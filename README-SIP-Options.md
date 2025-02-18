@@ -4,7 +4,7 @@
 ### Created: 2025/02/16
 
 ## Overview
-**get_sip_options.py** is a Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is compliant with [RFC 3261](https://datatracker.ietf.org/doc/html/rfc3261) and supports both **IPv4 and IPv6** communication. It also includes an SRV record discovery feature to automatically determine the best endpoint for SIP services.
+**get_sip_options.py** is a Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is compliant with [RFC 3261](https://datatracker.ietf.org/doc/html/rfc3261) and supports both **IPv4 and IPv6** communication. It also includes an SRV record discovery feature to automatically determine the best endpoint for SIP services and support for UDP, TCP and TLS, with additional TLS_VERSION explicit and CIPHER SUITE explicit support.
 
 ## Features
 - ✅ **SIP OPTIONS request via TCP or UDP**
@@ -14,6 +14,8 @@
 - ✅ **Handles DNS name compression for SRV lookups**
 - ✅ **Verbose mode for debugging**
 - ✅ **Nagios-compatible exit codes for monitoring integrations**
+- ✅ **TLS handshake support for secure SIP connections**
+- ✅ **Explicit TLS Version and Cipher Suite selection**
 
 ## Installation
 This script runs **natively in Python 3** with no additional dependencies.
@@ -49,7 +51,7 @@ python3 get_sip_options.py sip.example.com
 |----------------|------|---------|-------------|
 | `sip_server`   |      |         | SIP server IP/hostname |
 | `-p`, `--port` |      | `5060`    | SIP port |
-| `-k`, `--protocol` | | `tcp` | Transport protocol (`tcp` or `udp`) |
+| `-k`, `--protocol` | | `tcp` | Transport protocol (`udp`, `tcp` or `tls`) |
 | `-t`, `--timeout` | | `3` | Timeout in seconds |
 | `-w`, `--warn` | | `5` | Warning threshold for response time (seconds) |
 | `--max-forwards` | | `70` | Max-Forwards header value |
@@ -68,6 +70,50 @@ This mechanism supports `_sip._udp`, `_sip._tcp`, `_sips._tcp` and `_sipfederati
 ```sh
 python3 get_sip_options.py example.com -d -v
 ```
+Example:
+```sh
+python3 get_sip_options.py pexip.com -d -v
+🔎 [INFO] Found _sip._tcp.pexip.com: ygg1.vp.vc:5060 (Priority: 10, Weight: 100)
+🔎 [INFO] Found _sip._tcp.pexip.com: ygg2.vp.vc:5060 (Priority: 50, Weight: 100)
+🔎 [INFO] Found _sips._tcp.pexip.com: ygg1.vp.vc:5060 (Priority: 10, Weight: 100)
+🔎 [INFO] Found _sips._tcp.pexip.com: ygg2.vp.vc:5060 (Priority: 50, Weight: 100)
+🔎 [INFO] Found _sips._tcp.pexip.com: ygg2.vp.vc:5061 (Priority: 50, Weight: 100)
+🔎 [INFO] Found _sips._tcp.pexip.com: ygg1.vp.vc:5061 (Priority: 10, Weight: 100)
+🔎 [INFO] Found _sipfederationtls._tcp.pexip.com: ygg1.vp.vc:5060 (Priority: 10, Weight: 100)
+🔎 [INFO] Found _sipfederationtls._tcp.pexip.com: ygg2.vp.vc:5060 (Priority: 50, Weight: 100)
+🔎 [INFO] Found _sipfederationtls._tcp.pexip.com: ygg2.vp.vc:5061 (Priority: 50, Weight: 100)
+🔎 [INFO] Found _sipfederationtls._tcp.pexip.com: ygg1.vp.vc:5061 (Priority: 10, Weight: 100)
+🔎 [INFO] Found _sipfederationtls._tcp.pexip.com: sipfed.online.lync.com:5061 (Priority: 100, Weight: 1)
+🌎 [INFO] Resolved IPv4 Address: 185.94.240.215
+🔎 [INFO] Discovered SIP SRV Record (_sipfederationtls._tcp.pexip.com): 185.94.240.215:5060
+
+📤 [INFO] Sending SIP OPTIONS Request (TCP):
+------->
+OPTIONS sip:185.94.240.215 SIP/2.0
+Via: SIP/2.0/TCP 127.0.0.1:5060;branch=z9hG4bK-281309
+From: <sip:sjackson0109@185.94.240.215>
+To: <sip:185.94.240.215>
+Call-ID: d1ed4cc0-80fc-4144-95fe-6bc90a67f821
+CSeq: 1 OPTIONS
+Contact: <sip:sjackson0109@127.0.0.1>
+Max-Forwards: 70
+User-Agent: get_sip_options.py
+Content-Length: 0
+
+🚀 [INFO] Connecting to 185.94.240.215:5060 via TCP...
+✅ [INFO] TCP connection established to 185.94.240.215:5060
+📥 [INFO] Received SIP Response in 0.013s:
+<-------
+SIP/2.0 200 OK
+Via: SIP/2.0/TCP 127.0.0.1:5060;branch=z9hG4bK-281309;received=51.6.187.203;rport=54946
+Call-ID: d1ed4cc0-80fc-4144-95fe-6bc90a67f821
+CSeq: 1 OPTIONS
+From: <sip:sjackson0109@185.94.240.215>
+To: <sip:185.94.240.215>;tag=115153eccd3549bc
+Content-Length: 0
+
+SIP OK: 200 Success (response time: 0.013s)
+```
 
 #### 3️⃣ Check a SIP Server with a Custom Timeout
 ```sh
@@ -77,6 +123,16 @@ python3 get_sip_options.py sip.example.com -t 10
 #### 4️⃣ Use an IPv6 SIP Server
 ```sh
 python3 get_sip_options.py [2001:db8::1] -p 5061 -k tcp
+```
+
+#### 5️⃣ Perform a TLS Handshake & SIP Check
+```sh
+python3 get_sip_options.py sip.example.com -p 5061 -k tls -v
+```
+
+#### 6️⃣ Perform a TLS SIP Check with Explicit TLS Version and Cipher Suite
+```sh
+python3 get_sip_options.py sip.example.com -p 5061 -k tls --tls-version TLSv1.3 --cipher-suite ECDHE-RSA-AES128-GCM-SHA256 -v
 ```
 
 ## Exit Codes

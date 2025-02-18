@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Description   : Script checks SIP_SERVER for SIP OPTIONS, compliant with RFC 3261.
-# File Name     : TeamsPublicHolidays.ps1
+# File Name     : get_sip_options.py
 # Author        : Simon Jackson (@sjackson0109)
 # Inspiration   : Wim Devos (@WimObiwan)
 # Created     	: 2025/02/17
 # Updated       : 2025/01/03
-# Version       : 1.4
+# Version       : 1.5
 
 import socket
 import sys
@@ -23,6 +23,8 @@ DEFAULT_PORT = 5060
 DEFAULT_PROTOCOL = "tcp"
 DEFAULT_TIMEOUT = 3
 DEFAULT_WARN_THRESHOLD = 5  # Warning threshold in seconds
+DEFAULT_TLS_VERSION = "TLSv1.2"
+DEFAULT_CIPHER_SUITE = "CDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305"
 USER_PREFIX = "sjackson0109"
 USER_AGENT = "get_sip_options.py"
 
@@ -86,15 +88,15 @@ def discover_srv_record(host, protocol, verbose=False):
 
             if verbose:
                 for priority, weight, port, target in discovered_records:
-                    print(f"🔎 [INFO] Found {srv_query}: {target}:{port} (Priority: {priority}, Weight: {weight})")
+                    print(f"[INFO] Found {srv_query}: {target}:{port} (Priority: {priority}, Weight: {weight})")
 
         except socket.timeout:
             if verbose:
-                print(f"⚠️  [WARNING] DNS query timed out for {srv_query}.")
+                print(f"[WARNING] DNS query timed out for {srv_query}.")
             continue
         except Exception as e:
             if verbose:
-                print(f"⚠️  [WARNING] Error querying SRV records for {srv_query}: {e}")
+                print(f"[WARNING] Error querying SRV records for {srv_query}: {e}")
             continue
 
     # Sort by priority (lowest first), then by weight (highest first)
@@ -103,7 +105,7 @@ def discover_srv_record(host, protocol, verbose=False):
     if discovered_records:
         best_target, best_port = discovered_records[0][3], discovered_records[0][2]
 
-        # ✅ NEW: Resolve IPv4 and IPv6 addresses
+        # NEW: Resolve IPv4 and IPv6 addresses
         try:
             addr_info = socket.getaddrinfo(best_target, best_port, socket.AF_UNSPEC, socket.SOCK_STREAM)
             for res in addr_info:
@@ -111,14 +113,14 @@ def discover_srv_record(host, protocol, verbose=False):
                 ip_address = sockaddr[0]
                 
                 if family == socket.AF_INET6:
-                    print(f"🌍 [INFO] Resolved IPv6 Address: {ip_address}")
+                    print(f"🌍[INFO] Resolved IPv6 Address: {ip_address}")
                 else:
-                    print(f"🌎 [INFO] Resolved IPv4 Address: {ip_address}")
+                    print(f"🌎[INFO] Resolved IPv4 Address: {ip_address}")
                 
                 return ip_address, best_port, srv_query  # Return resolved address
 
         except socket.gaierror:
-            print(f"⚠️  [WARNING] SRV target {best_target} does not resolve. Skipping.")
+            print(f"[WARNING] SRV target {best_target} does not resolve. Skipping.")
 
     return None, None, None
 
@@ -238,6 +240,36 @@ def is_hostname(host):
 
     return False
 
+# TLS Version Mapping
+TLS_VERSIONS = {
+    "TLSv1.2": ssl.PROTOCOL_TLSv1_2,
+    "TLSv1.3": getattr(ssl, "PROTOCOL_TLSv1_3", ssl.PROTOCOL_TLSv1_2)  # Fallback to TLSv1.2 if TLSv1.3 is unavailable
+}
+
+def create_ssl_context(tls_version, cipher_suite, verbose=False):
+    """
+    Create an SSL context with an explicit TLS version and cipher suite.
+    """
+    if tls_version not in TLS_VERSIONS and tls_version != "auto":
+        print(f"[ERROR] Invalid TLS version specified: {tls_version}")
+        sys.exit(EXIT_CODES['UNKNOWN'])
+
+    context = ssl.create_default_context()
+
+    if tls_version != "auto":
+        context = ssl.SSLContext(TLS_VERSIONS[tls_version])
+
+    if cipher_suite:
+        try:
+            context.set_ciphers(cipher_suite)
+            if verbose:
+                print(f"🔒 [INFO] Using custom cipher suite: {cipher_suite}")
+        except ssl.SSLError as e:
+            print(f"[ERROR] Invalid cipher suite: {cipher_suite} ({e})")
+            sys.exit(EXIT_CODES['UNKNOWN'])
+
+    return context
+
 def check_tls(sock, hostname, tls_version="TLSv1_2", tls_ciphers=None, verbose=False):
     """
     Wrap the socket in an SSL context for TLS encryption.
@@ -257,15 +289,17 @@ def check_tls(sock, hostname, tls_version="TLSv1_2", tls_ciphers=None, verbose=F
 
     try:
         if verbose:
-            print(f"🔒 [INFO] Wrapping socket with {tls_version} for {hostname}")
+            print(f"🔒[INFO] Wrapping socket with {tls_version} for {hostname}")
         return context.wrap_socket(sock, server_hostname=hostname)
     except ssl.SSLError as e:
         if verbose:
-            print(f"⚠️  [WARNING] TLS handshake failed: {e}")
+            print(f"[WARNING] TLS handshake failed: {e}")
         return None
 
-def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::1", max_forwards=70, verbose=False, srv_type=None):
+def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::1", 
+                     max_forwards=70, verbose=False, srv_type=None, tls_version=None, cipher_suite=None):
     """Send a SIP OPTIONS request and return the response code and response time, supporting IPv6 and TLS."""
+
     branch_id = f"z9hG4bK-{random.randint(100000, 999999)}"
     call_id = str(uuid.uuid4())
 
@@ -286,34 +320,42 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::
         # Determine the socket type based on protocol
         sock_type = socket.SOCK_DGRAM if protocol == "udp" else socket.SOCK_STREAM
 
-        # ✅ NEW: Detect IPv6 vs IPv4
+        # Detect IPv6 vs IPv4
         family = socket.AF_INET6 if ":" in sip_server else socket.AF_INET
         sock = socket.socket(family, sock_type)
         sock.settimeout(timeout)
 
-        # ✅ NEW: Print SIP OPTIONS request BEFORE attempting a connection (TCP/TLS)
+        if protocol == "tls":
+            print(f"🚀 [INFO] Establishing TLS connection to {sip_server}:{sip_port}...")
+
+            # Use SSLContext instead of hardcoded TLS versions
+            context = ssl.create_default_context()
+
+            # Set TLS version if explicitly specified
+            if tls_version:
+                tls_version_map = {
+                    "TLSv1.2": ssl.TLSVersion.TLSv1_2,
+                    "TLSv1.3": getattr(ssl.TLSVersion, "TLSv1_3", ssl.TLSVersion.TLSv1_2)  # Fallback to TLS 1.2 if 1.3 is unavailable
+                }
+                context.minimum_version = tls_version_map.get(tls_version, ssl.TLSVersion.TLSv1_2)
+
+            # Set cipher suite if provided
+            if cipher_suite:
+                context.set_ciphers(cipher_suite)
+
+            sock = context.wrap_socket(sock, server_hostname=sip_server)
+
+        # Print SIP OPTIONS request BEFORE attempting a connection
         if verbose:
             print(f"\n📤 [INFO] Sending SIP OPTIONS Request ({protocol.upper()}):\n------->\n{sip_message}")
 
         if protocol in ["tcp", "tls"]:
             try:
-                print(f"\n🚀 [INFO] Connecting to {sip_server}:{sip_port} via {protocol.upper()}...")
                 sock.connect((sip_server, sip_port))
                 print(f"✅ [INFO] {protocol.upper()} connection established to {sip_server}:{sip_port}")
-
-                # Wrap the socket in an SSL context if the protocol is TLS
-                if protocol == "tls":
-                    if verbose:
-                        print(f"🔒 [INFO] Wrapping socket with TLS for {sip_server}")
-                    context = ssl.create_default_context()
-                    sock = context.wrap_socket(sock, server_hostname=sip_server)
-
-            except socket.error as e:
+            except (socket.error, ssl.SSLError) as e:
                 print(f"❌ [ERROR] {protocol.upper()} Connection Failed: {e}")
                 return f"Socket error: {e}", None, None
-            except ssl.SSLError as e:
-                print(f"❌ [ERROR] TLS Handshake Failed: {e}")
-                return f"TLS handshake error: {e}", None, None
 
         # Send SIP OPTIONS request
         start_time = time()
@@ -356,6 +398,9 @@ def main():
     parser.add_argument("--local-ip", default="127.0.0.1", help="Local IP address for the Via header (default: 127.0.0.1)")
     parser.add_argument("-d", "--discover-srv", action="store_true", help="Discover SIP SRV record and query the resolved endpoint")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose mode for debugging")
+    parser.add_argument("--tls-version", default=DEFAULT_TLS_VERSION, help="Explicit TLS version (TLSv1.2, TLSv1.3, etc.)")
+    parser.add_argument("--cipher-suite", default=DEFAULT_CIPHER_SUITE, help="Define a specific cipher suite")
+
 
     args = parser.parse_args()
 
@@ -366,22 +411,23 @@ def main():
     if args.discover_srv:
         resolved_host, resolved_port, srv_type = discover_srv_record(args.sip_server, args.protocol, args.verbose)
         if resolved_host:
-            print(f"🔎 [INFO] Discovered SIP SRV Record ({srv_type}): {resolved_host}:{resolved_port}")
+            print(f"[INFO] Discovered SIP SRV Record ({srv_type}): {resolved_host}:{resolved_port}")
             args.sip_server = resolved_host
             args.port = resolved_port
         else:
-            print(f"⚠️  [WARNING] No SRV record found for {args.sip_server}.")
-            print("❌ [ERROR] No valid SIP target found. Exiting.")
+            print(f"[WARNING] No SRV record found for {args.sip_server}.")
+            print("[ERROR] No valid SIP target found. Exiting.")
             sys.exit(EXIT_CODES['UNKNOWN'])
 
-    # Validate the SIP server hostname or IP
+    # **Validate the SIP Server Hostname or IP**
     if not is_hostname(args.sip_server):
-        print(f"Invalid hostname or IP: {args.sip_server}")
+        print(f"[ERROR] Invalid hostname or IP: {args.sip_server}")
         sys.exit(EXIT_CODES['UNKNOWN'])
 
-    # Send SIP OPTIONS request
+    # **Send SIP OPTIONS Request**
     sip_response, rtime, full_response = send_sip_options(
-        args.sip_server, args.port, args.timeout, args.protocol, args.local_ip, args.max_forwards, args.verbose, srv_type
+        args.sip_server, args.port, args.timeout, args.protocol, args.local_ip, 
+        args.max_forwards, args.verbose, srv_type, args.tls_version, args.cipher_suite
     )
 
     # Evaluate response
