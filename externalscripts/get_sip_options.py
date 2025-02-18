@@ -238,14 +238,26 @@ def is_hostname(host):
 
     return False
 
-def check_tls(sock, hostname, verbose=False):
+def check_tls(sock, hostname, tls_version="TLSv1_2", tls_ciphers=None, verbose=False):
     """
     Wrap the socket in an SSL context for TLS encryption.
+    Supports user-defined TLS versions and cipher suites.
     """
     context = ssl.create_default_context()
+    
+    # Set TLS version explicitly if provided
+    if tls_version == "TLSv1_3":
+        context.minimum_version = ssl.TLSVersion.TLSv1_3
+    elif tls_version == "TLSv1_2":
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+    # Set custom ciphers if provided
+    if tls_ciphers:
+        context.set_ciphers(tls_ciphers)
+
     try:
         if verbose:
-            print(f"🔒 [INFO] Wrapping socket with TLS for {hostname}")
+            print(f"🔒 [INFO] Wrapping socket with {tls_version} for {hostname}")
         return context.wrap_socket(sock, server_hostname=hostname)
     except ssl.SSLError as e:
         if verbose:
