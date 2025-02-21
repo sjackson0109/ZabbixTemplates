@@ -1,9 +1,3 @@
-# Custom Zabbix Scripts Repository
-
-### Author: Simon Jackson (sjackson0109)
-# Created     	: 2025/02/17
-# Updated       : 2025/02/21
-
 ## Overview
 This repository contains custom scripts designed for **Zabbix Monitoring**. Each script is documented individually, providing installation instructions, usage examples, and integration details.
 
@@ -13,7 +7,8 @@ All custom monitoring scripts reside under this repository. Below are the availa
 ### Available Scripts:
 - **[WatchGuard System Health Check](readme-watchguard.md)** - Logs into a WatchGuard Firewall, retrieves system health metrics, and calculates a health score for Zabbix. Returns a integer from 1 to 100 (healthy).
 - **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
-- **[Script B](readme-B.md)** - Description of Script B.
+- **[get_firebox_health.py](README-WatchguardSystemHealth.md)** - This script logs into a **WatchGuard Firewall**, retrieves **system health metrics**, and calculates a **health score** for monitoring in **Zabbix** (still under development)
+
 - **[Script C](readme-C.md)** - Description of Script C.
 
 ## Installation
@@ -25,5 +20,5 @@ For installation and usage details of each script, refer to the individual READM
 - Contributions and improvements are welcome.
 
 ## License
-MIT License
-
+This project is licensed under the **Apache License 2.0**.  
+See the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) for details.

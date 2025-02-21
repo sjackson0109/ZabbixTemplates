@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-# Description   : Script checks SIP_SERVER for SIP OPTIONS, compliant with RFC 3261.
-# File Name     : get_sip_options.py
-# Author        : Simon Jackson (@sjackson0109)
-# Inspiration   : Wim Devos (@WimObiwan) early pearl work on the same topic
-# Created     	: 2025/02/17
-# Updated       : 2025/02/21
-# Version       : 1.6
+"""
+Author: Simon Jackson (@sjackson0109)
+Created: 2025/02/17
+Updated: 2025/02/21
+Version: 1.6
+Description:
+    - Determines multiple parameters, using supplied/detected variables
+    - Executes a SIP OPTIONS request
+    - Validates against RFC 3261.
+"""
 
 import socket
 import sys

@@ -1,8 +1,3 @@
-# WatchGuard Firewall Health Check Script
-
-### Author: Simon Jackson / sjackson0109  
-### Created: 2025/02/03  
-
 ## Overview
 This script logs into a **WatchGuard Firewall**, retrieves **system health metrics**, and calculates a **health score** for monitoring in **Zabbix**.
 
@@ -27,11 +22,11 @@ This script logs into a **WatchGuard Firewall**, retrieves **system health metri
 ## Installation
 1. **Copy the script to Zabbix Proxy's external scripts directory:**
    ```bash
-   sudo cp watchguard_health.py /usr/lib/zabbix/externalscripts/
+   sudo cp get_firebox_health.py /usr/lib/zabbix/externalscripts/
    ```
 2. **Make it executable:**
    ```bash
-   sudo chmod +x /usr/lib/zabbix/externalscripts/watchguard_health.py
+   sudo chmod +x /usr/lib/zabbix/externalscripts/get_firebox_health.py
    ```
 3. **Ensure Zabbix Proxy can execute external scripts:**
    ```bash
@@ -41,7 +36,7 @@ This script logs into a **WatchGuard Firewall**, retrieves **system health metri
 ## Usage
 Run manually:
 ```bash
-./watchguard_health.py "https://firewall-ip/api" "admin" "password"
+./get_firebox_health.py "https://firewall-ip/api" "admin" "password"
 ```
 **Example Output:**
 ```
@@ -56,7 +51,7 @@ Run manually:
 - **Type:** External Check  
 - **Key:**  
   ```
-  watchguard_health.py["https://firewall-ip/api", "admin", "password"]
+  get_firebox_health.py["https://firewall-ip/api", "admin", "password"]
   ```
 - **Update Interval:** 60s (adjust as needed)  
 - **Type of Information:** Numeric (Unsigned)  
@@ -65,7 +60,7 @@ Run manually:
 ### Step 2: Create a Zabbix Trigger
 Example trigger:
 ```
-{host:watchguard_health.py.last()}<50
+{host:get_firebox_health.py.last()}<50
 ```
 **Actions:**
 - Alert if the health score **falls below 50**.
@@ -103,4 +98,5 @@ Example trigger:
 - Can be modified for additional metrics.
 
 ## License
-Full details of the license can be viewed [here](./LICENSE.md).
+This project is licensed under the **Apache License 2.0**.  
+See the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) for details.
