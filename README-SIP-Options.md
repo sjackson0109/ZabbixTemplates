@@ -10,15 +10,15 @@
 It includes automatic SRV record discovery, enabling seamless resolution of SIP endpoints. The script also supports UDP, TCP, and TLS, with advanced features like explicit TLS version selection and custom cipher suites.
 
 ## Features
-✅ Supports SIP OPTIONS requests over UDP, TCP, and TLS
-✅ IPv4 & IPv6 compatibility
-✅ SRV Record Discovery (`_sip._tcp`, `_sip._udp`, `_sips._tcp`, `_sipfederationtls._tcp`)
-✅ Validates SIP response codes and categorises them
-✅ Handles DNS SRV response, using compression for more accurate SRV name lookups
-✅ Verbose mode for advanced debugging
-✅ Nagios-compatible exit codes for monitoring integrations
-✅ Secure TLS handshake support
-✅ Explicit TLS version and custom cipher suite selection
+ - ✅ Supports SIP OPTIONS requests over UDP, TCP, and TLS
+ - ✅ IPv4 & IPv6 compatibility
+ - ✅ SRV Record Discovery (`_sip._tcp`, `_sip._udp`, `_sips._tcp`, `_sipfederationtls._tcp`)
+ - ✅ Validates SIP response codes and categorises them
+ - ✅ Handles DNS SRV response, using compression for more accurate SRV name lookups
+ - ✅ Verbose mode for advanced debugging
+ - ✅ Nagios-compatible exit codes for monitoring integrations
+ - ✅ Secure TLS handshake support
+ - ✅ Explicit TLS version and custom cipher suite selection
 
 ## Installation
 This script runs **natively in Python 3** with no additional dependencies.

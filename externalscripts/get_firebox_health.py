@@ -5,7 +5,7 @@ Created: 2024/02/18
 Updated: 2025/02/21
 Version: 1.1
 Description: 
-    - Logs into a WatchGuard Firewall via API.
+    - Logs into a WatchGuard Firebox (Firewall) via API.
     - Fetches system health metrics (CPU, Memory, Active Connections).
     - Computes a simple health score for Zabbix monitoring.
     - Returns a numeric metric (0-100) for use with Zabbix external checks.
