@@ -12,7 +12,7 @@ All custom monitoring scripts reside under this repository. Below are the availa
 
 ### Available Scripts:
 - **[WatchGuard System Health Check](readme-watchguard.md)** - Logs into a WatchGuard Firewall, retrieves system health metrics, and calculates a health score for Zabbix. Returns a integer from 1 to 100 (healthy).
-- **[Script A](readme-A.md)** - Description of Script A.
+- **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
 - **[Script B](readme-B.md)** - Description of Script B.
 - **[Script C](readme-C.md)** - Description of Script C.
 
