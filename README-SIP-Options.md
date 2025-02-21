@@ -1,21 +1,24 @@
 # SIP OPTIONS Check Script
 
 ### Author: Simon Jackson / sjackson0109  
-### Created: 2025/02/16
+### Created: 2025/02/17
+### Updated: 2025/02/21
 
 ## Overview
-**get_sip_options.py** is a Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is compliant with [RFC 3261](https://datatracker.ietf.org/doc/html/rfc3261) and supports both **IPv4 and IPv6** communication. It also includes an SRV record discovery feature to automatically determine the best endpoint for SIP services and support for UDP, TCP and TLS, with additional TLS_VERSION explicit and CIPHER SUITE explicit support.
+**get_sip_options.py** is a Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports both IPv4 and IPv6 communication.
+
+It includes automatic SRV record discovery, enabling seamless resolution of SIP endpoints. The script also supports UDP, TCP, and TLS, with advanced features like explicit TLS version selection and custom cipher suites.
 
 ## Features
-- ✅ **SIP OPTIONS request via TCP or UDP**
-- ✅ **Supports both IPv4 and IPv6**
-- ✅ **SRV Record Discovery** (_sip._tcp, _sip._udp, _sips._tcp, _sipfederationtls._tcp)
-- ✅ **Validates SIP response codes & categorizes them**
-- ✅ **Handles DNS name compression for SRV lookups**
-- ✅ **Verbose mode for debugging**
-- ✅ **Nagios-compatible exit codes for monitoring integrations**
-- ✅ **TLS handshake support for secure SIP connections**
-- ✅ **Explicit TLS Version and Cipher Suite selection**
+✅ Supports SIP OPTIONS requests over UDP, TCP, and TLS
+✅ IPv4 & IPv6 compatibility
+✅ SRV Record Discovery (`_sip._tcp`, `_sip._udp`, `_sips._tcp`, `_sipfederationtls._tcp`)
+✅ Validates SIP response codes and categorises them
+✅ Handles DNS SRV response, using compression for more accurate SRV name lookups
+✅ Verbose mode for advanced debugging
+✅ Nagios-compatible exit codes for monitoring integrations
+✅ Secure TLS handshake support
+✅ Explicit TLS version and custom cipher suite selection
 
 ## Installation
 This script runs **natively in Python 3** with no additional dependencies.
@@ -29,8 +32,8 @@ Note: Tested with `Python 3.12.9` but will likely work with all minor versions.
 
 ### Download the Script
 ```sh
-git clone https://github.com/sjackson0109/ZabbixTemplates
-cd externalscripts
+git clone https://github.com/sjackson0109/ZabbixTemplates.git
+cd ZabbixTemplates/externalscripts
 ```
 
 Alternatively, download `get_sip_options.py` directly and place it in a directory of your choice.
@@ -46,18 +49,22 @@ Example:
 python3 get_sip_options.py sip.example.com
 ```
 
-### Command-Line Arguments
-| Argument        | Short | Default  | Description |
-|----------------|------|---------|-------------|
-| `sip_server`   |      |         | SIP server IP/hostname |
-| `-p`, `--port` |      | `5060`    | SIP port |
-| `-k`, `--protocol` | | `tcp` | Transport protocol (`udp`, `tcp` or `tls`) |
-| `-t`, `--timeout` | | `3` | Timeout in seconds |
-| `-w`, `--warn` | | `5` | Warning threshold for response time (seconds) |
-| `--max-forwards` | | `70` | Max-Forwards header value |
-| `--local-ip` | | `127.0.0.1` | Local IP address used in the SIP Via header |
-| `-d`, `--discover-srv` | | `False` | Automatically discover SIP SRV records |
-| `-v`, `--verbose` | | `False` | Enable verbose debugging |
+### Command-Line Arguments  
+| Argument        | Default  | Description |
+|----------------|---------|-------------|
+| `sip_server`   |         | SIP server IP/hostname |
+| `-d`, `--discover` | `False` | [Optional] Discover SIP SRV records (`_sip._udp`, `_sip._tcp`, `_sips._tcp`, `_sipfederationtls._tcp`) |
+| `-k`, `--protocol` | `udp` | [Optional] Transport protocol (`udp`, `tcp`, or `tls`) |
+| `-p`, `--port` | `5060`  | [Optional] SIP server port (default: 5060) |
+| `-u`, `--user-agent` | `"get_sip_options.py"` | [Optional] User-Agent string |
+| `-s`, `--source` | `auto-detect` | [Optional] Source IP/FQDN |
+| `-t`, `--timeout` | `100` | [Optional] SIP Server Timeout (seconds) |
+| `-w`, `--warn` | `5` | [Optional] Warning threshold for response time (seconds) |
+| `-v`, `--verbose` | `False` | [Optional] Enable verbose debugging |
+| `-m`, `--max-forwards` | `70` | [Optional] Max-Forwards header value |
+| `--tls-version` | `TLSv1.2` | [Optional] Explicit TLS version selection |
+| `--cipher-suite` | A pre-configured secure set of ciphers | [Optional] Custom TLS Cipher Suite |
+
 
 ### Example Commands
 #### 1️⃣ Check a SIP Server Over UDP
@@ -136,7 +143,7 @@ python3 get_sip_options.py sip.example.com -p 5061 -k tls --tls-version TLSv1.3 
 ```
 
 ## Exit Codes
-This script uses *Standardised montoring solution exit codes**, making it ideal for Zabbix/Nagios monitoring integrations.
+This script uses **standardised monitoring solution exit codes**, making it ideal for **Zabbix/Nagios integrations**.
 
 | Exit Code | Status    | Description |
 |-----------|----------|-------------|
@@ -187,8 +194,7 @@ The script classifies SIP responses into categories:
 - **6xx - Global Failure (Critical)**
 
 ## License
-This project is licensed under the **Apache License**.
+This project is licensed under the **Apache License 2.0**.  
+See the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) for details.
 
-## Author
-**Simon Jackson** (@sjackson0109) - 2025
 

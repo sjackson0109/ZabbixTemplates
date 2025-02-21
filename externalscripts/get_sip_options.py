@@ -2,10 +2,10 @@
 # Description   : Script checks SIP_SERVER for SIP OPTIONS, compliant with RFC 3261.
 # File Name     : get_sip_options.py
 # Author        : Simon Jackson (@sjackson0109)
-# Inspiration   : Wim Devos (@WimObiwan)
+# Inspiration   : Wim Devos (@WimObiwan) early pearl work on the same topic
 # Created     	: 2025/02/17
-# Updated       : 2025/01/03
-# Version       : 1.5
+# Updated       : 2025/02/21
+# Version       : 1.6
 
 import socket
 import sys
@@ -19,14 +19,14 @@ import ssl
 from time import time
 
 # Constants
-DEFAULT_PORT = 5060
-DEFAULT_PROTOCOL = "tcp"
-DEFAULT_TIMEOUT = 3
-DEFAULT_WARN_THRESHOLD = 5  # Warning threshold in seconds
 DEFAULT_TLS_VERSION = "TLSv1.2"
 DEFAULT_CIPHER_SUITE = "CDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305"
 USER_PREFIX = "sjackson0109"
+USER_DOMAIN = "example.com"
 USER_AGENT = "get_sip_options.py"
+DNS_TIMEOUT = 3
+DNS_PORT = 53
+DNS_SERVERS = ["1.1.1.1", "8.8.8.8", "9.9.9.9"]  # Cloudflare, Google, Quad9
 
 # Nagios-compatible exit codes
 EXIT_CODES = {
@@ -46,83 +46,122 @@ SIP_RESPONSE_CATEGORIES = {
     6: "Global Failure"
 }
 
-def discover_srv_record(host, protocol, verbose=False):
+def get_source(target_host, target_port):
+    """
+    Determine the local IP address that would be used to connect to the target host.
+    
+    Args:
+    target_host (str): The hostname or IP address of the target SIP server.
+    target_port (int): The port number of the target SIP server.
+    
+    Returns:
+    str: The local IP address as a string.
+    """
+    try:
+        # Create a temporary socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
+        # Connect to the target host (note: this doesn't send any packets)
+        s.connect((target_host, target_port))
+        
+        # Get the local IP address used for this connection
+        source = s.getsockname()[0]
+        
+        # Close the temporary socket
+        s.close()
+        
+        return source
+    except Exception as e:
+        print(f"[WARNING] Unable to determine local IP: {e}")
+        # Fall back to loopback address if we can't determine the IP
+        return "127.0.0.1"
+
+def discover_srv_record(host, protocol, verbose=False, custom_dns=None):
     """
     Discover SIP SRV records, supporting both IPv4 and IPv6 targets.
+    Now includes fallback DNS servers for reliability.
+    
+    Args:
+        host (str): The SIP server hostname.
+        protocol (str): Protocol ("udp", "tcp", or "tls").
+        verbose (bool): Enable detailed logging.
+        custom_dns (str): User-defined DNS server (optional).
+    
+    Returns:
+        tuple: (IP address, Port, SRV query) if found, else (None, None, None).
     """
+
     srv_types = {
         "udp": ["_sip._udp."],  # Standard SIP over UDP
         "tcp": ["_sip._tcp.", "_sips._tcp.", "_sipfederationtls._tcp."],  # SIP over TCP, TLS, and Federation
     }
 
     srv_queries = srv_types.get(protocol, [])
+    resolved_addresses = []  # List to store resolved IP addresses and ports
     discovered_records = []
 
-    # DNS server to use (default is Cloudflare's public DNS)
-    dns_server = "1.1.1.1"
-    dns_port = 53
+    dns_servers = [custom_dns] if custom_dns else DNS_SERVERS
 
-    for srv_prefix in srv_queries:
-        srv_query = f"{srv_prefix}{host}"
+    for dns_server in dns_servers:
+        for srv_prefix in srv_queries:
+            srv_query = f"{srv_prefix}{host}"
 
         try:
             # Create a UDP socket for DNS resolution
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(DEFAULT_TIMEOUT)
+            sock.settimeout(DNS_TIMEOUT)
 
             # Generate a DNS query for the SRV record
             query_id = random.randint(0, 65535)  # Unique ID for the query
             query = build_dns_query(srv_query, query_id)
 
             # Send the query to the DNS server
-            sock.sendto(query, (dns_server, dns_port))
-
-            # Receive the response
+            sock.sendto(query, (dns_server, DNS_PORT))
             response, _ = sock.recvfrom(4096)
             sock.close()
 
             # Parse the DNS response
             records = parse_dns_response(response, query_id, verbose)
-            for priority, weight, port, target in records:
-                discovered_records.append((priority, weight, port, target))
-
-            if verbose:
-                for priority, weight, port, target in discovered_records:
-                    print(f"[INFO] Found {srv_query}: {target}:{port} (Priority: {priority}, Weight: {weight})")
+            if verbose and records:
+                print(f"[INFO] Discovered SRV records for {srv_query}: {records}")
+            break #If there is at least one record, then move on.
 
         except socket.timeout:
-            if verbose:
-                print(f"[WARNING] DNS query timed out for {srv_query}.")
+            print(f"[WARNING] DNS query timed out for {srv_query}.")
             continue
+        except socket.gaierror as e:
+                print(f"[WARNING] Error resolving DNS server {dns_server}: {e}")
+                continue
         except Exception as e:
-            if verbose:
-                print(f"[WARNING] Error querying SRV records for {srv_query}: {e}")
-            continue
+            print(f"[ERROR] An unexpected error occurred during DNS resolution: {e}")
+            continue #Try the next DNS Server if possible
 
     # Sort by priority (lowest first), then by weight (highest first)
     discovered_records.sort(key=lambda x: (x[0], -x[1]))
 
-    if discovered_records:
-        best_target, best_port = discovered_records[0][3], discovered_records[0][2]
-
-        # NEW: Resolve IPv4 and IPv6 addresses
+    # Resolve IP addresses for all discovered targets
+    for priority, weight, port, target in discovered_records:
         try:
-            addr_info = socket.getaddrinfo(best_target, best_port, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            addr_info = socket.getaddrinfo(target, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
             for res in addr_info:
                 family, _, _, _, sockaddr = res
                 ip_address = sockaddr[0]
-                
-                if family == socket.AF_INET6:
-                    print(f"🌍[INFO] Resolved IPv6 Address: {ip_address}")
-                else:
-                    print(f"🌎[INFO] Resolved IPv4 Address: {ip_address}")
-                
-                return ip_address, best_port, srv_query  # Return resolved address
-
+                resolved_addresses.append((ip_address, port))  # Append to the list
+                if verbose:
+                    if family == socket.AF_INET6:
+                        print(f"🌍[INFO] Resolved IPv6 Address: {ip_address}:{port} for {target}")
+                    else:
+                        print(f"🌎[INFO] Resolved IPv4 Address: {ip_address}:{port} for {target}")
         except socket.gaierror:
-            print(f"[WARNING] SRV target {best_target} does not resolve. Skipping.")
+            print(f"[WARNING] SRV target {target} does not resolve.")
+        except Exception as e:
+            print(f"[ERROR] An unexpected error occurred during address resolution: {e}")
 
-    return None, None, None
+    if not resolved_addresses:
+        print("[WARNING] No resolvable SRV records found.")
+        return [], None
+
+    return resolved_addresses, srv_query
 
 def build_dns_query(domain, query_id):
     """
@@ -161,7 +200,7 @@ def parse_dns_response(response, query_id, verbose=False):
     # Skip the question section
     while response[offset] != 0:
         offset += 1
-    offset += 5  # Skip the NULL byte and QTYPE/QCLASS (2 bytes each)
+        offset += 5  # Skip the NULL byte and QTYPE/QCLASS (2 bytes each)
 
     # Parse each answer
     for _ in range(answer_count):
@@ -185,7 +224,11 @@ def parse_dns_response(response, query_id, verbose=False):
 
             # Parse the target domain name
             target = parse_dns_name(response, offset)
-            offset += data_len - 6  # Move to the next record
+            # Validate that data_len is greater or equal to 6
+            if data_len >= 6:
+                offset += data_len - 6  # Move to the next record
+            else:
+                print(f"[WARNING] data_len is less than 6. Skipping record")
 
             records.append((priority, weight, port, target))
 
@@ -221,24 +264,12 @@ def is_hostname(host):
     """Validate if the input is a valid hostname or IP address."""
     if not host:
         return False
-
-    # Check if it's a valid IP address (IPv4 or IPv6)
     try:
-        ipaddress.ip_address(host)
+        socket.getaddrinfo(host, None)
         return True
-    except ValueError:
-        pass  # Not an IP, try resolving hostname
+    except socket.gaierror:
+        return False
 
-    # Check if it's a valid hostname
-    if re.match(r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*$', host):
-        # Try resolving the A/AAAA record
-        try:
-            socket.gethostbyname(host)
-            return True
-        except socket.gaierror:
-            pass  # Fall back to SRV record check
-
-    return False
 
 # TLS Version Mapping
 TLS_VERSIONS = {
@@ -246,73 +277,87 @@ TLS_VERSIONS = {
     "TLSv1.3": getattr(ssl, "PROTOCOL_TLSv1_3", ssl.PROTOCOL_TLSv1_2)  # Fallback to TLSv1.2 if TLSv1.3 is unavailable
 }
 
-def create_ssl_context(tls_version, cipher_suite, verbose=False):
+def create_ssl_context(tls_version="TLSv1.2", cipher_suite=None, verbose=False):
     """
-    Create an SSL context with an explicit TLS version and cipher suite.
+    Create an SSL context with an explicit TLS version and optional cipher suite.
+    If no cipher suite is specified, the system defaults will be used.
+    
+    Args:
+        tls_version (str): The TLS version to use (e.g., "TLSv1.2", "TLSv1.3").
+        cipher_suite (str, optional): The cipher suite to enforce. If None, system defaults are used.
+        verbose (bool): Enable verbose output.
+
+    Returns:
+        ssl.SSLContext: Configured SSL context.
     """
     if tls_version not in TLS_VERSIONS and tls_version != "auto":
         print(f"[ERROR] Invalid TLS version specified: {tls_version}")
         sys.exit(EXIT_CODES['UNKNOWN'])
 
+    # Create a secure default context
     context = ssl.create_default_context()
 
+    # Override TLS version if specified
     if tls_version != "auto":
         context = ssl.SSLContext(TLS_VERSIONS[tls_version])
 
+    # Apply cipher suite only if explicitly provided
     if cipher_suite:
         try:
             context.set_ciphers(cipher_suite)
             if verbose:
                 print(f"🔒 [INFO] Using custom cipher suite: {cipher_suite}")
         except ssl.SSLError as e:
-            print(f"[ERROR] Invalid cipher suite: {cipher_suite} ({e})")
+            print(f"[ERROR] Invalid cipher suite: {cipher_suite}. {e}")
             sys.exit(EXIT_CODES['UNKNOWN'])
 
     return context
 
-def check_tls(sock, hostname, tls_version="TLSv1_2", tls_ciphers=None, verbose=False):
-    """
-    Wrap the socket in an SSL context for TLS encryption.
-    Supports user-defined TLS versions and cipher suites.
-    """
-    context = ssl.create_default_context()
-    
-    # Set TLS version explicitly if provided
-    if tls_version == "TLSv1_3":
-        context.minimum_version = ssl.TLSVersion.TLSv1_3
-    elif tls_version == "TLSv1_2":
-        context.minimum_version = ssl.TLSVersion.TLSv1_2
 
-    # Set custom ciphers if provided
-    if tls_ciphers:
-        context.set_ciphers(tls_ciphers)
+def send_sip_options(sip_server, sip_port, timeout, protocol="udp", 
+                     max_forwards=70, verbose=False, srv_type=None, 
+                     tls_version=None, cipher_suite=None, user_agent=USER_AGENT, 
+                     source="auto-detect",from_header="auto-detect"):
 
-    try:
-        if verbose:
-            print(f"🔒[INFO] Wrapping socket with {tls_version} for {hostname}")
-        return context.wrap_socket(sock, server_hostname=hostname)
-    except ssl.SSLError as e:
-        if verbose:
-            print(f"[WARNING] TLS handshake failed: {e}")
-        return None
-
-def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::1", 
-                     max_forwards=70, verbose=False, srv_type=None, tls_version=None, cipher_suite=None):
     """Send a SIP OPTIONS request and return the response code and response time, supporting IPv6 and TLS."""
+
+    # Determine the appropriate source IP/fqdn
+    if source == "auto-detect":
+        try:
+            source = get_source(sip_server, sip_port)
+        except Exception as e:
+            source = "::1" if socket.has_ipv6 else "127.0.0.1"
+            print(f"[WARNING] Unable to determine Source IP dynamically (using NIC attributes), falling back to {source}: {e}")
+
+    if from_header == "auto-detect":
+        try:
+            from_header=f"{USER_PREFIX}@{USER_DOMAIN}"
+        except Exception as e:
+            print(f"[WARNING] Unable to determine from field {from_header}: {e}")
+
+    # Use an ephemeral port assigned by the OS
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM if protocol == "udp" else socket.SOCK_STREAM) as temp_sock:
+            temp_sock.bind(('', 0))  # Bind to an available ephemeral port
+            local_port = temp_sock.getsockname()[1]  # Retrieve the assigned port
+    except Exception as e:
+        print(f"[WARNING] Unable to determine local ephemeral port, using default 5060: {e}")
+        local_port = 5060  # Fallback
 
     branch_id = f"z9hG4bK-{random.randint(100000, 999999)}"
     call_id = str(uuid.uuid4())
+    user_agent = user_agent if user_agent and isinstance(user_agent, str) else USER_AGENT
 
     sip_message = (
         f"OPTIONS sip:{sip_server} SIP/2.0\r\n"
-        f"Via: SIP/2.0/{protocol.upper()} {local_ip}:{sip_port};branch={branch_id}\r\n"
-        f"From: <sip:{USER_PREFIX}@{sip_server}>\r\n"
+        f"Via: SIP/2.0/{protocol.upper()} {source}:{sip_port};branch={branch_id}\r\n"
+        f"From: <sip:{from_header}>\r\n"
         f"To: <sip:{sip_server}>\r\n"
-        f"Call-ID: {call_id}\r\n"
+        f"Call-Id: {call_id}\r\n"
         f"CSeq: 1 OPTIONS\r\n"
-        f"Contact: <sip:{USER_PREFIX}@{local_ip}>\r\n"
+        f"Contact: <sip:{USER_PREFIX}@{source}>\r\n"
         f"Max-Forwards: {max_forwards}\r\n"
-        f"User-Agent: {USER_AGENT}\r\n"
+        f"User-Agent: {user_agent}\r\n"
         f"Content-Length: 0\r\n\r\n"
     )
 
@@ -341,7 +386,11 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::
 
             # Set cipher suite if provided
             if cipher_suite:
-                context.set_ciphers(cipher_suite)
+                try:
+                    context.set_ciphers(cipher_suite)
+                except ssl.SSLError as e:
+                    error_message = f"❌ [ERROR] Invalid cipher suite: {cipher_suite}. {e}"
+                    return error_message, None, None
 
             sock = context.wrap_socket(sock, server_hostname=sip_server)
 
@@ -353,6 +402,18 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::
             try:
                 sock.connect((sip_server, sip_port))
                 print(f"✅ [INFO] {protocol.upper()} connection established to {sip_server}:{sip_port}")
+            except socket.gaierror as e:
+                error_message = f"❌ [ERROR] DNS resolution error: {e}"
+                return error_message, None, None
+            except ConnectionRefusedError as e:
+                error_message = f"❌ [ERROR] Connection refused: {e}"
+                return error_message, None, None
+            except socket.timeout:
+                 error_message = "❌ [ERROR] Connection timed out"
+                 return error_message, None, None
+            except OSError as e:
+                error_message = f"❌ [ERROR] OS error: {e}"
+                return error_message, None, None
             except (socket.error, ssl.SSLError) as e:
                 print(f"❌ [ERROR] {protocol.upper()} Connection Failed: {e}")
                 return f"Socket error: {e}", None, None
@@ -378,29 +439,32 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="tcp", local_ip="::
         if match:
             return int(match.group(1)), rtime, response.strip()
         else:
-            return "Invalid response received", rtime, response.strip()
+            return f"Invalid response: {response.strip()}", rtime, response.strip()
 
     except socket.timeout:
         return "Timeout: No response", None, None
     except socket.error as e:
         return f"Socket error: {e}", None, None
     finally:
-        sock.close()
+        if 'sock' in locals() and sock:
+            sock.close()
+
 
 def main():
     parser = argparse.ArgumentParser(description="SIP OPTIONS Check (RFC 3261 Compliant)")
     parser.add_argument("sip_server", help="SIP Server IP or hostname")
-    parser.add_argument("-p", "--port", type=int, default=DEFAULT_PORT, help=f"SIP Port (default: {DEFAULT_PORT})")
-    parser.add_argument("-k", "--protocol", choices=["tcp", "udp", "tls"], default=DEFAULT_PROTOCOL, help=f"Transport protocol (default: {DEFAULT_PROTOCOL})")
-    parser.add_argument("-t", "--timeout", type=int, default=DEFAULT_TIMEOUT, help=f"Timeout in seconds (default: {DEFAULT_TIMEOUT})")
-    parser.add_argument("-w", "--warn", type=float, default=DEFAULT_WARN_THRESHOLD, help=f"Warning threshold in seconds (default: {DEFAULT_WARN_THRESHOLD})")
-    parser.add_argument("--max-forwards", type=int, default=70, help="Max-Forwards header value (default: 70)")
-    parser.add_argument("--local-ip", default="127.0.0.1", help="Local IP address for the Via header (default: 127.0.0.1)")
-    parser.add_argument("-d", "--discover-srv", action="store_true", help="Discover SIP SRV record and query the resolved endpoint")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose mode for debugging")
-    parser.add_argument("--tls-version", default=DEFAULT_TLS_VERSION, help="Explicit TLS version (TLSv1.2, TLSv1.3, etc.)")
-    parser.add_argument("--cipher-suite", default=DEFAULT_CIPHER_SUITE, help="Define a specific cipher suite")
-
+    parser.add_argument("-d", "--discover", action="store_true", help="[Optional] Discover a SIP SRV record and query the resolved endpoint")
+    parser.add_argument("-k", "--protocol", choices=["udp", "tcp", "tls"], default="udp", help=f"[Optional] Transport protocol (default: udp)")
+    parser.add_argument("-p", "--port", type=int, default=5060, help=f"[Optional] SIP Port (default: 5060)")
+    parser.add_argument("-f", "--from_header", type=str, default="auto-detect", help=f"[Optional] FROM field (default: auto-detect)")
+    parser.add_argument("-u", "--user-agent", type=str, default=USER_AGENT, help=f"[Optional] Custom User-Agent string (default: {USER_AGENT})")
+    parser.add_argument("-s", "--source", default="auto-detect", help="[Optional] Source IP-Address/FQDN used in the SIP Via header (default: auto-detect)")
+    parser.add_argument("-t", "--timeout", type=int, default=100, help=f"[Optional] Timeout in seconds (default: 100)")
+    parser.add_argument("-w", "--warn", type=float, default=5, help=f"[Optional] Warning threshold in seconds (default: 5)")
+    parser.add_argument("-v", "--verbose", action="store_true", help=f"[Optional] Enable verbose mode for debugging")
+    parser.add_argument("-m", "--max-forwards", type=int, default=70, help=f"[Optional] Max-Forwards header value (default: 70)")
+    parser.add_argument("--tls-version", default=DEFAULT_TLS_VERSION, help=f"[Optional] specific TLS version [TLSv1.1, TLSv1.2, TLSv1.3, etc.] (default: negotiate tls)")
+    parser.add_argument("--cipher-suite", default=DEFAULT_CIPHER_SUITE, help=f"[Optional] specific cipher suite (default: negotiate cipher suite)")
 
     args = parser.parse_args()
 
@@ -408,7 +472,7 @@ def main():
     srv_type = None
 
     # Discover SRV record if requested
-    if args.discover_srv:
+    if args.discover:
         resolved_host, resolved_port, srv_type = discover_srv_record(args.sip_server, args.protocol, args.verbose)
         if resolved_host:
             print(f"[INFO] Discovered SIP SRV Record ({srv_type}): {resolved_host}:{resolved_port}")
@@ -426,9 +490,20 @@ def main():
 
     # **Send SIP OPTIONS Request**
     sip_response, rtime, full_response = send_sip_options(
-        args.sip_server, args.port, args.timeout, args.protocol, args.local_ip, 
-        args.max_forwards, args.verbose, srv_type, args.tls_version, args.cipher_suite
+        sip_server=args.sip_server,
+        sip_port=args.port,
+        timeout=args.timeout,
+        protocol=args.protocol,
+        max_forwards=args.max_forwards,
+        verbose=args.verbose,
+        srv_type=srv_type,
+        tls_version=args.tls_version,
+        cipher_suite=args.cipher_suite,
+        user_agent=args.user_agent,
+        source=args.source,
+        from_header=args.from_header
     )
+
 
     # Evaluate response
     if isinstance(sip_response, int):
