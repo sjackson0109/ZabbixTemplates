@@ -162,7 +162,7 @@ def discover_srv_record(host, protocol, verbose=False, custom_dns=None):
 
     if not resolved_addresses:
         print("[WARNING] No resolvable SRV records found.")
-        return [], None
+        return None, None, None
 
     return resolved_addresses, srv_query
 

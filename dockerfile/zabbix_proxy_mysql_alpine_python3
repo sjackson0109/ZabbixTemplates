@@ -1,0 +1,15 @@
+FROM zabbix/zabbix-proxy-mysql:alpine-7.0-latest
+
+# Switch to root to install additional packages
+USER root
+
+# Install Python 3, pip, and Python libraries
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install requests --break-system-packages
+RUN pip3 install py-zabbix --break-system-packages
+
+# Verify installation
+RUN python3 --version && pip3 --version && python3 -m pip show requests
+
+# Switch back to the default user
+USER zabbix

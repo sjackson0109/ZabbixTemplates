@@ -70,7 +70,9 @@ python3 get_sip_options.py sip.example.com
 #### 1️⃣ Check a SIP Server Over UDP
 ```sh
 python3 get_sip_options.py sip.example.com -k udp
+[ERROR] Invalid hostname or IP: sip.example.com
 ```
+Obviously, enter a valid DNS name or IP address.
 
 #### 2️⃣ Use SRV Record Discovery
 This mechanism supports `_sip._udp`, `_sip._tcp`, `_sips._tcp` and `_sipfederationtls._tcp` SRV record discovery.
