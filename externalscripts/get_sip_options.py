@@ -316,6 +316,15 @@ def create_ssl_context(tls_version="TLSv1.2", cipher_suite=None, verbose=False):
 
     return context
 
+def generate_auth_header(username, password, realm, nonce, uri):
+    from hashlib import md5
+    ha1 = md5(f"{username}:{realm}:{password}".encode()).hexdigest()
+    ha2 = md5(f"OPTIONS:{uri}".encode()).hexdigest()
+    response = md5(f"{ha1}:{nonce}:{ha2}".encode()).hexdigest()
+    return (
+        f'Authorization: Digest username="{username}", realm="{realm}", '
+        f'nonce="{nonce}", uri="{uri}", response="{response}"\r\n'
+    )
 
 def send_sip_options(sip_server, sip_port, timeout, protocol="udp", 
                      max_forwards=70, verbose=False, srv_type=None, 
@@ -354,15 +363,17 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="udp",
     sip_message = (
         f"OPTIONS sip:{sip_server} SIP/2.0\r\n"
         f"Via: SIP/2.0/{protocol.upper()} {source}:{sip_port};branch={branch_id}\r\n"
-        f"From: <sip:{from_header}>\r\n"
+        f"From: <sip:{username or USER_PREFIX}@{USER_DOMAIN}>\r\n"
         f"To: <sip:{sip_server}>\r\n"
         f"Call-Id: {call_id}\r\n"
         f"CSeq: 1 OPTIONS\r\n"
-        f"Contact: <sip:{USER_PREFIX}@{source}>\r\n"
+        f"Contact: <sip:{username or USER_PREFIX}@{source}>\r\n"
         f"Max-Forwards: {max_forwards}\r\n"
         f"User-Agent: {user_agent}\r\n"
-        f"Content-Length: 0\r\n\r\n"
     )
+    if username and password and realm and nonce:
+        sip_message += generate_auth_header(username, password, realm, nonce, f"sip:{sip_server}")
+    sip_message += "Content-Length: 0\r\n\r\n"
 
     try:
         # Determine the socket type based on protocol
@@ -403,17 +414,18 @@ def send_sip_options(sip_server, sip_port, timeout, protocol="udp",
 
         if protocol in ["tcp", "tls"]:
             try:
+                sock.settimeout(timeout)
                 sock.connect((sip_server, sip_port))
                 print(f"✅ [INFO] {protocol.upper()} connection established to {sip_server}:{sip_port}")
             except socket.gaierror as e:
                 error_message = f"❌ [ERROR] DNS resolution error: {e}"
                 return error_message, None, None
             except ConnectionRefusedError as e:
-                error_message = f"❌ [ERROR] Connection refused: {e}"
+                error_message = f"❌ [ERROR] Connection refused by {sip_server}:{sip_port} ({protocol.upper()})."
                 return error_message, None, None
             except socket.timeout:
-                 error_message = "❌ [ERROR] Connection timed out"
-                 return error_message, None, None
+                error_message = f"❌ [ERROR] Connection to {sip_server}:{sip_port} timed out after {timeout} seconds."
+                return error_message, None, None
             except OSError as e:
                 error_message = f"❌ [ERROR] OS error: {e}"
                 return error_message, None, None
@@ -462,12 +474,16 @@ def main():
     parser.add_argument("-f", "--from_header", type=str, default="auto-detect", help=f"[Optional] FROM field (default: auto-detect)")
     parser.add_argument("-u", "--user-agent", type=str, default=USER_AGENT, help=f"[Optional] Custom User-Agent string (default: {USER_AGENT})")
     parser.add_argument("-s", "--source", default="auto-detect", help="[Optional] Source IP-Address/FQDN used in the SIP Via header (default: auto-detect)")
-    parser.add_argument("-t", "--timeout", type=int, default=100, help=f"[Optional] Timeout in seconds (default: 100)")
+    parser.add_argument("-t", "--timeout", type=int, default=10, help=f"[Optional] Timeout in seconds (default: 10)")
     parser.add_argument("-w", "--warn", type=float, default=5, help=f"[Optional] Warning threshold in seconds (default: 5)")
     parser.add_argument("-v", "--verbose", action="store_true", help=f"[Optional] Enable verbose mode for debugging")
     parser.add_argument("-m", "--max-forwards", type=int, default=70, help=f"[Optional] Max-Forwards header value (default: 70)")
     parser.add_argument("--tls-version", default=DEFAULT_TLS_VERSION, help=f"[Optional] specific TLS version [TLSv1.1, TLSv1.2, TLSv1.3, etc.] (default: negotiate tls)")
     parser.add_argument("--cipher-suite", default=DEFAULT_CIPHER_SUITE, help=f"[Optional] specific cipher suite (default: negotiate cipher suite)")
+    parser.add_argument("--username", help="Username for SIP authentication")
+    parser.add_argument("--password", help="Password for SIP authentication")
+    parser.add_argument("--realm", help="Realm for SIP authentication")
+    parser.add_argument("--nonce", help="Nonce for SIP authentication")
 
     args = parser.parse_args()
 

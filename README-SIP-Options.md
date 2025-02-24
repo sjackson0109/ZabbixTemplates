@@ -2,7 +2,7 @@
 
 ### Author: Simon Jackson / sjackson0109  
 ### Created: 2025/02/17
-### Updated: 2025/02/21
+### Updated: 2025/02/24
 
 ## Overview
 **get_sip_options.py** is a Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports both IPv4 and IPv6 communication.
@@ -19,6 +19,7 @@ It includes automatic SRV record discovery, enabling seamless resolution of SIP 
  - ✅ Nagios-compatible exit codes for monitoring integrations
  - ✅ Secure TLS handshake support
  - ✅ Explicit TLS version and custom cipher suite selection
+ - ✅ Supports digest credentials (username, password, realm and nonce)
 
 ## Installation
 This script runs **natively in Python 3** with no additional dependencies.
@@ -58,12 +59,17 @@ python3 get_sip_options.py sip.example.com
 | `-p`, `--port` | `5060`  | [Optional] SIP server port (default: 5060) |
 | `-u`, `--user-agent` | `"get_sip_options.py"` | [Optional] User-Agent string |
 | `-s`, `--source` | `auto-detect` | [Optional] Source IP/FQDN |
-| `-t`, `--timeout` | `100` | [Optional] SIP Server Timeout (seconds) |
+| `-t`, `--timeout` | `10` | [Optional] SIP Server Timeout (seconds) |
 | `-w`, `--warn` | `5` | [Optional] Warning threshold for response time (seconds) |
 | `-v`, `--verbose` | `False` | [Optional] Enable verbose debugging |
 | `-m`, `--max-forwards` | `70` | [Optional] Max-Forwards header value |
 | `--tls-version` | `TLSv1.2` | [Optional] Explicit TLS version selection |
 | `--cipher-suite` | A pre-configured secure set of ciphers | [Optional] Custom TLS Cipher Suite |
+| `--username` | null | [Optional] Username for SIP authentication |
+| `--password` | null | [Optional] Password for SIP authentication |
+| `--realm` | null | [Optional] Realm for SIP authentication |
+| `--nonce` | null | [Optional] Nonce for SIP authentication |
+
 
 
 ### Example Commands
