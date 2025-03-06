@@ -7,9 +7,9 @@ All custom monitoring scripts reside under this repository. Below are the availa
 ### Available Scripts:
 - **[WatchGuard System Health Check](readme-watchguard.md)** - Logs into a WatchGuard Firewall, retrieves system health metrics, and calculates a health score for Zabbix. Returns a integer from 1 to 100 (healthy).
 - **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
+- **[get_tls_handshake.py](README-TLS-Handshake.md)** - A Python script designed to test TLS handshake capabilities of a specified HOST (Hostname, FQDN or IP endpoint). It dynamically detects the available SSL/TLS protocols and ciphers on the client-system, tests their compatibility against the supplied host/port, and provides a breakdown report of successful and failed connections.  
 - **[get_firebox_health.py](README-WatchguardSystemHealth.md)** - This script logs into a **WatchGuard Firewall**, retrieves **system health metrics**, and calculates a **health score** for monitoring in **Zabbix** (still under development)
 
-- **[Script C](readme-C.md)** - Description of Script C.
 
 ## Prerequsites
 Your zabbix-proxy docker containers will need pyhon installed, to be able to use any of these plugins.
