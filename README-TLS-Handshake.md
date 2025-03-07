@@ -5,9 +5,11 @@
 ### Updated: 2025/03/06  
 
 ## Overview  
-**get_tls_handshake.py** is a Python script designed to test TLS handshake capabilities with a specified host or IP endpoint. It dynamically detects available SSL/TLS protocols and ciphers on the system, tests their compatibility, and provides a detailed report of successful and failed connections.  
+**get_tls_handshake.py** is a Python script designed to test TLS handshake capabilities with a specified host or IP endpoint. It dynamically detects available SSL/TLS protocols and ciphers on the client-system, tests their compatibility, and provides a detailed report of successful and failed connections.  
 
-The script supports legacy SSL/TLS protocols (e.g., SSLv1.0, SSLv3.0, TLSv1.0, TLSv1.1) where supported by the operating system. It is ideal for verifying TLS configurations, identifying deprecated protocols, and ensuring secure communication.  
+The script supports legacy SSL/TLS protocols (e.g., SSLv1.0, SSLv3.0, TLSv1.0, TLSv1.1) where supported by the client-system. It is ideal for verifying TLS configurations, identifying deprecated protocols, and ensuring secure communication.  
+
+Finally the script then checks these available protocols and ciphers against the target host/port, providing a concise list of supported/unsupported configurations.
 
 ## Features  
 - ✅ **Dynamic Protocol Detection**: Detects available SSL/TLS protocols (SSLv1.0 through TLSv1.3) from the system.  
@@ -17,7 +19,7 @@ The script supports legacy SSL/TLS protocols (e.g., SSLv1.0, SSLv3.0, TLSv1.0, T
 - ✅ **Endpoint Testing**: Tests each protocol-cipher pair against the specified endpoint.  
 - ✅ **Optional Port Argument**: Defaults to port `443`, with optional override using `-p` or `--port`.  
 - ✅ **Timeout Handling**: Configurable timeout for socket connections (default: 4 seconds).  
-- ✅ **Debug Mode**: Detailed logging with the `--debug` switch for troubleshooting.  
+- ✅ **Verbose Mode**: Detailed logging with the `-v` or `--verbose` switch for troubleshooting.  
 - ✅ **Clean Output**: Prints results in a table format with status indicators (✅ for success, ❌ for failure).  
 - ✅ **Cross-Platform**: Works on Linux, Windows, and Docker containers.  
 
@@ -42,7 +44,7 @@ cd ZabbixTemplates/externalscripts
 ### 1️⃣ Supported Syntax
 The command line syntax includes all these `[optional]` and `<value>` parameters
 ```bash
-python3 get_tls_handshake.py <HOST> [-p/--port <PORT>] [-t/--timeout <TIMEOUT>] [-d/--debug]
+python3 get_tls_handshake.py <HOST> [-p/--port <PORT>] [-t/--timeout <TIMEOUT>] [-v/--verbose]
 ```
 
 ### Examples
@@ -56,11 +58,11 @@ python3 get_tls_handshake.py example.com -p 8443
 ```
 #### 3️⃣ Test a Host with Custom Timeout
 ```bash
-python3 get_tls_handshake.py example.com --timeout 1
+python3 get_tls_handshake.py example.com -t 1
 ```
-#### 4️⃣ Test a Host with Debug Mode
+#### 4️⃣ Test a Host with Verbose Mode
 ```bash
-python3 get_tls_handshake.py example.com  --debug
+python3 get_tls_handshake.py example.com -v
 ```
 
 Note: You can combine arguments.
@@ -71,7 +73,7 @@ Note: You can combine arguments.
 |host | | Hostname, FQDN or IP-address (IPv4 or IPv6) to check |
 |-p, --port | 443 | [Optional] TCP Port number to check against |
 |-t, --timeout | 4 | [Optional] Timeout for socket connection in seconds |
-|-d, --debug | False | [Optional] Enable debug output (includes errors) |
+|-v, --verbose | False | [Optional] Enable verbose output (includes errors) |
 
 ## Output
 The script collects data in an array, sorts and prints out a user-friendly table of results. As well as a small breakdown of the testing capabilities.
@@ -131,13 +133,13 @@ STATUS   PROTOCOL   CIPHER
 ❌        TLSv1.2    DHE-RSA-AES256-SHA256
 ```
 
-## Debugging and Verbose Output
-For detailed debugging, use --debug:
+## Verboseging and Verbose Output
+For detailed verboseging, use --verbose:
 ```bash
-python3 get_tls_handshake.py example.com --debug  
+python3 get_tls_handshake.py example.com --verbose  
 ```
 
-Example debug mode output:
+Example verbose mode output:
 ```bash
 ----------------------------------------
 Protocol SSLv3.0 is available.  

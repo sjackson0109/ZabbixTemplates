@@ -11,8 +11,8 @@ Features:
     - **Compatibility Filtering**: Incompatible protocol-cipher pairs are filtered out before testing.
     - **Output Formatting**: Protocols and ciphers are printed in a clean, readable format.
     - **Optional Arguments**: Port is optional with a default of `443`.
-    - **Debug Mode**: Detailed logging is available with the `--debug` switch.
-    - **Error Handling**: Errors are handled gracefully, and only shown in debug mode.
+    - **Verbose Mode**: Detailed logging is available with the `--verbose` switch.
+    - **Error Handling**: Errors are handled gracefully, and only shown in verbose mode.
     - **Endpoint Testing**: Each protocol-cipher pair is tested against the specified endpoint.
     - **Timeout Handling**: Includes a configurable timeout for socket connections.
     - **Cross-Platform**: Works on Linux, Windows, and is really designed to run in a Docker container (Zabbix?)
@@ -42,14 +42,14 @@ def get_available_protocols():
             if hasattr(ssl, protocol_constant):
                 # Create an SSL context to verify the protocol is usable
                 with warnings.catch_warnings():
-                    if not args.debug:
+                    if not args.verbose:
                         warnings.filterwarnings("ignore", category=DeprecationWarning)
                     context = ssl.SSLContext(getattr(ssl, protocol_constant))
                 available_protocols.append(protocol_name)
-                if args.debug:
+                if args.verbose:
                     print(f"Protocol {protocol_name} is available.")
         except Exception as e:
-            if args.debug:
+            if args.verbose:
                 print(f"Protocol {protocol_name} is NOT available: {e}")
     return available_protocols
 
@@ -64,7 +64,7 @@ def create_criteria_array(protocols, ciphers):
     for protocol in protocols:
         for cipher in ciphers:
             criteria.append((protocol, cipher['name']))
-    if args.debug:
+    if args.verbose:
         print(f"Created CRITERIA array with {len(criteria)} protocol-cipher pairs.")
     return criteria
 
@@ -85,20 +85,20 @@ def filter_compatible_criteria(criteria):
             }.get(protocol, None)
             if protocol_constant is None:
                 raise ValueError(f"Unsupported protocol: {protocol}")
-            # Suppress DeprecationWarning unless debug is enabled
+            # Suppress DeprecationWarning unless verbose is enabled
             with warnings.catch_warnings():
-                if not args.debug:
+                if not args.verbose:
                     warnings.filterwarnings("ignore", category=DeprecationWarning)
                 context = ssl.SSLContext(getattr(ssl, protocol_constant))
             # Set the cipher and check compatibility
             context.set_ciphers(cipher)
             compatible_criteria.append((protocol, cipher))
-            if args.debug:
+            if args.verbose:
                 print(f"Added compatible pair: {protocol} with {cipher}")
         except (ssl.SSLError, ValueError, AttributeError) as e:
-            if args.debug:
+            if args.verbose:
                 print(f"Compatibility error: {protocol} with {cipher} - {e}")
-    if args.debug:
+    if args.verbose:
         print(f"Filtered {len(compatible_criteria)} compatible protocol-cipher pairs.")
     return compatible_criteria
 
@@ -117,20 +117,20 @@ def test_endpoint(endpoint, port, protocol, cipher, timeout):
         }.get(protocol, None)
         if protocol_constant is None:
             raise ValueError(f"Unsupported protocol: {protocol}")
-        # Suppress DeprecationWarning unless debug is enabled
+        # Suppress DeprecationWarning unless verbose is enabled
         with warnings.catch_warnings():
-            if not args.debug:
+            if not args.verbose:
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
             context = ssl.SSLContext(getattr(ssl, protocol_constant))
         context.set_ciphers(cipher)
         # Create a socket connection and wrap it with SSL
         with socket.create_connection((endpoint, port), timeout=timeout) as sock:
             with context.wrap_socket(sock, server_hostname=endpoint) as ssock:
-                if args.debug:
+                if args.verbose:
                     print(f"Successfully connected using {protocol} with {cipher}")
                 return True
     except Exception as e:
-        if args.debug:
+        if args.verbose:
             print(f"Connection error: {protocol} with {cipher} - {e}")
         return False
 
@@ -176,8 +176,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Check TLS handshake capabilities for a given host and port.")
     parser.add_argument("host", help="The hostname or IP address to check.")
     parser.add_argument("-p", "--port", type=int, default=443, help="The port number to check (default: 443).")
-    parser.add_argument("--timeout", type=int, default=4, help="Timeout for socket connection in seconds (default: 4).")
-    parser.add_argument("--debug", action="store_true", help="Enable debug output, including errors.")
+    parser.add_argument("-t", "--timeout", type=int, default=4, help="Timeout for socket connection in seconds (default: 4).")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output, including errors.")
     args = parser.parse_args()
 
     main()
