@@ -73,7 +73,7 @@ Note: You can combine arguments.
 |host | | Hostname, FQDN or IP-address (IPv4 or IPv6) to check |
 |-p, --port | 443 | [Optional] TCP Port number to check against |
 |-t, --timeout | 4 | [Optional] Timeout for socket connection in seconds |
-|-v, --verbose | False | [Optional] Enable verbose output (includes errors) |
+|-v, --verbose | False | [Optional] Enable verbose output (includes errors). No input value necessary, just the switch. |
 
 ## Output
 The script collects data in an array, sorts and prints out a user-friendly table of results. As well as a small breakdown of the testing capabilities.

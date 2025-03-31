@@ -1,5 +1,5 @@
 ## Overview
-This script logs into a **WatchGuard Firewall**, retrieves **system health metrics**, and calculates a **health score** for monitoring in **Zabbix**.
+This script logs into a **WatchGuard Firewall**, retrieves **system health metrics**, and calculates a **health score** for monitoring in **Zabbix**; as well as the original work by Ticau Tudor on the Watchguard M400 template; updated by me for a more generic, and more automated discovery process.
 
 ##### NOTICE: STILL UNDER DEVELOPMENT
 
