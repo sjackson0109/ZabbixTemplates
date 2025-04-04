@@ -1,0 +1,10 @@
+{
+    "[yaml]": {
+        "editor.autoIndent": "keep",
+        "editor.tabSize": 2,
+    },
+    "[github-actions-workflow]": {
+        "editor.autoIndent": "keep",
+        "editor.tabSize": 2,
+      }
+  }
