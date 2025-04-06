@@ -2,7 +2,7 @@ zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
-      name: 'Firewall'
+      name: Firewall
   templates:
     - uuid: 70bea07f3fbf4af0bf65b40690311461
       template: 'Watchguard Firebox'
@@ -10,7 +10,7 @@ zabbix_export:
       description: |
         ## Overview    
         Template for monitoring Watchuard Firebox Firewall with explanations and advices.
-
+        
         Includes automated discovery of:
         - Device Info: device name, device location, device uptime, device ping response, device ping latency, firemware verion
         - Cluster Info: Clustering Enabled, Primary/Secondary roles, Primary/Secondary health, thresholds
@@ -19,1318 +19,1562 @@ zabbix_export:
         - Firewall Metrics: Firewall Throughput, Active Connections, Connection Rate, GwVPN Tunnel Status, GwVPN Tunel Traffic, triggers and graphs 
         - Disk Info: File-System detection (/var, /boot, /, and /tmp), will trigger on Utilisation over 80%
         - Memory discovery: total physical/virtual, used physical/virtual, cache-used and several triggers and graphs
-
-
+        
+        
         Tested on:
         - Firebox M400 running v12+ firmware 
         - Clustered and non-clustered firebox units
-
+        
         Inspired by original works of: Ticau Tudor / @tudorticau
         Re-written and expanded significantly by: Simon Jackson / @sjackson0109
-
       groups:
-        - name: "Firewall"
-
+        - name: Firewall
       items:
-        - uuid: 7635cc08a4d548b3a439f042050dffe8
-          name: "Cluster Enabled"
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.6.1.0
-          key: "cluster.enabled"
-          value_type: FLOAT
-          valuemap:
-            name: cluster.enabled.valuemap
-        
         - uuid: 7764ebd9d3964b758933e1a988dc55ab
-          name: "Primary Member System Health"
+          name: 'Primary Member Health'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.6.4.0
-          key: "cluster.primary.health"
-          units: "%"
+          key: cluster.primary.health
+          units: '%'
           tags:
-          - tag: Component
-            value: HA
+            - tag: Component
+              value: HA
           triggers:
             - uuid: 699e7464cc994663bd9b85045925a840
-              name: "Cluster Member Health Critical"
-              expression: "last(/Watchguard Firebox/cluster.primary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}"
+              expression: 'last(/Watchguard Firebox/cluster.primary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+              name: 'Cluster Member Health Critical'
               priority: HIGH
               tags:
                 - tag: Component
                   value: HA
-            - uuid: 7f296321016948928ce7f0c0ab730cdf
-              name: "Primary Member Failover Risk"
-              expression: "last(/Watchguard Firebox/cluster.primary.health) < last(/Watchguard Firebox/cluster.secondary.health)"
-              priority: AVERAGE
-              description: "Secondary member has better health than primary"
-              tags:
-                - tag: Component
-                  value: HA
-
-        - uuid: 3b120ed4d6d4421fb3746bac20900fef
-          name: "Secondary Member System Health"
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.6.10.0
-          key: "cluster.secondary.health"
-          units: "%"
-          tags:
-          - tag: Component
-            value: HA
-          triggers:
-            - uuid: 331665304e98422198d81d4c24943e57
-              name: "Cluster Member Health Critical"
-              expression: "last(/Watchguard Firebox/cluster.secondary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}"
-              priority: HIGH
-              tags:
-                - tag: Component
-                  value: HA
-        
         - uuid: b9a47cab6dae459da6344454fc48814b
-          name: "Primary Member Role"
+          name: 'Primary Member Role'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
-          key: "cluster.primary.role"
-          units: "%"
+          key: cluster.primary.role
           valuemap:
-            name: cluster.member.role.valuemap
+            name: firebox.member.role.valuemap
           tags:
-          - tag: Component
-            value: HA
+            - tag: Component
+              value: HA
           triggers:
             - uuid: 6a72fb5372df4617ae931a94e148c9bf
-              name: "Firebox HA Event Detected"
-              expression: "change(/Watchguard Firebox/cluster.primary.role)<>0"
+              expression: 'change(/Watchguard Firebox/cluster.primary.role)<>0'
+              name: 'Firebox HA Event Detected'
               priority: HIGH
-              description: "Cluster member roles changed; indicating a possible failover event. Needs investigating"
+              description: 'Cluster member roles changed; indicating a possible failover event. Needs investigating'
+              manual_close: 'YES'
               tags:
                 - tag: Component
                   value: HA
                 - tag: EventType
                   value: Failover
-              manual_close: YES
-        
+        - uuid: 609aa2976110460fb64151e3ff27f832
+          name: 'Primary Member Serial'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.2.0
+          key: cluster.primary.serial
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: Component
+              value: HA
+        - uuid: 3b120ed4d6d4421fb3746bac20900fef
+          name: 'Secondary Member Health'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.10.0
+          key: cluster.secondary.health
+          units: '%'
+          tags:
+            - tag: Component
+              value: HA
+          triggers:
+            - uuid: 331665304e98422198d81d4c24943e57
+              expression: 'last(/Watchguard Firebox/cluster.secondary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+              name: 'Cluster Member Health Critical'
+              priority: HIGH
+              tags:
+                - tag: Component
+                  value: HA
         - uuid: c5c7bac0df914866b9a86147196d3a32
-          name: "Secondary Member Role"
+          name: 'Secondary Member Role'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
-          key: "cluster.secondary.role"
-          units: "%"
+          key: cluster.secondary.role
           valuemap:
-            name: interface.status.valuemap
+            name: firebox.member.role.valuemap
           tags:
-          - tag: Component
-            value: HA
+            - tag: Component
+              value: HA
           triggers:
             - uuid: bc2cf72c513142dbb037f9d191b0dfa9
-              name: "Firebox HA Event Detected"
-              expression: "change(/Watchguard Firebox/cluster.secondary.role)<>0"
-              priority: HIGH
-              description: "Cluster member roles changed; indicating a possible failover event. Needs investigating"
+              expression: 'change(/Watchguard Firebox/cluster.secondary.role)<>0'
+              name: 'Firebox HA Event Detected'
+              priority: AVERAGE
+              description: 'Cluster member roles changed; indicating a possible failover event. Needs investigating'
+              manual_close: 'YES'
               tags:
                 - tag: Component
                   value: HA
                 - tag: EventType
                   value: Failover
-              manual_close: YES
-        
-        - uuid: 609aa2976110460fb64151e3ff27f832
-          name: "Primary Member Serial"
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
-          key: "cluster.primary.serial"
-          units: "%"
-          tags:
-          - tag: Component
-            value: HA
-        
         - uuid: eb66cc0a924e48678bad4d8d66995933
-          name: "Secondary Member Serial"
+          name: 'Secondary Member Serial'
           type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
-          key: "cluster.secondary.serial"
-          units: "%"
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.8.0
+          key: cluster.secondary.serial
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
           tags:
-          - tag: Component
-            value: HA
-        
-        - uuid: 5f9f37467ceb4deba44592bed7bff233
-          name: "Device Name"
+            - tag: Component
+              value: HA
+        - uuid: 9e291445b25c49009f02b0ebf8221c28
+          name: 'Cluster Synchronisation Status'
           type: SNMP_AGENT
-          snmp_oid: "SNMPv2-MIB::sysName.0"
-          key: sysName
-          delay: "30"
-          history: 1w
-          trends: "0"
-          value_type: CHAR
-          description: "An administratively-assigned name for this managed node. By convention, this is the node's fully-qualified domain name.  If the name is unknown, the value is the zero-length string."
-          inventory_link: NAME
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.5.0
+          key: cluster.sync.status
+          delay: 30s
+          value_type: FLOAT
+          valuemap:
+            name: firebox.cluster.sync.valuemap
           tags:
-          - tag: Application
-            value: General
-        
-        - uuid: 0a7d17d617f849748f83fcf2521f54b5
-          name: "Device Description"
+            - tag: Component
+              value: HA
+          triggers:
+            - uuid: b1d90c34321d4c9f91da6e1c1eb14542
+              expression: 'min(/Watchguard Firebox/cluster.sync.status,5m)<>100'
+              name: 'Cluster Synchronisation Issue Detected'
+              priority: HIGH
+              description: 'Cluster nodes are no longer synchronised. This may indicate failover instability or a configuration mismatch.'
+              tags:
+                - tag: Component
+                  value: HA
+                - tag: EventType
+                  value: SyncIssue
+        - uuid: 01631f0dd4ee4fb294b78656cae137d6
+          name: 'Application Control Enabled'
           type: SNMP_AGENT
-          snmp_oid: "SNMPv2-MIB::sysDescr.0"
-          key: sysDescr
-          delay: "30"
-          history: 1w
-          trends: "0"
-          value_type: CHAR
-          description: "A textual description of the entity.  This value should include the full name and version identification of the system's hardware type, software operating-system, and networking software."
-          inventory_link: HARDWARE
-          tags:
-          - tag: Application
-            value: General
-        
-        - uuid: 529287f4ce164be1be0a1eabead176a5
-          name: "Device Location"
-          type: SNMP_AGENT
-          snmp_oid: "SNMPv2-MIB::sysLocation.0"
-          key: sysLocation
-          delay: "30"
-          history: 1w
-          trends: "0"
-          value_type: CHAR
-          description: "The physical location of this node (e.g., `telephone closet, 3rd floor').  If the location is unknown, the value is the zero-length string."
-          inventory_link: LOCATION
-          tags:
-          - tag: Application
-            value: General
-        
-        - uuid: 3fb0eec716ee423a819486947d8666d0
-          name: "Device Model"
-          type: SNMP_AGENT
-          snmp_oid: "SNMPv2-MIB::sysDescr.0"
-          key: watchguard.model
-          delay: "30"
-          history: 1w
-          trends: "0"
-          value_type: CHAR
-          description: "Model name or identifier of the WatchGuard hardware."
-          inventory_link: MODEL
+          snmp_oid: 1.3.6.1.4.1.3097.6.4.3.0
+          key: firebox.appcontrol.status
+          delay: 1h
+          value_type: FLOAT
+          status: DISABLED
+          valuemap:
+            name: firebox.feature.status.valuemap
           tags:
             - tag: Application
-              value: General
-        
-        - uuid: 13f42e02f8a44c1396c7bfe6b30b4c21
-          name: "Device Firmware"
+              value: Licensing
+        - uuid: 7635cc08a4d548b3a439f042050dffe8
+          name: 'High Availability Enabled'
           type: SNMP_AGENT
-          snmp_oid: "1.3.6.1.4.1.3097.6.3.1.0"
-          key: watchguard.firmware
-          delay: "30"
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.1.0
+          key: firebox.cluster.status
+          delay: 1h
+          value_type: FLOAT
+          valuemap:
+            name: firebox.cluster.status.valuemap
+          tags:
+            - tag: Component
+              value: Clustering
+        - uuid: 13f42e02f8a44c1396c7bfe6b30b4c21
+          name: 'Device Firmware'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.3.1.0
+          key: firebox.firmware
+          delay: '30'
           history: 1w
-          trends: "0"
           value_type: CHAR
-          description: "Firmware version currently running on the Watchguard gateway device."
+          trends: '0'
+          description: 'Firmware version currently running on the Watchguard gateway device.'
           preprocessing:
             - type: REGEX
               parameters:
                 - '<sysa:([^>]+)>'
-                - '\1'
+                - \1
           tags:
             - tag: Application
               value: General
-        
-        - uuid: 9d37f216afb040ae85a1f6dfda360251
-          name: "Device Uptime"
+        - uuid: 47384f135c5e48aeb6d995dcb4461986
+          name: 'AntiVirus (GAV) Version'
           type: SNMP_AGENT
-          snmp_oid: "SNMPv2-MIB::sysUpTime.0"
-          key: sysUpTime
-          delay: "30"
-          history: 1w
-          units: uptime
-          description: "The time since the network management portion of the system was last re-initialized."
-          preprocessing:
-          - type: MULTIPLIER
-            parameters:
-            - "0.01"
+          snmp_oid: 1.3.6.1.4.1.3097.6.1.3.0
+          key: firebox.gav.version
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Should detect the Service enablement of'
           tags:
-          - tag: Application
-            value: General
-        
-        - uuid: 7bf47d4cf3f0427c90077b3070d9ae01
-          name: "Active Connections"
+            - tag: Application
+              value: Licensing
+          triggers:
+            - uuid: 39217367e6f64060b15ca7c0a32f318e
+              expression: 'length(last(/Watchguard Firebox/firebox.gav.version))=0'
+              name: 'Antivirus (GAV) Disabled, Not Installed or No Updating'
+              priority: WARNING
+        - uuid: 1a4e33dfc2504b8ba6ae89f7da9e90e5
+          name: 'Intrusion Protection System (IPS) Version'
           type: SNMP_AGENT
-          snmp_oid: "1.3.6.1.4.1.3097.5.1.2.1.0"
-          key: "firewall.connections.active"
+          snmp_oid: 1.3.6.1.4.1.3097.6.1.4.0
+          key: firebox.ips.version
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: Application
+              value: Licensing
+          triggers:
+            - uuid: 7841b9943a5d4dcc81a1f73dede0097e
+              expression: 'length(last(/Watchguard Firebox/firebox.ips.version))=0'
+              name: 'Intrusion Protection System (IPS) Disabled, Not Installed or No Updating'
+              priority: WARNING
+        - uuid: 3fb0eec716ee423a819486947d8666d0
+          name: 'Device Model'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysDescr.0'
+          key: firebox.model
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'Model name or identifier of the WatchGuard hardware.'
+          inventory_link: MODEL
+          tags:
+            - tag: Application
+              value: General
+        - uuid: 7bf47d4cf3f0427c90077b3070d9ae01
+          name: 'Active Connections'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.1.0
+          key: firewall.connections.active
           value_type: FLOAT
-          units: "connections"
-          description: "Current active firewall connections"
+          units: connections
+          description: 'Current active firewall connections'
           triggers:
             - uuid: b29b0981202f43dfa0f9fed286962c04
-              name: "High Connection Count"
-              expression: "last(/Watchguard Firebox/firewall.connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}"
-              priority: WARNING
-              description: "Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})"
+              expression: 'last(/Watchguard Firebox/firewall.connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}'
+              name: 'Possible DDoS Attack'
+              priority: AVERAGE
+              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
               tags:
                 - tag: Component
                   value: Connections
-        
         - uuid: e756a8c29bf64b5bb507238cd6314304
-          name: "Connection Rate"
+          name: 'Connection Rate'
           type: SNMP_AGENT
-          snmp_oid: "1.3.6.1.4.1.3097.5.1.2.2.0"
-          key: "firewall.connections.rate"
+          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.2.0
+          key: firewall.connections.rate
           value_type: FLOAT
-          units: "conn/s"
-        
+          units: conn/s
         - uuid: 9ae35f6ab16d42ae84acc6bb6b91316f
-          name: "Inbound Traffic"
+          name: 'Traffic: Inbound'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.5.0
           key: firewall.traffic.in
           value_type: FLOAT
-          units: "bps"
+          units: bps
           preprocessing:
             - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
             - type: MULTIPLIER
-              parameters: ["8"]
-        
+              parameters:
+                - '8'
         - uuid: 276ee8e2402e4b799d1bbb52110559f9
-          name: "Outbound Traffic"
+          name: 'Traffic: Outbound'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.6.0
           key: firewall.traffic.out
           value_type: FLOAT
-          units: "bps"
+          units: bps
           preprocessing:
             - type: CHANGE_PER_SECOND
-            - type: MULTIPLIER
-              parameters: ["8"]
-
-        - uuid: 2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p
-          name: "Firebox Alarm Trap"
-          type: SNMP_TRAP
-          snmp_oid: 1.3.6.1.4.1.3097.2.3.0.1
-          key: trap.firebox.alarm
-          value_type: LOG
-          description: "SNMP trap for WatchGuard Firebox alarms"
-          tags:
-            - tag: Component
-              value: Alarms
-          preprocessing:
-            - type: REGEX
               parameters:
-                - 'wgAlarmId: (\d+)'
-                - '\1'
-              error_handler: CUSTOM_VALUE
-              error_handler_params: ''
-            - type: REGEX
-              parameters:
-                - 'wgAlarmLabel: ([^;]+)'
-                - '\1'
-            - type: REGEX
-              parameters:
-                - 'wgAlarmLevel: (\d+)'
-                - '\1'
-            - type: REGEX
-              parameters:
-                - 'wgAlarmMsg: ([^;]+)'
-                - '\1'
-          triggers:
-            - uuid: 0691fe33f229455f82f0d79ec67ea506
-              name: "Trap-Alarm Critical: {ITEM.VALUE}"
-              expression: "find(/Watchguard Firebox/trap.firebox.alarm,,\"like\",\"wgAlarmLevel: 5\")=1"
-              priority: DISASTER
-              description: "Critical alarm detected: {ITEM.LASTVALUE}"
-              tags:
-                - tag: Component
-                  value: Alarms
-                - tag: Severity
-                  value: Critical
-
-            - uuid: 96409049286846bd9b0efd287652a8dc
-              name: "Trap-Alarm Warning: {ITEM.VALUE}"
-              expression: "find(/Watchguard Firebox/trap.firebox.alarm,,\"like\",\"wgAlarmLevel: 3\")=1"
-              priority: WARNING
-              description: "Warning alarm detected: {ITEM.LASTVALUE}"
-              tags:
-                - tag: Component
-                  value: Alarms
-                - tag: Severity
-                  value: Warning
-      
-      discovery_rules:
-        - uuid: d08266c54b8340dfbe79b7fc198e7135
-          name: Processors
-          type: SNMP_AGENT
-          snmp_oid: "discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrProcessorLoad]"
-          key: hrProcessorLoad
-          delay: 5m
-          description: "Discover the processors of the firewall device"
-          item_prototypes:
-          - uuid: e94a619629574606acd0a5e9ac169060
-            name: "Processor {#SNMPINDEX} type"
-            type: SNMP_AGENT
-            snmp_oid: "HOST-RESOURCES-MIB::hrDeviceDescr.{#SNMPINDEX}"
-            key: "hrDeviceDescr[{#SNMPINDEX}]"
-            trends: "0"
-            value_type: CHAR
-            description: "Processor type (vendor string prefix removed with preprocessing)"
-            preprocessing:
-            - type: REGEX
-              parameters:
-                - '^.*?:\s*'
                 - ''
-            tags:
+            - type: MULTIPLIER
+              parameters:
+                - '8'
+        - uuid: 0a7d17d617f849748f83fcf2521f54b5
+          name: 'Device Description'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysDescr.0'
+          key: sysDescr
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'A textual description of the entity.  This value should include the full name and version identification of the system''s hardware type, software operating-system, and networking software.'
+          inventory_link: HARDWARE
+          tags:
             - tag: Application
-              value: CPU
-          - uuid: a14697b5314449cba012621e3233ccbb
-            name: "Utilization of processor {#SNMPINDEX}"
-            type: SNMP_AGENT
-            snmp_oid: "HOST-RESOURCES-MIB::hrProcessorLoad.{#SNMPINDEX}"
-            key: "hrProcessorLoad[{#SNMPINDEX}]"
-            units: "%"
-            description: "The average, over the last minute, of the percentage of time that this processor was not idle. Implementations may approximate this one minute smoothing period if necessary."
-            tags:
+              value: General
+        - uuid: 529287f4ce164be1be0a1eabead176a5
+          name: 'Device Location'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysLocation.0'
+          key: sysLocation
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'The physical location of this node (e.g., `telephone closet, 3rd floor'').  If the location is unknown, the value is the zero-length string.'
+          inventory_link: LOCATION
+          tags:
             - tag: Application
-              value: CPU
-
-          trigger_prototypes:
-          - uuid: 09f704b658ec46ba8787211659adc66c
-            expression: "last(/Watchguard Firebox/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_LOW}"
-            name: "Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_LOW}%"
-            priority: AVERAGE
-            description: "Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_LOW}%"
-            manual_close: "YES"
-            tags:
-            - tag: Value
-              value: "{ITEM.VALUE}"
-          - uuid: 8d877b6be7de4f35976e80c447681379
-            expression: "last(/Watchguard Firebox/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_HIGH}"
-            name: "Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_HIGH}%"
-            priority: WARNING
-            description: "Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_HIGH}%"
-            manual_close: "NO"
-            tags:
-            - tag: Value
-              value: "{ITEM.VALUE}"
-
-          graph_prototypes:
-          - uuid: e108e4fbf3074c6fb907630bf1a4a090
-            name: "Utilization of processor {#SNMPINDEX}"
-            width: "600"
-            height: "340"
-            yaxismax: "0"
-            show_work_period: "YES"
-            show_triggers: "YES"
-            graph_items:
-            - color: 1A7C11
-              item:
-                host: "Watchguard Firebox"
-                key: "hrProcessorLoad[{#SNMPINDEX}]"         
-
-        - uuid: 36f6c341b9af4ccb9641fc003968f837
-          name: "Temperature Sensors"
+              value: General
+        - uuid: 5f9f37467ceb4deba44592bed7bff233
+          name: 'Device Name'
           type: SNMP_AGENT
-          snmp_oid: "1.3.6.1.4.1.3097.6.3.1"
-          key: temperature.discovery
-          delay: "5m"
-          status: DISABLED
-          filter:
-            conditions:
-              - macro: "{#SENSOR_TYPE}"
-                value: "temperature"
-                formulaid: A
-          item_prototypes:
-            - uuid: 6bbe24e86cca4734b9435ded3b63a957
-              name: "Temperature Sensor {#SENSOR_NAME}"
-              type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.6.3.1.{#SNMPINDEX}"
-              key: "temperature.sensor[{#SENSOR_NAME}]"
-              units: "°C"
-              value_type: FLOAT
-              description: "Temperature reading from {#SENSOR_NAME} sensor"
-              tags:
-                - tag: Component
-                  value: Temperature
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters:
-                    - "0.1"
-
-          trigger_prototypes:
-            - uuid: dc6ffe6c7e1f47c48f691e3494a7d8d5
-              expression: "last(/Watchguard Firebox/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_WARNING}"
-              name: "High Temperature Warning on {#SENSOR_NAME}"
-              priority: WARNING
-              description: "Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}°C)"
-              tags:
-                - tag: Component
-                  value: Temperature
-            - uuid: b86cb876da87465f8ccc9b7bbf9141d1
-              expression: "last(/Watchguard Firebox/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_CRITICAL}"
-              name: "Critical Temperature on {#SENSOR_NAME}"
-              priority: HIGH
-              description: "Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}°C)"
-              tags:
-                - tag: Component
-                  value: Temperature
-
-          graph_prototypes:
-            - uuid: cf89c10b5d2b46ccb24cc4a6d6067852
-              name: "Temperature Trend - {#SENSOR_NAME}"
-              width: "900"
-              height: "200"
-              graph_items:
-                - color: "FF0000"
-                  item:
-                    host: "Watchguard Firebox"
-                    key: "temperature.sensor[{#SENSOR_NAME}]"
-              yaxismin: "0"
-              show_work_period: "YES"
-              show_triggers: "YES"
-
-        - uuid: 99d69c506b1f41f1816fea394fb29fde
-          name: "Fan Sensors"
+          snmp_oid: 'SNMPv2-MIB::sysName.0'
+          key: sysName
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'An administratively-assigned name for this managed node. By convention, this is the node''s fully-qualified domain name.  If the name is unknown, the value is the zero-length string.'
+          inventory_link: NAME
+          tags:
+            - tag: Application
+              value: General
+        - uuid: 9d37f216afb040ae85a1f6dfda360251
+          name: 'Device Uptime'
           type: SNMP_AGENT
-          snmp_oid: discovery[{#SNMPINDEX},1.3.6.1.4.1.3097.6.3.2.1.1]
-          key: fan.discovery
-          delay: "5m"
-          filter:
-            conditions:
-            - macro: "{#FAN_TYPE}"
-              value: "fan"
-              formulaid: A
-          item_prototypes:
-            - uuid: d7c819753c1949359cfadc15a78e13d1
-              name: "Fan {#FAN_NAME} Speed"
-              type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.6.3.2.1.3.{#SNMPINDEX}"
-              key: "fan.speed[{#FAN_NAME}]"
-              units: "RPM"
-              value_type: FLOAT
-              description: "Rotation speed for fan {#FAN_NAME}"
-              tags:
-              - tag: Component
-                value: Fan
-            - uuid: d96ba1d905a34d20bd3ff96703b2aa04
-              name: "Fan {#FAN_NAME} Status"
-              type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.6.3.2.1.4.{#SNMPINDEX}"
-              key: "fan.status[{#FAN_NAME}]"
-              value_type: FLOAT
-              description: "Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)"
-              tags:
-              - tag: Component
-                value: Fan
-
-          trigger_prototypes:
-            - uuid: d78a3ac9a76541fcbac5dc278a3a198f
-              expression: "last(/Watchguard Firebox/fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}"
-              name: "Low Fan Speed on {#FAN_NAME}"
-              priority: WARNING
-              description: "Fan {#FAN_NAME} speed is below minimum threshold ({ITEM.LASTVALUE} < {$WATCHGUARD_FAN_MIN_SPEED} RPM)"
-              tags:
-              - tag: Component
-                value: Fan
-            - uuid: 88dbf85421c1499091853fa6d555c0de
-              expression: "last(/Watchguard Firebox/fan.status[{#FAN_NAME}]) > 0"
-              name: "Fan {#FAN_NAME} Status Alert"
-              priority: WARNING
-              description: "Fan {#FAN_NAME} reports non-normal status (Value: {ITEM.LASTVALUE})"
-              tags:
-              - tag: Component
-                value: Fan
-
-          graph_prototypes:
-            - uuid: a679223d23974611b13d25a26f16980e
-              name: "Fan Speed Trend - {#FAN_NAME}"
-              width: "900"
-              height: "200"
-              graph_items:
-              - color: "0000FF"
-                item:
-                  host: "Watchguard Firebox"
-                  key: "fan.speed[{#FAN_NAME}]"
-              yaxismin: "0"
-              show_work_period: "YES"
-              show_triggers: "YES"
-
-        - uuid: 3703178f3a494ea8b49fea3c19752d59
-          name: "Memory"
-          type: SNMP_AGENT
-          snmp_oid: HOST-RESOURCES-MIB::hrStorageType
-          key: memory.discovery
-          delay: 5m
-          filter:
-            conditions:
-              - macro: "{#STORAGETYPE}"
-                value: "1.3.6.1.2.1.25.2.1.1"
-                formulaid: A
-          item_prototypes:
-            - uuid: 89b47f0032d545eb83b74ba4a078f17a
-              name: "Total RAM ({#STORAGEDESCR})"
-              type: SNMP_AGENT
-              snmp_oid: HOST-RESOURCES-MIB::hrStorageSize.{#STORAGEINDEX}
-              key: hrStorageSize[{#STORAGEINDEX}]
-              units: B
-              description: "Total physical memory size"
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters:
-                    - "1024"
-              tags:
-                - tag: Application
-                  value: Memory
-            - uuid: 67c2b64258624317b10e276cf89175c3
-              name: "Used RAM ({#STORAGEDESCR})"
-              type: SNMP_AGENT
-              snmp_oid: HOST-RESOURCES-MIB::hrStorageUsed.{#STORAGEINDEX}
-              key: hrStorageUsed[{#STORAGEINDEX}]
-              units: B
-              description: "Used physical memory"
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters:
-                    - "1024"
-              tags:
-                - tag: Application
-                  value: Memory
-            - uuid: a944918f50d54477a468c9324e004ea7
-              name: "Free RAM % ({#STORAGEDESCR})"
-              type: CALCULATED
-              key: hrStorageFree[{#STORAGEINDEX}]
-              params: "(last(//hrStorageUsed[{#STORAGEINDEX}]) / last(//hrStorageSize[{#STORAGEINDEX}])) * 100"
-              units: "%"
-              description: "Free physical memory percentage"
-              tags:
-                - tag: Application
-                  value: Memory
-          trigger_prototypes:
-            - uuid: 76a36d1c82c5442498aa736b3d62dba0
-              expression: "last(/Watchguard Firebox/hrStorageFree[{#STORAGEINDEX}]) < {$WATCHGUARD_RAM_LOW}"
-              name: "Free RAM ({#STORAGEDESCR}) below {$WATCHGUARD_RAM_LOW}%"
-              priority: AVERAGE
-              manual_close: "YES"
-              tags:
-                - tag: Value
-                  value: "{ITEM.VALUE}"
-            - uuid: 19f57bd6495d44339cb802e4ed99d994
-              expression: "last(/Watchguard Firebox/hrStorageFree[{#STORAGEINDEX}]) < {$WATCHGUARD_RAM_HIGH}"
-              name: "Free RAM ({#STORAGEDESCR}) below {$WATCHGUARD_RAM_HIGH}%"
-              priority: WARNING
-              manual_close: "YES"
-              tags:
-                - tag: Value
-                  value: "{ITEM.VALUE}"
-          graph_prototypes:
-            - uuid: 1ed2fcec4dcc45e496f5293b82143702
-              name: "Memory Usage ({#STORAGEDESCR})"
-              width: "1200"
-              height: "400"
-              graph_items:
-                - color: 1A7C11
-                  item:
-                    host: "Watchguard Firebox"
-                    key: hrStorageSize[{#STORAGEINDEX}]
-                - color: F63100
-                  item:
-                    host: "Watchguard Firebox"
-                    key: hrStorageUsed[{#STORAGEINDEX}]
-              yaxismin: "0"
-              show_work_period: "YES"
-              show_triggers: "YES"
-
-        - uuid: 6061415077714cea877e01120670e165
-          name: "Cache/Swap Memory"
-          type: SNMP_AGENT
-          snmp_oid: discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrStorageDescr]
-          key: swap_cached.discovery
-          delay: 5m
-          filter:
-            conditions:
-              - macro: "{#SNMPVALUE}"
-                value: "^(Swap|Cached)$"
-                formulaid: A
-          item_prototypes:
-            - uuid: 994afb08ba464c948d5a5226ef8b1c81
-              name: "Total {#SNMPVALUE}"
-              type: SNMP_AGENT
-              snmp_oid: HOST-RESOURCES-MIB::hrStorageSize.{#SNMPINDEX}
-              key: hrStorageSize.[{#SNMPVALUE}]
-              units: "B"
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters: [ "1024" ]
-              tags:
-                - tag: Application
-                  value: Memory
-            - uuid: 869770a27ad24fd7bf06d1f77c2f6957
-              name: "Used {#SNMPVALUE}"
-              type: SNMP_AGENT
-              snmp_oid: HOST-RESOURCES-MIB::hrStorageUsed.{#SNMPINDEX}
-              key: hrStorageUsed.[{#SNMPVALUE}]
-              units: "B"
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters: [ "1024" ]
-              tags:
-                - tag: Application
-                  value: Memory
-            - uuid: 5f2cf122c9e74b478b3384c3a4af2cdb
-              name: "Used {#SNMPVALUE} %"
-              type: CALCULATED
-              key: hrStorageUsedPct.[{#SNMPVALUE}]
-              params: "(last(//hrStorageUsed.[{#SNMPVALUE}]) / last(//hrStorageSize.[{#SNMPVALUE}])) * 100"
-              units: "%"
-              tags:
-                - tag: Application
-                  value: Memory
-          
-          graph_prototypes:
-            - uuid: bd50be482eda466daebf3ffccd2faf4e
-              name: "Memory Usage Percentage ({#SNMPVALUE})"
-              width: "1200"
-              height: "400"
-              graph_items:
-              - color: 00A1FF
-                item:
-                  host: "Watchguard Firebox"
-                  key: hrStorageUsedPct.[{#SNMPVALUE}]
-              yaxismin: "0"
-              yaxismax: "100"
-              show_work_period: "YES"
-              show_triggers: "YES"
-
-        - uuid: 4aecb006c90142bea79bfae5a1da5dac
-          name: "Disk partitions"
-          type: SNMP_AGENT
-          snmp_oid: "discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrStorageDescr]"
-          key: hrStorageDescr
-          delay: 5m
-          filter:
-            conditions:
-              - macro: "{#SNMPVALUE}"
-                value: ^(/var|/|/boot|/tmp)$
-                formulaid: A
-          description: |
-            The rule will discover all disk partitions matching the global regexp "Storage devices for SNMP discovery".
-            {$SNMP_COMMUNITY} is a global macro.
-          item_prototypes:
-            - uuid: 9ee5bab46a4e4ead913110ab4ff1bbf5
-              name: "Description of storage {#SNMPVALUE}"
-              type: SNMP_AGENT
-              snmp_oid: "HOST-RESOURCES-MIB::hrStorageDescr.{#SNMPINDEX}"
-              key: "hrStorageDescr[{#SNMPVALUE}]"
-              delay: 30s
-              trends: "0"
-              value_type: CHAR
-              description: "A description of the type and instance of the storage described by this entry."
-              tags:
-                - tag: Application
-                  value: "Disk partitions"
-            - uuid: d922bb9b39e342ddbf5a515fb89fac07
-              name: "Total disk space on {#SNMPVALUE}"
-              type: SNMP_AGENT
-              snmp_oid: "HOST-RESOURCES-MIB::hrStorageSize.{#SNMPINDEX}"
-              key: "hrStorageSize[{#SNMPVALUE}]"
-              delay: 30s
-              units: B
-              description: "total disk space in bytes."
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters:
-                    - "10240"
-              tags:
-                - tag: Application
-                  value: "Disk partitions"
-            - uuid: 1d90884e06d040d1924a511e2deae73d
-              name: "Used disk space on {#SNMPVALUE}"
-              type: SNMP_AGENT
-              snmp_oid: "HOST-RESOURCES-MIB::hrStorageUsed.{#SNMPINDEX}"
-              key: "hrStorageUsed[{#SNMPVALUE}]"
-              delay: 30s
-              units: B
-              description: "Used disk space in bytes."
-              preprocessing:
-                - type: MULTIPLIER
-                  parameters:
-                    - "10240"
-              tags:
-                - tag: Application
-                  value: "Disk partitions"
-          trigger_prototypes:
-            - uuid: fc92586b426f452fb52d1651869c3333
-              expression: "(last(/Watchguard Firebox/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard Firebox/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_LOW}"
-              name: "ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_LOW}"
-              priority: AVERAGE
-            - uuid: 350e4b4d1ab44c39a8ab44646dabb578
-              expression: "(last(/Watchguard Firebox/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard Firebox/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_HIGH}"
-              name: "WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_HIGH}"
-              priority: WARNING
-          graph_prototypes:
-          - uuid: 937ac52180a942408ab3fc921532ce33
-            name: "Disk space usage {#SNMPVALUE}"
-            width: "600"
-            height: "340"
-            yaxismax: "0"
-            type: PIE
-            graph_items:
-              - color: 1A7C11
-                item:
-                  host: "Watchguard Firebox"
-                  key: "hrStorageSize[{#SNMPVALUE}]"
-              - sortorder: "1"
-                color: F63100
-                item:
-                  host: "Watchguard Firebox"
-                  key: "hrStorageUsed[{#SNMPVALUE}]"
-            show_work_period: "YES"
-            show_triggers: "YES"
-            show_3d: "YES"
-
-        - uuid: 30253dfbef0b4849b4f51e0bc815934a
-          name: "Interfaces"
-          type: SNMP_AGENT
-          snmp_oid: "discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]"
-          key: ethernet.interfaces
-          delay: 5m
-          filter:
-            conditions:
-              - macro: "{#IFTYPE}"
-                value: "^6$"
-                formulaid: A
-          description: "Discover Interfaces (ifType = 6)"
-          item_prototypes:
-            - uuid: 1bbe4491bab148d398ce4868d20fa140
-              name: "Interface: {#IFDESCR} Bytes In"
-              type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifInOctets.{#SNMPINDEX}"
-              key: "ethernet.ifInOctets[{#IFDESCR}]"
-              delay: 30s
-              units: Bps
-              description: "Incoming traffic on interface {#IFDESCR}"
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ""
-                - type: MULTIPLIER
-                  parameters:
-                    - "8"
-              tags:
-                - tag: Application
-                  value: Interfaces
-            - uuid: 2b9d96f7cffc4b06a50f264788a3542c
-              name: "Interface: {#IFDESCR} Bytes Out"
-              type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifOutOctets.{#SNMPINDEX}"
-              key: "ethernet.ifOutOctets[{#IFDESCR}]"
-              units: Bps
-              description: "Outgoing traffic on interface {#IFDESCR}"
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ""
-                - type: MULTIPLIER
-                  parameters:
-                    - "8"
-              tags:
-                - tag: Application
-                  value: Interfaces
-            - uuid: f750d8e05ca54716ad71706ddceade1e
-              name: "Interface: {#IFDESCR} Operational Status"
-              type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifOperStatus.{#SNMPINDEX}"
-              key: "ethernet.ifOperStatus[{#IFDESCR}]"
-              description: "Operational status of interface {#IFDESCR}"
-              tags:
-                - tag: Application
-                  value: Interfaces
-            - uuid: 7d1ebdc1c66e45a4b6a8db1bb4b2be1c
-              name: "Interface: {#IFDESCR} Errors In"
-              type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifInErrors.{#SNMPINDEX}"
-              key: "ethernet.ifInErrors[{#IFDESCR}]"
-              status: DISABLED
-              description: "Inbound errors on interface {#IFDESCR}"
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ""
-              tags:
-                - tag: Application
-                  value: Interfaces
-            - uuid: a460f11b55cf4d21a102846183d4656e
-              name: "Interface: {#IFDESCR} Errors Out"
-              type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifOutErrors.{#SNMPINDEX}"
-              key: "ethernet.ifOutErrors[{#IFDESCR}]"
-              status: DISABLED
-              description: "Outbound errors on interface {#IFDESCR}"
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ""
-              tags:
-                - tag: Application
-                  value: Interfaces
-          trigger_prototypes:
-            - uuid: 9ce65072570a4ddf823a63e1ccd86295
-              expression: "(last(/Watchguard Firebox/ethernet.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard Firebox/ethernet.ifOperStatus[{#IFDESCR}],#2))=1"
-              name: "Operational status was changed on {HOST.NAME} interface {#IFDESCR}"
-              priority: INFO
-              manual_close: "YES"
-
-          graph_prototypes:
-            - uuid: 441c90eb2707495a8fffb78efc4bdba5
-              name: "Traffic on Interface {#IFDESCR}"
-              graph_items:
-                - color: 1A7C11
-                  item:
-                    host: "Watchguard Firebox"
-                    key: "ethernet.ifInOctets[{#IFDESCR}]"
-                - sortorder: "1"
-                  color: F63100
-                  item:
-                    host: "Watchguard Firebox"
-                    key: "ethernet.ifOutOctets[{#IFDESCR}]"
-
+          snmp_oid: 'SNMPv2-MIB::sysUpTime.0'
+          key: sysUpTime
+          delay: '30'
+          history: 1w
+          units: uptime
+          description: 'The time since the network management portion of the system was last re-initialized.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: Application
+              value: General
+      discovery_rules:
         - uuid: fa8bb6e2d1f644cb8c83bb07368d9d0d
-          name: "BoVPN Tunnels"
+          name: BoVPNs
           type: SNMP_AGENT
-          snmp_oid: discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]
-          key: bovpn.interfaces
-          delay: 5m
+          snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
+          key: firebox.bovpn.discovery
+          delay: 1h
           filter:
             conditions:
-              - macro: "{#IFTYPE}"
-                value: "^131$"
+              - macro: '{#IFTYPE}'
+                value: ^131$
                 formulaid: A
-          description: "Discover BoVPN interfaces (IFTYPE=131)"
+          description: 'Firebox v12.11 firmware resolves the discovery of BoVPN interfaces, that contain a logical Interface (Virtual Tunnel Interface), these are detected as {#IFTYPE=^131}.'
           item_prototypes:
-            - uuid: 4a5b0b9e96574bba8ad34e9bb9721d98
-              name: "BoVPN: {#IFDESCR} Bytes In"
+            - uuid: 3825d5cb56b441a7a9d26c9af97c81d4
+              name: 'BoVPN: {#IFDESCR} Errors In'
               type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifInOctets.{#SNMPINDEX}"
-              key: "bovpn.ifInOctets[{#IFDESCR}]"
-              delay: 30s
-              units: Bps
-              description: "Incoming traffic on boVPN interface {#IFDESCR}"
+              snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
+              key: 'firebox.bovpn.ifInErrors[{#IFDESCR}]'
+              description: 'Inbound errors on BoVPN interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
                   parameters:
-                    - ""
-                - type: MULTIPLIER
-                  parameters:
-                    - "8"
+                    - ''
               tags:
                 - tag: Component
                   value: BoVPN
-                - tag: Application
-                  value: VirtualTunnelInterface
-            - uuid: 2b9d96f7cffc4b06a50f264788a3542f
-              name: "BoVPN: {#IFDESCR} Bytes Out"
+              trigger_prototypes:
+                - uuid: cbaaacd3b2144964915fa569fea949bb
+                  expression: 'last(/Watchguard Firebox/firebox.bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
+                  name: 'BoVPN {#IFDESCR} Inbound Errors (Critical)'
+                  priority: HIGH
+                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: BoVPN
+                - uuid: 10651d67459a40adb0466aec7537e284
+                  expression: 'last(/Watchguard Firebox/firebox.bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
+                  name: 'BoVPN {#IFDESCR} Inbound Errors (Warning)'
+                  priority: WARNING
+                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: BoVPN
+            - uuid: 4a5b0b9e96574bba8ad34e9bb9721d98
+              name: 'BoVPN: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifOutOctets.{#SNMPINDEX}"
-              key: "bovpn.ifOutOctets[{#IFDESCR}]"
+              snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
+              key: 'firebox.bovpn.ifInOctets[{#IFDESCR}]'
+              delay: 30s
               units: Bps
-              description: "Outgoing traffic on boVPN interface {#IFDESCR}"
+              description: 'Incoming traffic on boVPN interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
                   parameters:
-                    - ""
+                    - ''
                 - type: MULTIPLIER
                   parameters:
-                    - "8"
+                    - '8'
               tags:
                 - tag: Component
                   value: BoVPN
             - uuid: f750d8e05ca54716ad71706ddceade21
-              name: "BoVPN: {#IFDESCR} Operational Status"
+              name: 'BoVPN: {#IFDESCR} Status'
               type: SNMP_AGENT
-              snmp_oid: "IF-MIB::ifOperStatus.{#SNMPINDEX}"
-              key: "bovpn.ifOperStatus[{#IFDESCR}]"
-              description: "Operational status of BoVPN {#IFDESCR}"
+              snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
+              key: 'firebox.bovpn.ifOperStatus[{#IFDESCR}]'
+              description: 'Operational status of BoVPN {#IFDESCR}'
+              valuemap:
+                name: firebox.interface.status.valuemap
               tags:
                 - tag: Component
                   value: BoVPN
-          trigger_prototypes:
-            - uuid: 9ce65072570a4ddf823a63e1ccd86298
-              expression: "(last(/Watchguard Firebox/bovpn.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard Firebox/bovpn.ifOperStatus[{#IFDESCR}],#2))=1"
-              name: "BoVPN {#IFDESCR} status changed"
-              priority: AVERAGE
-              manual_close: "YES"
+              trigger_prototypes:
+                - uuid: 9ce65072570a4ddf823a63e1ccd86298
+                  expression: '(last(/Watchguard Firebox/firebox.bovpn.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard Firebox/firebox.bovpn.ifOperStatus[{#IFDESCR}],#2))=1'
+                  name: 'BoVPN {#IFDESCR} status changed'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+            - uuid: 9eb3a3b320694e8b9b03ee60f7fe35c6
+              name: 'BoVPN: {#IFDESCR} Errors Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
+              key: 'firebox.bovpn.ifOutErrors[{#IFDESCR}]'
+              description: 'Outbound errors on BoVPN interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              tags:
+                - tag: Component
+                  value: BoVPN
+              trigger_prototypes:
+                - uuid: 34f1ab6cacf4415aa23c0d8d3cd12d12
+                  expression: 'last(/Watchguard Firebox/firebox.bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
+                  name: 'BoVPN {#IFDESCR} Outbound Errors (Critical)'
+                  priority: HIGH
+                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: BoVPN
+                - uuid: 12a75b598cad4476b170b0720064eb1a
+                  expression: 'last(/Watchguard Firebox/firebox.bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
+                  name: 'BoVPN {#IFDESCR} Outbound Errors (Warning)'
+                  priority: WARNING
+                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: BoVPN
+            - uuid: 2b9d96f7cffc4b06a50f264788a3542f
+              name: 'BoVPN: {#IFDESCR} Bytes Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
+              key: 'firebox.bovpn.ifOutOctets[{#IFDESCR}]'
+              units: Bps
+              description: 'Outgoing traffic on boVPN interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: BoVPN
           graph_prototypes:
+            - uuid: a0438209de22405c9dd99914b7df55af
+              name: 'BoVPN: {#IFDESCR} Status'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'firebox.bovpn.ifOperStatus[{#IFDESCR}]'
             - uuid: 5a0eb594d92f4ea89047fe130d8bec86
-              name: "BoVPN: {#IFDESCR} Traffic"
+              name: 'BoVPN: {#IFDESCR} Traffic'
               graph_items:
                 - color: 1A7C11
                   item:
-                    host: "Watchguard Firebox"
-                    key: "bovpn.ifInOctets[{#IFDESCR}]"
-                - sortorder: "1"
+                    host: 'Watchguard Firebox'
+                    key: 'firebox.bovpn.ifInOctets[{#IFDESCR}]'
+                - sortorder: '1'
                   color: F63100
                   item:
-                    host: "Watchguard Firebox"
-                    key: "bovpn.ifOutOctets[{#IFDESCR}]"
-
-        - uuid: 6c359cfe2bd8453bab331ef6ae877a8c
-          name: "Gateway VPN Tunnels"
+                    host: 'Watchguard Firebox'
+                    key: 'firebox.bovpn.ifOutOctets[{#IFDESCR}]'
+        - uuid: d08266c54b8340dfbe79b7fc198e7135
+          name: Processors
           type: SNMP_AGENT
-          snmp_oid: "1.3.6.1.4.1.3097.7.1"
-          key: vpn.tunnel.discovery
-          delay: "5m"
-          status: DISABLED  # Currently (v12.10 firmware), the SNMP OID is NOT exposed over SNMP - bug in the FW firmware if you ask me!
+          snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrProcessorLoad]'
+          key: firebox.cpu.discovery
+          delay: 1h
+          description: 'Discover the processors of the firewall device'
+          item_prototypes:
+            - uuid: a14697b5314449cba012621e3233ccbb
+              name: 'Processor Utilisation {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: 'HOST-RESOURCES-MIB::hrProcessorLoad.{#SNMPINDEX}'
+              key: 'hrProcessorLoad[{#SNMPINDEX}]'
+              units: '%'
+              description: 'The average, over the last minute, of the percentage of time that this processor was not idle. Implementations may approximate this one minute smoothing period if necessary.'
+              tags:
+                - tag: Application
+                  value: CPU
+              trigger_prototypes:
+                - uuid: 8d877b6be7de4f35976e80c447681379
+                  expression: 'last(/Watchguard Firebox/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_HIGH}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_HIGH}%'
+                  priority: WARNING
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_HIGH}%'
+                  tags:
+                    - tag: Value
+                      value: '{ITEM.VALUE}'
+                - uuid: 09f704b658ec46ba8787211659adc66c
+                  expression: 'last(/Watchguard Firebox/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_LOW}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_LOW}%'
+                  priority: AVERAGE
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_LOW}%'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Value
+                      value: '{ITEM.VALUE}'
+          graph_prototypes:
+            - uuid: e108e4fbf3074c6fb907630bf1a4a090
+              name: 'Processor Utilisation{#SNMPINDEX}'
+              width: '600'
+              height: '340'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'hrProcessorLoad[{#SNMPINDEX}]'
+        - uuid: 4aecb006c90142bea79bfae5a1da5dac
+          name: Disks
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrStorageDescr]'
+          key: firebox.disk.discovery
+          delay: 1h
           filter:
             conditions:
-              - macro: "{#VPN_TYPE}"
-                value: "^[^BoVPN]"
+              - macro: '{#SNMPVALUE}'
+                value: ^(/var|/|/boot|/tmp)$
                 formulaid: A
           item_prototypes:
-            - uuid: 6e38304aac414a329194a1240788d3d8
-              name: "VPN Tunnel {#TUNNEL_NAME} Status"
+            - uuid: 9ee5bab46a4e4ead913110ab4ff1bbf5
+              name: 'Description of storage {#SNMPVALUE}'
               type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.7.1.{#SNMPINDEX}"
-              key: "vpn.status[{#TUNNEL_NAME}]"
-              value_type: FLOAT
-              description: "VPN tunnel {#TUNNEL_NAME} (1=up, 0=down)"
+              snmp_oid: 'HOST-RESOURCES-MIB::hrStorageDescr.{#SNMPINDEX}'
+              key: 'hrStorageDescr[{#SNMPVALUE}]'
+              delay: 1h
+              value_type: CHAR
+              trends: '0'
+              description: 'A description of the type and instance of the storage described by this entry.'
               tags:
-                - tag: Component
-                  value: GwVPN
                 - tag: Application
-                  value: PolicyBasedVPN
-            - uuid: fa6017fe1c0a49c29f5df0e3cb12eeb9
-              name: "VPN Tunnel {#TUNNEL_NAME} Traffic In"
+                  value: 'Disk partitions'
+            - uuid: d922bb9b39e342ddbf5a515fb89fac07
+              name: 'Total disk space on {#SNMPVALUE}'
               type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.7.2.{#SNMPINDEX}"
-              key: "vpn.traffic.in[{#TUNNEL_NAME}]"
-              units: "bps"
-              value_type: FLOAT
+              snmp_oid: 'HOST-RESOURCES-MIB::hrStorageSize.{#SNMPINDEX}'
+              key: 'hrStorageSize[{#SNMPVALUE}]'
+              delay: 5m
+              units: B
+              description: 'total disk space in bytes.'
               preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters: [ "" ]
                 - type: MULTIPLIER
-                  parameters: [ "8" ]
+                  parameters:
+                    - '10240'
               tags:
-                - tag: Component
-                  value: GwVPN
-            - uuid: 4df9f9b19eca4d46816a21c3df5e4b6e
-              name: "VPN Tunnel {#TUNNEL_NAME} Traffic Out"
+                - tag: Application
+                  value: 'Disk partitions'
+            - uuid: 1d90884e06d040d1924a511e2deae73d
+              name: 'Used disk space on {#SNMPVALUE}'
               type: SNMP_AGENT
-              snmp_oid: "1.3.6.1.4.1.3097.7.3.{#SNMPINDEX}"
-              key: "vpn.traffic.out[{#TUNNEL_NAME}]"
-              units: "bps"
-              value_type: FLOAT
+              snmp_oid: 'HOST-RESOURCES-MIB::hrStorageUsed.{#SNMPINDEX}'
+              key: 'hrStorageUsed[{#SNMPVALUE}]'
+              delay: 5m
+              units: B
+              description: 'Used disk space in bytes.'
               preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters: [ "" ]
                 - type: MULTIPLIER
-                  parameters: [ "8" ]
+                  parameters:
+                    - '10240'
               tags:
-                - tag: Component
-                  value: GwVPN
+                - tag: Application
+                  value: 'Disk partitions'
           trigger_prototypes:
-            - uuid: dcfa13b84c1341c382b7138cc9981b3c
-              expression: "last(/Watchguard Firebox/vpn.status[{#TUNNEL_NAME}]) = 0"
-              name: "Gateway VPN {#TUNNEL_NAME} Down"
-              priority: HIGH
-              description: "VPN tunnel {#TUNNEL_NAME} is down"
+            - uuid: fc92586b426f452fb52d1651869c3333
+              expression: '(last(/Watchguard Firebox/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard Firebox/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_LOW}'
+              name: 'ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_LOW}'
+              priority: AVERAGE
+            - uuid: 350e4b4d1ab44c39a8ab44646dabb578
+              expression: '(last(/Watchguard Firebox/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard Firebox/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_HIGH}'
+              name: 'WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_HIGH}'
+              priority: WARNING
+          graph_prototypes:
+            - uuid: 937ac52180a942408ab3fc921532ce33
+              name: 'Disk space usage {#SNMPVALUE}'
+              width: '600'
+              height: '340'
+              yaxismax: '0'
+              type: PIE
+              show_3d: 'YES'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'hrStorageSize[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'hrStorageUsed[{#SNMPVALUE}]'
+        - uuid: 99d69c506b1f41f1816fea394fb29fde
+          name: 'Fan Sensors'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPINDEX},1.3.6.1.4.1.3097.6.3.2.1.1]'
+          key: firebox.fan.discovery
+          delay: 1h
+          status: DISABLED
+          filter:
+            conditions:
+              - macro: '{#FAN_TYPE}'
+                value: fan
+                formulaid: A
+          description: 'Firebox v12.10 does not expose FAN Index, FAN Speed, or FAN Health metrics over SNMPv2/3. Their published MIB pack suggests this should be available. Likely a bug in the firmware.'
+          item_prototypes:
+            - uuid: d7c819753c1949359cfadc15a78e13d1
+              name: 'Fan {#FAN_NAME} Speed'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.3.{#SNMPINDEX}'
+              key: 'fan.speed[{#FAN_NAME}]'
+              delay: 5m
+              value_type: FLOAT
+              units: RPM
+              description: 'Rotation speed for fan {#FAN_NAME}'
               tags:
                 - tag: Component
-                  value: GwVPN
+                  value: Fan
+              trigger_prototypes:
+                - uuid: d78a3ac9a76541fcbac5dc278a3a198f
+                  expression: 'last(/Watchguard Firebox/fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}'
+                  name: 'Low Fan Speed on {#FAN_NAME}'
+                  priority: WARNING
+                  description: 'Fan {#FAN_NAME} speed is below minimum threshold ({ITEM.LASTVALUE} < {$WATCHGUARD_FAN_MIN_SPEED} RPM)'
+                  tags:
+                    - tag: Component
+                      value: Fan
+            - uuid: d96ba1d905a34d20bd3ff96703b2aa04
+              name: 'Fan {#FAN_NAME} Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.4.{#SNMPINDEX}'
+              key: 'fan.status[{#FAN_NAME}]'
+              delay: 5m
+              value_type: FLOAT
+              description: 'Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)'
+              tags:
+                - tag: Component
+                  value: Fan
+              trigger_prototypes:
+                - uuid: 88dbf85421c1499091853fa6d555c0de
+                  expression: 'last(/Watchguard Firebox/fan.status[{#FAN_NAME}]) > 0'
+                  name: 'Fan {#FAN_NAME} Status Alert'
+                  priority: WARNING
+                  description: 'Fan {#FAN_NAME} reports non-normal status (Value: {ITEM.LASTVALUE})'
+                  tags:
+                    - tag: Component
+                      value: Fan
           graph_prototypes:
-            - uuid: 7054edce0f394a9fad35aeaf6f7b5261
-              name: "Gateway VPN {#TUNNEL_NAME} Traffic"
-              width: "1200"
-              height: "400"
+            - uuid: a679223d23974611b13d25a26f16980e
+              name: 'Fan Speed Trend - {#FAN_NAME}'
               graph_items:
-                - color: "1A7C11"
+                - color: 0000FF
                   item:
-                    host: "Watchguard Firebox"
-                    key: "vpn.traffic.in[{#TUNNEL_NAME}]"
-                - color: "F63100"
+                    host: 'Watchguard Firebox'
+                    key: 'fan.speed[{#FAN_NAME}]'
+        - uuid: 30253dfbef0b4849b4f51e0bc815934a
+          name: Interfaces
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
+          key: firebox.int.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#IFTYPE}'
+                value: ^6$
+                formulaid: A
+          description: 'Discover Interfaces (ifType = 6)'
+          item_prototypes:
+            - uuid: 7d1ebdc1c66e45a4b6a8db1bb4b2be1c
+              name: 'Interface: {#IFDESCR} Errors In'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
+              key: 'ethernet.ifInErrors[{#IFDESCR}]'
+              description: 'Inbound errors on interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              tags:
+                - tag: Application
+                  value: Interfaces
+            - uuid: 1bbe4491bab148d398ce4868d20fa140
+              name: 'Interface: {#IFDESCR} Bytes In'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
+              key: 'ethernet.ifInOctets[{#IFDESCR}]'
+              units: Bps
+              description: 'Incoming traffic on interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Application
+                  value: Interfaces
+            - uuid: f750d8e05ca54716ad71706ddceade1e
+              name: 'Interface: {#IFDESCR} Status'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
+              key: 'ethernet.ifOperStatus[{#IFDESCR}]'
+              description: 'Operational status of interface {#IFDESCR}'
+              valuemap:
+                name: firebox.interface.status.valuemap
+              tags:
+                - tag: Application
+                  value: Interfaces
+              trigger_prototypes:
+                - uuid: 9ce65072570a4ddf823a63e1ccd86295
+                  expression: '(last(/Watchguard Firebox/ethernet.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard Firebox/ethernet.ifOperStatus[{#IFDESCR}],#2))=1'
+                  name: 'Operational status was changed on {HOST.NAME} interface {#IFDESCR}'
+                  priority: INFO
+                  manual_close: 'YES'
+            - uuid: a460f11b55cf4d21a102846183d4656e
+              name: 'Interface: {#IFDESCR} Errors Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
+              key: 'ethernet.ifOutErrors[{#IFDESCR}]'
+              description: 'Outbound errors on interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              tags:
+                - tag: Application
+                  value: Interfaces
+            - uuid: 2b9d96f7cffc4b06a50f264788a3542c
+              name: 'Interface: {#IFDESCR} Bytes Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
+              key: 'ethernet.ifOutOctets[{#IFDESCR}]'
+              units: Bps
+              description: 'Outgoing traffic on interface {#IFDESCR}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Application
+                  value: Interfaces
+          graph_prototypes:
+            - uuid: 3d0f28c28e8149edaaad34aacca27515
+              name: 'Interface: {#IFDESCR} Status'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
                   item:
-                    host: "Watchguard Firebox"
-                    key: "vpn.traffic.out[{#TUNNEL_NAME}]"
-              yaxismin: "0"
-              show_work_period: "YES"
-              show_triggers: "YES"
-      
+                    host: 'Watchguard Firebox'
+                    key: 'ethernet.ifOperStatus[{#IFDESCR}]'
+            - uuid: 441c90eb2707495a8fffb78efc4bdba5
+              name: 'Interface: {#IFDESCR} Traffic'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'ethernet.ifInOctets[{#IFDESCR}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'ethernet.ifOutOctets[{#IFDESCR}]'
+        - uuid: 36f6c341b9af4ccb9641fc003968f837
+          name: 'Temperature Sensors'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.3.1
+          key: firebox.temp.discovery
+          delay: 1h
+          status: DISABLED
+          filter:
+            conditions:
+              - macro: '{#SENSOR_TYPE}'
+                value: temperature
+                formulaid: A
+          item_prototypes:
+            - uuid: 6bbe24e86cca4734b9435ded3b63a957
+              name: 'Temperature Sensor {#SENSOR_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.6.3.1.{#SNMPINDEX}'
+              key: 'temperature.sensor[{#SENSOR_NAME}]'
+              delay: 5m
+              value_type: FLOAT
+              units: °C
+              description: 'Temperature reading from {#SENSOR_NAME} sensor'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Temperature
+              trigger_prototypes:
+                - uuid: b86cb876da87465f8ccc9b7bbf9141d1
+                  expression: 'last(/Watchguard Firebox/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_CRITICAL}'
+                  name: 'Critical Temperature on {#SENSOR_NAME}'
+                  priority: HIGH
+                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}°C)'
+                  tags:
+                    - tag: Component
+                      value: Temperature
+                - uuid: dc6ffe6c7e1f47c48f691e3494a7d8d5
+                  expression: 'last(/Watchguard Firebox/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_WARNING}'
+                  name: 'High Temperature Warning on {#SENSOR_NAME}'
+                  priority: WARNING
+                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}°C)'
+                  tags:
+                    - tag: Component
+                      value: Temperature
+          graph_prototypes:
+            - uuid: cf89c10b5d2b46ccb24cc4a6d6067852
+              name: 'Temperature Trend - {#SENSOR_NAME}'
+              graph_items:
+                - color: FF0000
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'temperature.sensor[{#SENSOR_NAME}]'
+        - uuid: 6c359cfe2bd8453bab331ef6ae877a8c
+          name: 'Gateway VPNs'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.7.1
+          key: firebox.vpn.discovery
+          delay: 1h
+          status: DISABLED
+          filter:
+            conditions:
+              - macro: '{#VPN_TYPE}'
+                value: '^[^BoVPN]'
+                formulaid: A
+          description: |
+            Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.
+            These VPNs are Policy-Based VPNs, not Route-Based like BoVPNs are. I've never seen a firewall that successfully exposes metrics over SNMP related to Policy-Based VPNs. So i'm not hopeful this will ever be resolved by watchguard.
+          item_prototypes:
+            - uuid: d069897a63fb4fa58cc051ded4fddd55
+              name: 'VPN Tunnel {#TUNNEL_NAME} Errors In'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.7.X.{#SNMPINDEX}'
+              key: 'vpn.ifInErrors[{#TUNNEL_NAME}]'
+              description: 'Inbound errors on VPN tunnel {#TUNNEL_NAME}'
+              tags:
+                - tag: Component
+                  value: VPN
+              trigger_prototypes:
+                - uuid: ed96cd2938124583bf5e7ad54eb32e32
+                  expression: 'last(/Watchguard Firebox/vpn.ifInErrors[{#TUNNEL_NAME}]) > {$GWVPN_ERROR_THRESHOLD}'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Inbound Errors (Critical)'
+                  priority: HIGH
+                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: VPN
+                - uuid: 5196bb6e24a749018f20f64dde91b925
+                  expression: 'last(/Watchguard Firebox/vpn.ifInErrors[{#TUNNEL_NAME}]) > {$GWVPN_WARNING_THRESHOLD}'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Inbound Errors (Warning)'
+                  priority: WARNING
+                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: VPN
+            - uuid: fa6017fe1c0a49c29f5df0e3cb12eeb9
+              name: 'VPN Tunnel {#TUNNEL_NAME} Bytes In'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.7.2.{#SNMPINDEX}'
+              key: 'vpn.ifInOctets[{#TUNNEL_NAME}]'
+              value_type: FLOAT
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: VPN
+            - uuid: db71225b1ac5441f80a3ee5739cce566
+              name: 'VPN Tunnel {#TUNNEL_NAME} Errors Out'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.7.Y.{#SNMPINDEX}'
+              key: 'vpn.ifOutErrors[{#TUNNEL_NAME}]'
+              description: 'Outbound errors on VPN tunnel {#TUNNEL_NAME}'
+              tags:
+                - tag: Component
+                  value: VPN
+              trigger_prototypes:
+                - uuid: 4561d362106243c0bef50d5357ae0f33
+                  expression: 'last(/Watchguard Firebox/vpn.ifOutErrors[{#TUNNEL_NAME}]) > {$GWVPN_ERROR_THRESHOLD}'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Outbound Errors (Critical)'
+                  priority: HIGH
+                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: VPN
+                - uuid: c85d376f7b604ba08a32bb53588e4602
+                  expression: 'last(/Watchguard Firebox/vpn.ifOutErrors[{#TUNNEL_NAME}]) > {$GWVPN_WARNING_THRESHOLD}'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Outbound Errors (Warning)'
+                  priority: WARNING
+                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)'
+                  tags:
+                    - tag: Component
+                      value: VPN
+            - uuid: 4df9f9b19eca4d46816a21c3df5e4b6e
+              name: 'VPN Tunnel {#TUNNEL_NAME} Bytes Out'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.7.3.{#SNMPINDEX}'
+              key: 'vpn.ifOutOctets[{#TUNNEL_NAME}]'
+              value_type: FLOAT
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: VPN
+            - uuid: 6e38304aac414a329194a1240788d3d8
+              name: 'VPN Tunnel {#TUNNEL_NAME} Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.7.1.{#SNMPINDEX}'
+              key: 'vpn.status[{#TUNNEL_NAME}]'
+              value_type: FLOAT
+              description: 'Status of VPN tunnel {#TUNNEL_NAME} (1=up, 0=down)'
+              valuemap:
+                name: firebox.interface.status.valuemap
+              tags:
+                - tag: Component
+                  value: VPN
+              trigger_prototypes:
+                - uuid: dcfa13b84c1341c382b7138cc9981b3c
+                  expression: 'last(/Watchguard Firebox/vpn.status[{#TUNNEL_NAME}]) = 0'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Down'
+                  priority: HIGH
+                  description: 'VPN tunnel {#TUNNEL_NAME} is down'
+                  tags:
+                    - tag: Component
+                      value: VPN
+          graph_prototypes:
+            - uuid: bc0e161a1ba940e2b041969f9dedb350
+              name: 'Gateway VPN: {#IFDESCR} Status'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'vpn.status[{#TUNNEL_NAME}]'
+            - uuid: 7054edce0f394a9fad35aeaf6f7b5261
+              name: 'Gateway VPN {#TUNNEL_NAME} Traffic'
+              width: '1200'
+              height: '400'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'vpn.ifInOctets[{#TUNNEL_NAME}]'
+                - color: F63100
+                  item:
+                    host: 'Watchguard Firebox'
+                    key: 'vpn.ifOutOctets[{#TUNNEL_NAME}]'
+      macros:
+        - macro: '{$BOVPN_ERROR_THRESHOLD}'
+          value: '10'
+        - macro: '{$BOVPN_WARNING_THRESHOLD}'
+          value: '1'
+        - macro: '{$GWVPN_ERROR_THRESHOLD}'
+          value: '10'
+        - macro: '{$GWVPN_WARNING_THRESHOLD}'
+          value: '1'
+        - macro: '{$SNMP_COMMUNITY}'
+          value: MonitorZabbix
+        - macro: '{$WATCHGUARD_CACHED_THRESHOLD}'
+          value: '99'
+        - macro: '{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+          value: '90'
+        - macro: '{$WATCHGUARD_CPU_HIGH}'
+          value: '90'
+        - macro: '{$WATCHGUARD_CPU_LOW}'
+          value: '70'
+        - macro: '{$WATCHGUARD_DISK_HIGH}'
+          value: '90'
+        - macro: '{$WATCHGUARD_DISK_LOW}'
+          value: '80'
+        - macro: '{$WATCHGUARD_FAN_MIN_SPEED}'
+          value: '2000'
+        - macro: '{$WATCHGUARD_HIGH_THROUGHPUT}'
+          value: '1000000000'
+        - macro: '{$WATCHGUARD_MAX_CONNECTIONS}'
+          value: '50000'
+        - macro: '{$WATCHGUARD_SWAP_THRESHOLD}'
+          value: '99'
+        - macro: '{$WATCHGUARD_TEMP_CRITICAL}'
+          value: '70'
+        - macro: '{$WATCHGUARD_TEMP_WARNING}'
+          value: '60'
       dashboards:
-        - uuid: 085ef76a703741199f0bb8c5fd08fbe4
-          name: 'Firebox'
+        - uuid: e056d7d058ee45309c64875fb4bfd5e1
+          name: Firebox
           pages:
-            - name: 'Cluster'
+            - name: Cluster
               widgets:
-                - type: graph
-                  name: 'Cluster Health Overview'
-                  width: '12'
-                  height: '6'
+                - type: problemsbysv
+                  width: '25'
+                  height: '1'
+                  hide_header: 'YES'
                   fields:
-                    - type: GRAPH
-                      name: graphid.0
+                    - type: STRING
+                      name: reference
+                      value: GZKAM
+                    - type: INTEGER
+                      name: show_timeline
+                      value: '0'
+                - type: svggraph
+                  name: 'Cluster Health Overview'
+                  'y': '1'
+                  width: '25'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 00FF00
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Primary Member Health'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 00BFFF
+                    - type: INTEGER
+                      name: ds.1.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Secondary Member Health'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: '%'
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: BTIQU
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Traffic
+                  'y': '4'
+                  width: '41'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Traffic: Inbound'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: INTEGER
+                      name: ds.1.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Traffic: Outbound'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: CIYCM
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: Cluster
+                  x: '25'
+                  width: '8'
+                  height: '1'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '50'
+                    - type: ITEM
+                      name: itemid.0
                       value:
                         host: 'Watchguard Firebox'
-                        name: 'Cluster Member Health Trends'
+                        key: firebox.cluster.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '50'
                 - type: item
-                  name: 'Primary Role'
-                  width: '6'
-                  height: '2'
+                  name: Uptime
+                  x: '25'
+                  'y': '1'
+                  width: '8'
+                  height: '1'
+                  hide_header: 'YES'
                   fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: cluster.primary.role
-                        host: Watchguard Firebox
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '50'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Watchguard Firebox'
+                        key: sysUpTime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '50'
                 - type: item
-                  name: 'Secondary Role'
-                  width: '6'
-                  height: '2'
-                  fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: cluster.secondary.role
-                        host: Watchguard Firebox
-            - name: 'System'
-              widgets:
-                - type: item
-                  name: 'Device Uptime'
-                  width: '4'
-                  height: '2'
-                  fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: sysUpTime
-                        host: Watchguard Firebox
-                - type: graph
                   name: 'Active Connections'
-                  width: '12'
-                  height: '6'
+                  x: '25'
+                  'y': '2'
+                  width: '8'
                   fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: firewall.connections.active
-                        host: Watchguard Firebox
-                - type: graph
-                  name: 'Connections Rate'
-                  width: '12'
-                  height: '6'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Watchguard Firebox'
+                        key: firewall.connections.active
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: units_show
+                      value: '0'
+                - type: item
+                  name: Primary
+                  x: '33'
+                  width: '8'
+                  height: '1'
+                  hide_header: 'YES'
                   fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: firewall.connections.rate
-                        host: Watchguard Firebox
-                - type: graph
-                  name: 'Memory Usage (Physical & Virtual)'
-                  width: '12'
-                  height: '6'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '50'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Watchguard Firebox'
+                        key: cluster.primary.role
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '50'
+                - type: item
+                  name: Secondary
+                  x: '33'
+                  'y': '1'
+                  width: '8'
+                  height: '1'
+                  hide_header: 'YES'
                   fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsed.[Swap]
-                        host: Watchguard Firebox
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsed.[Cached]
-                        host: Watchguard Firebox
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsedPct.[Swap]
-                        host: Watchguard Firebox
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsedPct.[Cached]
-                        host: Watchguard Firebox
-                - type: graph
-                  name: 'Disk Utilisation'
-                  width: '12'
-                  height: '6'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '50'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Watchguard Firebox'
+                        key: cluster.secondary.role
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '50'
+                - type: item
+                  name: 'Connection Rate'
+                  x: '33'
+                  'y': '2'
+                  width: '8'
                   fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsed[/]
-                        host: Watchguard Firebox
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrStorageUsed[/var]
-                        host: Watchguard Firebox
-                - type: graph
-                  name: 'CPU Load'
-                  width: '12'
-                  height: '6'
-                  fields:
-                    - type: GRAPH
-                      name: ITEM
-                      value: 
-                        name: hrProcessorLoad[0]
-                        host: Watchguard Firebox
-            - name: 'BoVPNs'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Watchguard Firebox'
+                        key: firewall.connections.rate
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: units
+                      value: /s
+            - name: 'Branch Office VPNs'
               widgets:
                 - type: honeycomb
-                  name: 'BoVPN Status'
-                  width: '12'
-                  height: '6'
+                  name: 'BoVPN Statuses'
+                  width: '21'
+                  height: '10'
                   fields:
                     - type: STRING
-                      name: item_tags
-                      value: "Component=BoVPN"
+                      name: items.0
+                      value: '* Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
                     - type: STRING
-                      name: expression
-                      value: "bovpn.ifOperStatus"
+                      name: item_tags.0.tag
+                      value: Component
                     - type: STRING
-                      name: pattern
-                      value: "1=green;0=red"
-                - type: graph
-                  name: 'BoVPN Tunnel Throughput'
-                  width: '12'
-                  height: '6'
+                      name: item_tags.0.value
+                      value: BoVPN
+                    - type: INTEGER
+                      name: maintenance
+                      value: '1'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^BoVPN: (.+) Status$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_bold
+                      value: '1'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '50'
+                    - type: STRING
+                      name: reference
+                      value: JWFEG
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 80FF00
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                - type: svggraph
+                  name: 'BoVPN: Bytes In'
+                  x: '21'
+                  width: '51'
+                  height: '5'
                   fields:
-                    - type: GRAPH
-                      name: graphid.0
-                      value:
-                        host: "Watchguard Firebox"
-                        name: "BoVPN Tunnel Throughput"
-
-      macros:
-        - macro: "{$SNMP_COMMUNITY}"
-          value: MonitorZabbix
-        - macro: "{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}"
-          value: "50"
-        - macro: "{$WATCHGUARD_RAM_LOW}"
-          value: "10"
-        - macro: "{$WATCHGUARD_RAM_HIGH}"
-          value: "5"
-        - macro: "{$WATCHGUARD_CPU_LOW}"
-          value: "70"
-        - macro: "{$WATCHGUARD_CPU_HIGH}"
-          value: "90"
-        - macro: "{$WATCHGUARD_DISK_LOW}"
-          value: "80"
-        - macro: "{$WATCHGUARD_DISK_HIGH}"
-          value: "90"
-        - macro: "{$WATCHGUARD_SWAP_THRESHOLD}"
-          value: "90"
-        - macro: "{$WATCHGUARD_CACHED_THRESHOLD}"
-          value: "80"
-        - macro: "{$WATCHGUARD_TEMP_WARNING}"
-          value: "60"
-        - macro: "{$WATCHGUARD_TEMP_CRITICAL}"
-          value: "70"
-        - macro: "{$WATCHGUARD_FAN_MIN_SPEED}"
-          value: "2000"
-        - macro: "{$WATCHGUARD_MAX_CONNECTIONS}"
-          value: "50000"
-        - macro: "{$WATCHGUARD_HIGH_THROUGHPUT}"
-          value: "1000000000"
-        - macro: "{$WATCHGUARD_BOVPN_LATENCY_WARN}"
-          value: "150"
-        - macro: "{$WATCHGUARD_BOVPN_PKTLOSS_WARN}"
-          value: "5"
-    
+                    - type: STRING
+                      name: ds.0.color
+                      value: 80FF00
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'BoVPN: * Bytes In'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '8'
+                    - type: STRING
+                      name: reference
+                      value: TJAWZ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'BoVPN: Bytes Out'
+                  x: '21'
+                  'y': '5'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF8000
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'BoVPN: * Bytes Out'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '8'
+                    - type: STRING
+                      name: reference
+                      value: YSBLG
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: 'Gateway VPNs'
+              widgets:
+                - type: honeycomb
+                  name: 'Gateway VPN Statuses'
+                  width: '21'
+                  height: '10'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '* Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: VPN
+                    - type: INTEGER
+                      name: maintenance
+                      value: '1'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^VPN: (.+) Status$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_bold
+                      value: '1'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '50'
+                    - type: STRING
+                      name: reference
+                      value: UUONL
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 80FF00
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                - type: svggraph
+                  name: 'Gateway VPN: Bytes In'
+                  x: '21'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 80FF00
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'VPN: * Bytes In'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '8'
+                    - type: STRING
+                      name: reference
+                      value: VGNJO
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Gateway VPN: Bytes Out'
+                  x: '21'
+                  'y': '5'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF8000
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'VPN: * Bytes Out'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '8'
+                    - type: STRING
+                      name: reference
+                      value: SCSSE
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
       valuemaps:
         - uuid: 71a060a54ea2489b9997531e0de28103
-          name: cluster.enabled.valuemap
+          name: firebox.cluster.status.valuemap
           mappings:
-            - value: "0"
-              newvalue: "Not Applicable"
-            - value: "1"
-              newvalue: "Enabled"
-            - value: "2"
-              newvalue: "Disabled"
-        - uuid: e75ad32d175e4bc882730f78a60ae7f6
-          name: cluster.member.role.valuemap
+            - value: '0'
+              newvalue: N/A
+            - value: '1'
+              newvalue: Clustered
+            - value: '2'
+              newvalue: Standalone
+        - uuid: bbe748f3a1a7405ab4c1e49d4e4eb75f
+          name: firebox.cluster.sync.valuemap
           mappings:
-            - value: "1"
-              newvalue: "Primary"
-            - value: "2"
-              newvalue: "Secondary"
-            - value: "3"
-              newvalue: "Idle / Unknown"
+            - value: '0'
+              newvalue: 'Not Synchronized'
+            - value: '1'
+              newvalue: Synchronized
+        - uuid: ba5c23563caa4ec1aaf4657ccb304f23
+          name: firebox.feature.status.valuemap
+          mappings:
+            - value: '0'
+              newvalue: Disabled
+            - value: '1'
+              newvalue: Enabled
         - uuid: 839e718ef97f40659f422cf5f603b17b
-          name: interface.status.valuemap
+          name: firebox.interface.status.valuemap
           mappings:
-            - value: "1"
-              newvalue: "Up"
-            - value: "2"
-              newvalue: "Down"
-            - value: "3"
-              newvalue: "Testing"
-            - value: "4"
-              newvalue: "Unknown"
-            - value: "5"
-              newvalue: "Dormant"
-            - value: "6"
-              newvalue: "Not Present"
-            - value: "7"
-              newvalue: "Lower Layer Down"
-
-
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '3'
+              newvalue: Testing
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not Present'
+            - value: '7'
+              newvalue: 'Lower Layer Down'
+        - uuid: e75ad32d175e4bc882730f78a60ae7f6
+          name: firebox.member.role.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Rebooting
+            - value: '2'
+              newvalue: Standby
+            - value: '3'
+              newvalue: Master
+  triggers:
+    - uuid: 7f296321016948928ce7f0c0ab730cdf
+      expression: 'last(/Watchguard Firebox/cluster.primary.health) < last(/Watchguard Firebox/cluster.secondary.health)'
+      name: 'Possible Cluster Failover'
+      priority: AVERAGE
+      description: 'Secondary member has better health than primary'
+      tags:
+        - tag: Component
+          value: HA
   graphs:
-    - uuid: 2b664d1f6327410cb076482f29ab0c44
-      name: "Cluster Member Health Trends"
+    - uuid: 802536932165491484c03f37ab758ee9
+      name: 'Cluster Member Health Trends'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
       graph_items:
         - color: 1A7C11
+          calc_fnc: ALL
           item:
-            host: "Watchguard Firebox"
-            key: "cluster.primary.health"
-        - color: F63100
+            host: 'Watchguard Firebox'
+            key: cluster.primary.health
+        - sortorder: '1'
+          color: F63100
+          calc_fnc: ALL
           item:
-            host: "Watchguard Firebox"
-            key: "cluster.secondary.health"
-      yaxismin: "0"
-      yaxismax: "100"
-
-    - uuid: 941260152ceb41d4aa744ce3f870aecf
-      name: "Primary Member Health Trend"
-      width: "1200"
-      height: "400"
-      graph_items:
-      - color: 1A7C11
-        item:
-          host: "Watchguard Firebox"
-          key: "cluster.primary.health"
-        drawtype: FILLED_REGION
-      yaxismin: "0"
-      yaxismax: "100"
-      show_work_period: "YES"
-      show_triggers: "YES"
-      show_legend: "YES"
-      show_3d: "NO"
-    
-    - uuid: ee36c5f8082845428aeef0a1659bc25e
-      name: "Secondary Member Health Trend"
-      width: "1200"
-      height: "400"
-      graph_items:
-      - color: F63100
-        item:
-          host: "Watchguard Firebox"
-          key: "cluster.secondary.health"
-        drawtype: FILLED_REGION
-      yaxismin: "0"
-      yaxismax: "100"
-      show_work_period: "YES"
-      show_triggers: "YES"
-      show_legend: "YES"
-      show_3d: "NO"
-    
-    - uuid: b3f38b8078fe4e64aeeb60dcba5e909e
-      name: "Firewall Throughput"
-      width: "1200"
-      height: "400"
-      graph_items:
-        - color: "1A7C11"
-          item:
-            host: "Watchguard Firebox"
-            key: "firewall.traffic.in"
-          drawtype: FILLED_REGION
-        - color: "F63100"
-          item:
-            host: "Watchguard Firebox"
-            key: "firewall.traffic.out"
-          drawtype: FILLED_REGION
-      yaxismin: "0"
-      show_work_period: "YES"
-      show_triggers: "YES"
+            host: 'Watchguard Firebox'
+            key: cluster.secondary.health
