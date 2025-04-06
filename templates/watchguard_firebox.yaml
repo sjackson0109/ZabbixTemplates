@@ -9,19 +9,42 @@ zabbix_export:
       name: 'Watchguard Firebox'
       description: |
         ## Overview    
-        Template for monitoring Watchuard Firebox Firewall with explanations and advices.
+        Complete Template for monitoring Watchuard Firebox Firewalls.
         
-        Includes automated discovery of:
-        - Device Info: device name, device location, device uptime, device ping response, device ping latency, firemware verion
-        - Cluster Info: Clustering Enabled, Primary/Secondary roles, Primary/Secondary health, thresholds
-        - Sensor details: temperature and fan-speeds, with thresholds and graphs
-        - CPU Info: CPU Load with thresholds and graphs
-        - Firewall Metrics: Firewall Throughput, Active Connections, Connection Rate, GwVPN Tunnel Status, GwVPN Tunel Traffic, triggers and graphs 
-        - Disk Info: File-System detection (/var, /boot, /, and /tmp), will trigger on Utilisation over 80%
-        - Memory discovery: total physical/virtual, used physical/virtual, cache-used and several triggers and graphs
+        ITEMS:           
+        - Basic Info: Uptime, Device Name, Model, Location, Description, Firmware, Ping, Latency, Packet-Loss
+        - Firebox Info: AntiVirus (GAV) Version, Intrusion Protection System (IPS) Version, Application Control Enabled (disabled/not working), High Availability Enabled
+        - Cluster Info: Cluster Synchronisation Status, Member Roles, Member Health, Member Serial
+        - Network Info: Active Connections, Connection Rate, Inbound/Outbound Traffic
         
+        ITEM-TRIGGERS:
+        - Cluster: Member Sync Issues, Member Health, Cluster HA Required, HA Event Detection
+        - GAV/IPS Version Check Failure > Disbaled/NotInstalled/NotUpdating
+        - High no of concurrent connections > Possible DDoS Attack
         
-        Tested on:
+        DISCOVERY ITEMS:
+        - BoVPNs: Status, Bytes In/Out, Errors In/Out
+        - Gateway VPNs (disabled/not available): Status, Bytes In/Out, Errors In/Out
+        - Processors: Processor Type, CPU utilisation
+        - Disks: File-system Description, Total/Used space 
+        - Fan Sensors (disabled/not available): Status, Speed
+        - Interfaces: Status, Bytes In/Out, Errors In/Out
+        - Temperature Sensors (disabled/not available)
+        - Power Supplies (disabled/not available)
+        
+        DISCOVERY ITEM-TRIGGERS:
+        - BoVPN: Status Changed, In/Out Error above threshold
+        - Processor: Utilisation over threshold
+        - Disk: Utilisation above threshold (low/high)
+        - FANs: Status Alert, Low Fan Speed
+        - Interfaces: Status Changed
+        - Gateway VPN: Status Changed, In/Out Error above threshold
+        - Temperature: Above threshold (high/critical)
+        - Power: Status Changed
+        
+        + Graphs and Dashboards (Useful)
+        
+        TESTED ON:
         - Firebox M400 running v12+ firmware 
         - Clustered and non-clustered firebox units
         
@@ -647,7 +670,7 @@ zabbix_export:
               name: 'Fan {#FAN_NAME} Speed'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.3.{#SNMPINDEX}'
-              key: 'fan.speed[{#FAN_NAME}]'
+              key: 'firebox.fan.speed[{#FAN_NAME}]'
               delay: 5m
               value_type: FLOAT
               units: RPM
@@ -657,7 +680,7 @@ zabbix_export:
                   value: Fan
               trigger_prototypes:
                 - uuid: d78a3ac9a76541fcbac5dc278a3a198f
-                  expression: 'last(/Watchguard Firebox/fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}'
+                  expression: 'last(/Watchguard Firebox/firebox.fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}'
                   name: 'Low Fan Speed on {#FAN_NAME}'
                   priority: WARNING
                   description: 'Fan {#FAN_NAME} speed is below minimum threshold ({ITEM.LASTVALUE} < {$WATCHGUARD_FAN_MIN_SPEED} RPM)'
@@ -668,16 +691,18 @@ zabbix_export:
               name: 'Fan {#FAN_NAME} Status'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.4.{#SNMPINDEX}'
-              key: 'fan.status[{#FAN_NAME}]'
+              key: 'firebox.fan.status[{#FAN_NAME}]'
               delay: 5m
               value_type: FLOAT
               description: 'Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)'
+              valuemap:
+                name: firebox.fan.status.valuemap
               tags:
                 - tag: Component
                   value: Fan
               trigger_prototypes:
                 - uuid: 88dbf85421c1499091853fa6d555c0de
-                  expression: 'last(/Watchguard Firebox/fan.status[{#FAN_NAME}]) > 0'
+                  expression: 'last(/Watchguard Firebox/firebox.fan.status[{#FAN_NAME}]) > 0'
                   name: 'Fan {#FAN_NAME} Status Alert'
                   priority: WARNING
                   description: 'Fan {#FAN_NAME} reports non-normal status (Value: {ITEM.LASTVALUE})'
@@ -691,7 +716,7 @@ zabbix_export:
                 - color: 0000FF
                   item:
                     host: 'Watchguard Firebox'
-                    key: 'fan.speed[{#FAN_NAME}]'
+                    key: 'firebox.fan.speed[{#FAN_NAME}]'
         - uuid: 30253dfbef0b4849b4f51e0bc815934a
           name: Interfaces
           type: SNMP_AGENT
@@ -803,6 +828,35 @@ zabbix_export:
                   item:
                     host: 'Watchguard Firebox'
                     key: 'ethernet.ifOutOctets[{#IFDESCR}]'
+        - uuid: 0fe9ccfaff514ddc95c8484e0eee14a5
+          name: 'Power Supplies'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PSU_NAME},1.3.6.1.4.1.3097.6.4.2.1.1]'
+          key: firebox.psu.discovery
+          delay: 1h
+          status: DISABLED
+          description: 'Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.'
+          item_prototypes:
+            - uuid: f168009628b849788bea5a086d6f635f
+              name: 'Power Supply {#PSU_NAME} Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.3097.6.4.2.1.2.{#SNMPINDEX}'
+              key: 'firebox.psu.status[{#PSU_NAME}]'
+              value_type: FLOAT
+              valuemap:
+                name: firebox.psu.status.valuemap
+              tags:
+                - tag: Component
+                  value: Power
+              trigger_prototypes:
+                - uuid: e7994f58fe0f451b90276ffdbc4d19bb
+                  expression: 'min(/Watchguard Firebox/firebox.psu.status[{#PSU_NAME}],5m)<>1'
+                  name: 'Power Supply {#PSU_NAME} Fault Detected'
+                  priority: HIGH
+                  description: 'Power supply {#PSU_NAME} is reporting a fault or has been disconnected.'
+                  tags:
+                    - tag: Component
+                      value: Power
         - uuid: 36f6c341b9af4ccb9641fc003968f837
           name: 'Temperature Sensors'
           type: SNMP_AGENT
@@ -815,6 +869,7 @@ zabbix_export:
               - macro: '{#SENSOR_TYPE}'
                 value: temperature
                 formulaid: A
+          description: 'Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.'
           item_prototypes:
             - uuid: 6bbe24e86cca4734b9435ded3b63a957
               name: 'Temperature Sensor {#SENSOR_NAME}'
@@ -1519,6 +1574,15 @@ zabbix_export:
               newvalue: 'Not Synchronized'
             - value: '1'
               newvalue: Synchronized
+        - uuid: cddcb4c626d641759b26f30d7c8d129b
+          name: firebox.fan.status.valuemap
+          mappings:
+            - value: '1'
+              newvalue: OK
+            - value: '2'
+              newvalue: Fault
+            - value: '3'
+              newvalue: 'Not Present'
         - uuid: ba5c23563caa4ec1aaf4657ccb304f23
           name: firebox.feature.status.valuemap
           mappings:
@@ -1552,6 +1616,15 @@ zabbix_export:
               newvalue: Standby
             - value: '3'
               newvalue: Master
+        - uuid: 1ee381ecbce64a3eb2c75d9e4205954d
+          name: firebox.psu.status.valuemap
+          mappings:
+            - value: '1'
+              newvalue: OK
+            - value: '2'
+              newvalue: Fault
+            - value: '3'
+              newvalue: 'Not Present'
   triggers:
     - uuid: 7f296321016948928ce7f0c0ab730cdf
       expression: 'last(/Watchguard Firebox/cluster.primary.health) < last(/Watchguard Firebox/cluster.secondary.health)'
