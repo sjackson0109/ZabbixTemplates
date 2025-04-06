@@ -1,0 +1,94 @@
+zabbix_export:
+  version: '7.0'
+  templates:
+    - template: 'TLS Security Template'
+      name: 'TLS Security Template'
+      groups:
+        - name: 'TLS Security'
+      applications:
+        - name: 'TLS Compliance Checks'
+      discovery_rules:
+        - name: 'Discover TLS Protocols/Ciphers'
+          key: 'tls.discovery'
+          lifetime: '1d'
+          description: 'Auto-discovery of all available TLS protocol/cipher combinations'
+          item_prototypes:
+            - uuid: 118d16135f054fbb81e66b1676155cd1
+              name: 'TLS Support: {#PROTOCOL} - {#CIPHER}'
+              key: 'tls.check[{#PROTOCOL},{#CIPHER}]'
+              applications:
+                - 'TLS Compliance Checks'
+              value_type: FLOAT
+              valuemap:
+                name: 'tls.compliance.status.valuemap'
+              description: 'Check support for {#PROTOCOL} with {#CIPHER}'
+              tags:
+                - tag: 'Security'
+                  value: 'TLS'
+              preprocessing:
+                - type: 'Regular expression'
+                  parameters:
+                    - '^([01])$'
+                    - '\1'
+              timeout: '10s'
+              history: '7d'
+              trends: '0'
+          preprocessing:
+            - type: 'JSONPath'
+              parameters:
+                - '$.data[*]'
+      macros:
+        - macro: '{$TLS.PORT}'
+          value: '443'
+        - macro: '{$TLS.TIMEOUT}'
+          value: '4'
+      items:
+        - uuid: b0204b56f0a64b5d9c95ac5c1c224cd5
+          name: 'TLS Overall Status'
+          key: 'tls.compliance.status'
+          value_type: FLOAT
+          applications:
+            - 'TLS Compliance Checks'
+          description: 'Overall TLS compliance status'
+          tags:
+            - tag: 'Security'
+              value: 'TLS'
+      triggers:
+        - uuid: 688d5f1fcfd14b238cda6c14731057da
+          name: 'Unsupported TLS config'
+          description: 'Unsupported TLS configuration detected'
+          expression: 'count(/TLS Security Template/tls.check[{#PROTOCOL},{#CIPHER}],#1,"eq","0")>0'
+          severity: 'Warning'
+        - uuid: 4335d972a392445e95a174c0245a8b7b
+          name: 'Depreciated SSLv2.0 used'
+          description: 'Deprecated TLS protocol in use (SSLv2.0)'
+          expression: 'count(/TLS Security Template/tls.check["SSLv2.0",*],#1,"eq","1")>0'
+          severity: 'High'
+        - uuid: 6a82f5d571474be08846cb7f30b74f57
+          name: 'Depreciated SSLv3.0 used'
+          description: 'Deprecated TLS protocol in use (SSLv3.0)'
+          expression: 'count(/TLS Security Template/tls.check["SSLv3.0",*],#1,"eq","1")>0'
+          severity: 'High'
+        - uuid: 40027a7119d8405b8b7ed3cc5be56388
+          name: 'Depreciated TLSv1.0 used'
+          description: 'Deprecated TLS protocol in use (TLSv1.0)'
+          expression: 'count(/TLS Security Template/tls.check["TLSv1.0",*],#1,"eq","1")>0'
+          severity: 'High'
+        - uuid: 5cafeb5e8eb544e69844430f58f2cbd8
+          name: 'Depreciated TLSv1.0 used'
+          description: 'Deprecated TLS protocol in use (TLSv1.1)'
+          expression: 'count(/TLS Security Template/tls.check["TLSv1.0",*],#1,"eq","1")>0'
+          severity: 'High'
+        - uuid: 8b7b751bef6f447eaec2767d8d864922
+          name: 'Depreciated TLSv1.2 used'
+          description: 'Deprecated TLS protocol in use (TLSv1.2)'
+          expression: 'count(/TLS Security Template/tls.check["TLSv1.2",*],#1,"eq","1")>0'
+          severity: 'High'
+          status: DISABLED
+      value_maps:
+        - name: 'tls.compliance.status.valuemap'
+          mappings:
+            - value: '0'
+              newvalue: '❌ Unsupported'
+            - value: '1'
+              newvalue: '✅ Supported'

@@ -16,6 +16,7 @@ Features:
     - **Endpoint Testing**: Each protocol-cipher pair is tested against the specified endpoint.
     - **Timeout Handling**: Includes a configurable timeout for socket connections.
     - **Cross-Platform**: Works on Linux, Windows, and is really designed to run in a Docker container (Zabbix?)
+    - **New arguments for Zabbix**: Now includes --discovery and --check arguments.
 """
 import sys
 import ssl
@@ -136,48 +137,70 @@ def test_endpoint(endpoint, port, protocol, cipher, timeout):
 
 def main():
     """Main function to execute the script."""
-    print("Testing Capabilities:")
-    # Step 1: Get available protocols
-    protocols = get_available_protocols()
-    print(f" Protocols: {', '.join(protocols)}")
+    if args.discovery:
+        # Zabbix Discovery Mode: Output all compatible protocol-cipher pairs as JSON
+        protocols = get_available_protocols()
+        ciphers = get_available_ciphers()
+        criteria = create_criteria_array(protocols, ciphers)
+        compatible_criteria = filter_compatible_criteria(criteria)
+        discovery_data = [{"{#PROTOCOL}": p, "{#CIPHER}": c} for p, c in compatible_criteria]
+        print(json.dumps({"data": discovery_data}, indent=4))
+    elif args.check:
+        # Zabbix Check Mode: Test a specific protocol-cipher pair
+        if not args.protocol or not args.cipher:
+            print("ERROR: --check requires --protocol and --cipher")
+            sys.exit(3)
+        status = test_endpoint(args.host, args.port, args.protocol, args.cipher, args.timeout)
+        print("1" if status else "0")
+    else:
+        # CLI Mode
+        print("Testing Capabilities:")
+        # Step 1: Get available protocols
+        protocols = get_available_protocols()
+        print(f" Protocols: {', '.join(protocols)}")
 
-    # Step 2: Get available ciphers
-    ciphers = get_available_ciphers()
-    print(f" Ciphers: {':'.join(cipher['name'] for cipher in ciphers)}")
+        # Step 2: Get available ciphers
+        ciphers = get_available_ciphers()
+        print(f" Ciphers: {':'.join(cipher['name'] for cipher in ciphers)}")
 
-    # Step 3: Create CRITERIA array
-    criteria = create_criteria_array(protocols, ciphers)
-    print("-" * 40)
-    print(" ")
-    # Step 4: Filter incompatible protocol-cipher pairs
-    compatible_criteria = filter_compatible_criteria(criteria)
+        # Step 3: Create CRITERIA array
+        criteria = create_criteria_array(protocols, ciphers)
+        print("-" * 40)
+        print(" ")
+        # Step 4: Filter incompatible protocol-cipher pairs
+        compatible_criteria = filter_compatible_criteria(criteria)
 
-    # Step 5: Create RESULTS array
-    results = []
-    for protocol, cipher in compatible_criteria:
-        results.append(['', protocol, cipher])
+        # Step 5: Create RESULTS array
+        results = []
+        for protocol, cipher in compatible_criteria:
+            results.append(['', protocol, cipher])
 
-    # Step 6: Test each protocol-cipher pair
-    for i, (protocol, cipher) in enumerate(compatible_criteria):
-        status = test_endpoint(args.host, args.port, protocol, cipher, args.timeout)
-        results[i][0] = '✅' if status else '❌'
+        # Step 6: Test each protocol-cipher pair
+        for i, (protocol, cipher) in enumerate(compatible_criteria):
+            status = test_endpoint(args.host, args.port, protocol, cipher, args.timeout)
+            results[i][0] = '✅' if status else '❌'
 
-    # Step 8: Sort RESULTS array
-    results.sort(key=lambda x: (x[0], x[1], x[2]))
+        # Step 8: Sort RESULTS array
+        results.sort(key=lambda x: (x[0], x[1], x[2]))
 
-    # Step 9: Print RESULTS array as columns
-    print("\nRESULTS:")
-    print(f"{'STATUS':<8} {'PROTOCOL':<10} {'CIPHER'}")
-    print("-" * 40)
-    for status, protocol, cipher in results:
-        print(f"{status:<8} {protocol:<10} {cipher}")
+        # Step 9: Print RESULTS array as columns
+        print("\nRESULTS:")
+        print(f"{'STATUS':<8} {'PROTOCOL':<10} {'CIPHER'}")
+        print("-" * 40)
+        for status, protocol, cipher in results:
+            print(f"{status:<8} {protocol:<10} {cipher}")
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Check TLS handshake capabilities for a given host and port.")
     parser.add_argument("host", help="The hostname or IP address to check.")
-    parser.add_argument("-p", "--port", type=int, default=443, help="The port number to check (default: 443).")
-    parser.add_argument("-t", "--timeout", type=int, default=4, help="Timeout for socket connection in seconds (default: 4).")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output, including errors.")
+    parser.add_argument("-p", "--port", type=int, default=443, help="The port number (default: 443).")
+    parser.add_argument("-t", "--timeout", type=int, default=4, help="Timeout in seconds (default: 4).")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output.")
+    # Add Zabbix-specific arguments
+    parser.add_argument("--discovery", action="store_true", help="Output JSON for Zabbix discovery.")
+    parser.add_argument("--check", action="store_true", help="Check a specific protocol and cipher.")
+    parser.add_argument("--protocol", help="Protocol to check (use with --check).")
+    parser.add_argument("--cipher", help="Cipher to check (use with --check).")
     args = parser.parse_args()
 
     main()
