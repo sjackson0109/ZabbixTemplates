@@ -76,7 +76,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
           key: cluster.primary.role
           valuemap:
-            name: firebox.member.role.valuemap
+            name: member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -126,7 +126,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
           key: cluster.secondary.role
           valuemap:
-            name: firebox.member.role.valuemap
+            name: member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -161,7 +161,7 @@ zabbix_export:
           delay: 30s
           value_type: FLOAT
           valuemap:
-            name: firebox.cluster.sync.valuemap
+            name: cluster.sync.valuemap
           tags:
             - tag: Component
               value: HA
@@ -180,12 +180,12 @@ zabbix_export:
           name: 'Application Control Enabled'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.4.3.0
-          key: firebox.appcontrol.status
+          key: appcontrol.status
           delay: 1h
           value_type: FLOAT
           status: DISABLED
           valuemap:
-            name: firebox.feature.status.valuemap
+            name: feature.status.valuemap
           tags:
             - tag: Application
               value: Licensing
@@ -193,11 +193,11 @@ zabbix_export:
           name: 'High Availability Enabled'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.6.1.0
-          key: firebox.cluster.status
+          key: cluster.status
           delay: 1h
           value_type: FLOAT
           valuemap:
-            name: firebox.cluster.status.valuemap
+            name: cluster.status.valuemap
           tags:
             - tag: Component
               value: Clustering
@@ -205,7 +205,7 @@ zabbix_export:
           name: 'Device Firmware'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.3.1.0
-          key: firebox.firmware
+          key: firmware
           delay: '30'
           history: 1w
           value_type: CHAR
@@ -223,7 +223,7 @@ zabbix_export:
           name: 'AntiVirus (GAV) Version'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.1.3.0
-          key: firebox.gav.version
+          key: gav.version
           delay: 1h
           value_type: TEXT
           trends: '0'
@@ -233,14 +233,14 @@ zabbix_export:
               value: Licensing
           triggers:
             - uuid: 39217367e6f64060b15ca7c0a32f318e
-              expression: length(last(/Watchguard/firebox.gav.version))=0
+              expression: length(last(/Watchguard/gav.version))=0
               name: 'Antivirus (GAV) Disabled, Not Installed or No Updating'
               priority: WARNING
         - uuid: 1a4e33dfc2504b8ba6ae89f7da9e90e5
           name: 'Intrusion Protection System (IPS) Version'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.1.4.0
-          key: firebox.ips.version
+          key: ips.version
           delay: 1h
           value_type: TEXT
           trends: '0'
@@ -249,14 +249,14 @@ zabbix_export:
               value: Licensing
           triggers:
             - uuid: 7841b9943a5d4dcc81a1f73dede0097e
-              expression: length(last(/Watchguard/firebox.ips.version))=0
+              expression: length(last(/Watchguard/ips.version))=0
               name: 'Intrusion Protection System (IPS) Disabled, Not Installed or No Updating'
               priority: WARNING
         - uuid: 3fb0eec716ee423a819486947d8666d0
           name: 'Device Model'
           type: SNMP_AGENT
           snmp_oid: 'SNMPv2-MIB::sysDescr.0'
-          key: firebox.model
+          key: model
           delay: '30'
           history: 1w
           value_type: CHAR
@@ -270,13 +270,13 @@ zabbix_export:
           name: 'Active Connections'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.1.0
-          key: firewall.connections.active
+          key: active_connections
           value_type: FLOAT
           units: connections
           description: 'Current active firewall connections'
           triggers:
             - uuid: b29b0981202f43dfa0f9fed286962c04
-              expression: 'last(/Watchguard/firewall.connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}'
+              expression: 'last(/Watchguard/active_connections) > {$WATCHGUARD_MAX_CONNECTIONS}'
               name: 'Possible DDoS Attack'
               priority: AVERAGE
               description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
@@ -287,18 +287,18 @@ zabbix_export:
           name: 'Connection Rate'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.2.0
-          key: firewall.connections.rate
+          key: connections_rate
           value_type: FLOAT
           units: conn/s
           description: 'Current connection rate'
           tags:
             - tag: Performance
-              value: Connections
+              value: Metrics
         - uuid: 9ae35f6ab16d42ae84acc6bb6b91316f
           name: 'Traffic: Inbound'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.5.0
-          key: firewall.traffic.in
+          key: traffc_inbound
           value_type: FLOAT
           units: bps
           description: 'Total inbound traffic'
@@ -311,12 +311,12 @@ zabbix_export:
                 - '8'
           tags:
             - tag: Performance
-              value: Connections
+              value: Metrics
         - uuid: 276ee8e2402e4b799d1bbb52110559f9
           name: 'Traffic: Outbound'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.5.1.2.6.0
-          key: firewall.traffic.out
+          key: traffc_outbound
           value_type: FLOAT
           units: bps
           description: 'Total outbound traffic'
@@ -329,12 +329,12 @@ zabbix_export:
                 - '8'
           tags:
             - tag: Performance
-              value: Connections
+              value: Metrics
         - uuid: 0a7d17d617f849748f83fcf2521f54b5
           name: 'Device Description'
           type: SNMP_AGENT
           snmp_oid: 'SNMPv2-MIB::sysDescr.0'
-          key: sysDescr
+          key: description
           delay: '30'
           history: 1w
           value_type: CHAR
@@ -348,7 +348,7 @@ zabbix_export:
           name: 'Device Location'
           type: SNMP_AGENT
           snmp_oid: 'SNMPv2-MIB::sysLocation.0'
-          key: sysLocation
+          key: location
           delay: '30'
           history: 1w
           value_type: CHAR
@@ -362,7 +362,7 @@ zabbix_export:
           name: 'Device Name'
           type: SNMP_AGENT
           snmp_oid: 'SNMPv2-MIB::sysName.0'
-          key: sysName
+          key: name
           delay: '30'
           history: 1w
           value_type: CHAR
@@ -376,7 +376,7 @@ zabbix_export:
           name: 'Device Uptime'
           type: SNMP_AGENT
           snmp_oid: 'SNMPv2-MIB::sysUpTime.0'
-          key: sysUpTime
+          key: uptime
           delay: '30'
           history: 1w
           units: uptime
@@ -393,7 +393,7 @@ zabbix_export:
           name: BoVPNs
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
-          key: firebox.bovpn.discovery
+          key: discover.bovpn
           delay: 1h
           filter:
             conditions:
@@ -406,7 +406,7 @@ zabbix_export:
               name: 'BoVPN: {#IFDESCR} Errors In'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
-              key: 'firebox.bovpn.ifInErrors[{#IFDESCR}]'
+              key: 'bovpn.ifInErrors[{#IFDESCR}]'
               description: 'Inbound errors on BoVPN interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -417,7 +417,7 @@ zabbix_export:
                   value: BoVPN
               trigger_prototypes:
                 - uuid: cbaaacd3b2144964915fa569fea949bb
-                  expression: 'last(/Watchguard/firebox.bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
+                  expression: 'last(/Watchguard/bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Inbound Errors (Error)'
                   priority: HIGH
                   description: 'Inbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
@@ -425,7 +425,7 @@ zabbix_export:
                     - tag: Component
                       value: BoVPN
                 - uuid: 10651d67459a40adb0466aec7537e284
-                  expression: 'last(/Watchguard/firebox.bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
+                  expression: 'last(/Watchguard/bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Inbound Errors (Warning)'
                   priority: WARNING
                   description: 'Inbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
@@ -436,7 +436,7 @@ zabbix_export:
               name: 'BoVPN: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
-              key: 'firebox.bovpn.ifInOctets[{#IFDESCR}]'
+              key: 'bovpn.ifInOctets[{#IFDESCR}]'
               units: Bps
               description: 'Incoming traffic on boVPN interface {#IFDESCR}'
               preprocessing:
@@ -453,16 +453,16 @@ zabbix_export:
               name: 'BoVPN: {#IFDESCR} Status'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
-              key: 'firebox.bovpn.ifOperStatus[{#IFDESCR}]'
+              key: 'bovpn.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of BoVPN {#IFDESCR}'
               valuemap:
-                name: firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Component
                   value: BoVPN
               trigger_prototypes:
                 - uuid: 9ce65072570a4ddf823a63e1ccd86298
-                  expression: '(last(/Watchguard/firebox.bovpn.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard/firebox.bovpn.ifOperStatus[{#IFDESCR}],#2))=1'
+                  expression: 'last(/Watchguard/bovpn.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard/bovpn.ifOperStatus[{#IFDESCR}],#5:now-5m)=1'
                   name: 'BoVPN {#IFDESCR} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
@@ -470,7 +470,7 @@ zabbix_export:
               name: 'BoVPN: {#IFDESCR} Errors Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
-              key: 'firebox.bovpn.ifOutErrors[{#IFDESCR}]'
+              key: 'bovpn.ifOutErrors[{#IFDESCR}]'
               description: 'Outbound errors on BoVPN interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -481,7 +481,7 @@ zabbix_export:
                   value: BoVPN
               trigger_prototypes:
                 - uuid: 34f1ab6cacf4415aa23c0d8d3cd12d12
-                  expression: 'last(/Watchguard/firebox.bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
+                  expression: 'last(/Watchguard/bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Outbound Errors (Critical)'
                   priority: HIGH
                   description: 'Outbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
@@ -489,7 +489,7 @@ zabbix_export:
                     - tag: Component
                       value: BoVPN
                 - uuid: 12a75b598cad4476b170b0720064eb1a
-                  expression: 'last(/Watchguard/firebox.bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
+                  expression: 'last(/Watchguard/bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Outbound Errors (Warning)'
                   priority: WARNING
                   description: 'Outbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
@@ -500,7 +500,7 @@ zabbix_export:
               name: 'BoVPN: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
-              key: 'firebox.bovpn.ifOutOctets[{#IFDESCR}]'
+              key: 'bovpn.ifOutOctets[{#IFDESCR}]'
               units: Bps
               description: 'Outgoing traffic on boVPN interface {#IFDESCR}'
               preprocessing:
@@ -521,36 +521,36 @@ zabbix_export:
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.bovpn.ifOperStatus[{#IFDESCR}]'
+                    key: 'bovpn.ifOperStatus[{#IFDESCR}]'
             - uuid: 5a0eb594d92f4ea89047fe130d8bec86
               name: 'BoVPN: {#IFDESCR} Traffic'
               graph_items:
                 - color: 199C0D
                   item:
                     host: Watchguard
-                    key: 'firebox.bovpn.ifInOctets[{#IFDESCR}]'
+                    key: 'bovpn.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
                   color: F63100
                   item:
                     host: Watchguard
-                    key: 'firebox.bovpn.ifOutOctets[{#IFDESCR}]'
+                    key: 'bovpn.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   color: 81C784
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.bovpn.ifInErrors[{#IFDESCR}]'
+                    key: 'bovpn.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   color: E57373
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.bovpn.ifOutErrors[{#IFDESCR}]'
+                    key: 'bovpn.ifOutErrors[{#IFDESCR}]'
         - uuid: d08266c54b8340dfbe79b7fc198e7135
           name: Processors
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrProcessorLoad]'
-          key: firebox.cpu.discovery
+          key: cpu.discovery
           delay: 1h
           description: 'Discover the processors of the firewall device'
           item_prototypes:
@@ -598,7 +598,7 @@ zabbix_export:
           name: Disks
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrStorageDescr]'
-          key: firebox.disk.discovery
+          key: disk.discovery
           delay: 1h
           filter:
             conditions:
@@ -679,7 +679,7 @@ zabbix_export:
           name: 'Fan Sensors'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPINDEX},1.3.6.1.4.1.3097.6.3.2.1.1]'
-          key: firebox.fan.discovery
+          key: fan.discovery
           delay: 1h
           status: DISABLED
           filter:
@@ -693,7 +693,7 @@ zabbix_export:
               name: 'Fan {#FAN_NAME} Speed'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.3.{#SNMPINDEX}'
-              key: 'firebox.fan.speed[{#FAN_NAME}]'
+              key: 'fan.speed[{#FAN_NAME}]'
               delay: 5m
               value_type: FLOAT
               units: RPM
@@ -703,7 +703,7 @@ zabbix_export:
                   value: Fan
               trigger_prototypes:
                 - uuid: d78a3ac9a76541fcbac5dc278a3a198f
-                  expression: 'last(/Watchguard/firebox.fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}'
+                  expression: 'last(/Watchguard/fan.speed[{#FAN_NAME}]) < {$WATCHGUARD_FAN_MIN_SPEED}'
                   name: 'Low Fan Speed on {#FAN_NAME}'
                   priority: WARNING
                   description: 'Fan {#FAN_NAME} speed is below minimum threshold ({ITEM.LASTVALUE} < {$WATCHGUARD_FAN_MIN_SPEED} RPM)'
@@ -714,18 +714,18 @@ zabbix_export:
               name: 'Fan {#FAN_NAME} Status'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.3097.6.3.2.1.4.{#SNMPINDEX}'
-              key: 'firebox.fan.status[{#FAN_NAME}]'
+              key: 'fan.status[{#FAN_NAME}]'
               delay: 5m
               value_type: FLOAT
               description: 'Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)'
               valuemap:
-                name: firebox.fan.status.valuemap
+                name: fan.status.valuemap
               tags:
                 - tag: Component
                   value: Fan
               trigger_prototypes:
                 - uuid: 88dbf85421c1499091853fa6d555c0de
-                  expression: 'last(/Watchguard/firebox.fan.status[{#FAN_NAME}]) > 0'
+                  expression: 'last(/Watchguard/fan.status[{#FAN_NAME}]) > 0'
                   name: 'Fan {#FAN_NAME} Status Alert'
                   priority: WARNING
                   description: 'Fan {#FAN_NAME} reports non-normal status (Value: {ITEM.LASTVALUE})'
@@ -739,12 +739,12 @@ zabbix_export:
                 - color: 0000FF
                   item:
                     host: Watchguard
-                    key: 'firebox.fan.speed[{#FAN_NAME}]'
+                    key: 'fan.speed[{#FAN_NAME}]'
         - uuid: 30253dfbef0b4849b4f51e0bc815934a
           name: Interfaces
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
-          key: firebox.int.discovery
+          key: int.discovery
           delay: 1h
           filter:
             conditions:
@@ -757,7 +757,7 @@ zabbix_export:
               name: 'Interface: {#IFDESCR} Errors In'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
-              key: 'firebox.interface.ifInErrors[{#IFDESCR}]'
+              key: 'interface.ifInErrors[{#IFDESCR}]'
               description: 'Inbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -768,18 +768,18 @@ zabbix_export:
                   value: Interfaces
               trigger_prototypes:
                 - uuid: 348b07d008854b899f9e94659405877f
-                  expression: 'last(/Watchguard/firebox.interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
                   name: 'Interface {#IFDESCR} Inbound Errors'
                   priority: HIGH
                 - uuid: 1b9e2bce98494c6ebb34a9442aede8f6
-                  expression: 'last(/Watchguard/firebox.interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
                   name: 'Interface {#IFDESCR} Inbound Warning'
                   priority: AVERAGE
             - uuid: 1bbe4491bab148d398ce4868d20fa140
               name: 'Interface: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
-              key: 'firebox.interface.ifInOctets[{#IFDESCR}]'
+              key: 'interface.ifInOctets[{#IFDESCR}]'
               units: Bps
               description: 'Incoming traffic on interface {#IFDESCR}'
               preprocessing:
@@ -796,16 +796,16 @@ zabbix_export:
               name: 'Interface: {#IFDESCR} Status'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
-              key: 'firebox.interface.ifOperStatus[{#IFDESCR}]'
+              key: 'interface.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of interface {#IFDESCR}'
               valuemap:
-                name: firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Application
                   value: Interfaces
               trigger_prototypes:
                 - uuid: 9ce65072570a4ddf823a63e1ccd86295
-                  expression: '(last(/Watchguard/firebox.interface.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard/firebox.interface.ifOperStatus[{#IFDESCR}],#2))=1'
+                  expression: '(last(/Watchguard/interface.ifOperStatus[{#IFDESCR}],#1)<>last(/Watchguard/interface.ifOperStatus[{#IFDESCR}],#2))=1'
                   name: 'Interface {#IFDESCR} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
@@ -813,7 +813,7 @@ zabbix_export:
               name: 'Interface: {#IFDESCR} Errors Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
-              key: 'firebox.interface.ifOutErrors[{#IFDESCR}]'
+              key: 'interface.ifOutErrors[{#IFDESCR}]'
               description: 'Outbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -826,7 +826,7 @@ zabbix_export:
               name: 'Interface: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
-              key: 'firebox.interface.ifOutOctets[{#IFDESCR}]'
+              key: 'interface.ifOutOctets[{#IFDESCR}]'
               units: Bps
               description: 'Outgoing traffic on interface {#IFDESCR}'
               preprocessing:
@@ -847,38 +847,38 @@ zabbix_export:
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.interface.ifOperStatus[{#IFDESCR}]'
+                    key: 'interface.ifOperStatus[{#IFDESCR}]'
             - uuid: 441c90eb2707495a8fffb78efc4bdba5
               name: 'Interface: {#IFDESCR} Traffic'
               graph_items:
                 - color: 1A7C11
                   item:
                     host: Watchguard
-                    key: 'firebox.interface.ifInOctets[{#IFDESCR}]'
+                    key: 'interface.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
                   color: F63100
                   item:
                     host: Watchguard
-                    key: 'firebox.interface.ifOutOctets[{#IFDESCR}]'
+                    key: 'interface.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
                   color: 199C0D
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.interface.ifInErrors[{#IFDESCR}]'
+                    key: 'interface.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
                   color: 2774A4
                   calc_fnc: ALL
                   item:
                     host: Watchguard
-                    key: 'firebox.interface.ifOutErrors[{#IFDESCR}]'
+                    key: 'interface.ifOutErrors[{#IFDESCR}]'
         - uuid: 0fe9ccfaff514ddc95c8484e0eee14a5
           name: 'Power Supplies'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#PSU_NAME},1.3.6.1.4.1.3097.6.4.2.1.1]'
-          key: firebox.psu.discovery
+          key: psu.discovery
           delay: 1h
           status: DISABLED
           description: 'Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.'
@@ -887,16 +887,16 @@ zabbix_export:
               name: 'Power Supply {#PSU_NAME} Status'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.3097.6.4.2.1.2.{#SNMPINDEX}'
-              key: 'firebox.psu.status[{#PSU_NAME}]'
+              key: 'psu.status[{#PSU_NAME}]'
               value_type: FLOAT
               valuemap:
-                name: firebox.psu.status.valuemap
+                name: psu.status.valuemap
               tags:
                 - tag: Component
                   value: Power
               trigger_prototypes:
                 - uuid: e7994f58fe0f451b90276ffdbc4d19bb
-                  expression: 'min(/Watchguard/firebox.psu.status[{#PSU_NAME}],5m)<>1'
+                  expression: 'min(/Watchguard/psu.status[{#PSU_NAME}],5m)<>1'
                   name: 'Power Supply {#PSU_NAME} Fault Detected'
                   priority: HIGH
                   description: 'Power supply {#PSU_NAME} is reporting a fault or has been disconnected.'
@@ -907,7 +907,7 @@ zabbix_export:
           name: 'Temperature Sensors'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.3.1
-          key: firebox.temp.discovery
+          key: discover.temp
           delay: 1h
           status: DISABLED
           filter:
@@ -962,7 +962,7 @@ zabbix_export:
           name: 'Gateway VPNs'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.7.1
-          key: firebox.vpn.discovery
+          key: discover.vpn
           delay: 1h
           status: DISABLED
           filter:
@@ -1068,7 +1068,7 @@ zabbix_export:
               value_type: FLOAT
               description: 'Status of VPN tunnel {#TUNNEL_NAME} (1=up, 0=down)'
               valuemap:
-                name: firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Component
                   value: VPN
@@ -1269,7 +1269,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: firebox.cluster.status
+                        key: cluster.status
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -1294,7 +1294,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: sysUpTime
+                        key: uptime
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -1314,7 +1314,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: firewall.connections.active
+                        key: active_connections
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -1386,7 +1386,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: firewall.connections.rate
+                        key: connections_rate
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -1612,7 +1612,7 @@ zabbix_export:
                       value: '0'
       valuemaps:
         - uuid: 71a060a54ea2489b9997531e0de28103
-          name: firebox.cluster.status.valuemap
+          name: cluster.status.valuemap
           mappings:
             - value: '0'
               newvalue: N/A
@@ -1621,14 +1621,14 @@ zabbix_export:
             - value: '2'
               newvalue: Standalone
         - uuid: bbe748f3a1a7405ab4c1e49d4e4eb75f
-          name: firebox.cluster.sync.valuemap
+          name: cluster.sync.valuemap
           mappings:
             - value: '0'
               newvalue: 'Not Synchronized'
             - value: '1'
               newvalue: Synchronized
         - uuid: cddcb4c626d641759b26f30d7c8d129b
-          name: firebox.fan.status.valuemap
+          name: fan.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
@@ -1637,14 +1637,14 @@ zabbix_export:
             - value: '3'
               newvalue: 'Not Present'
         - uuid: ba5c23563caa4ec1aaf4657ccb304f23
-          name: firebox.feature.status.valuemap
+          name: feature.status.valuemap
           mappings:
             - value: '0'
               newvalue: Disabled
             - value: '1'
               newvalue: Enabled
         - uuid: 839e718ef97f40659f422cf5f603b17b
-          name: firebox.interface.status.valuemap
+          name: interface.status.valuemap
           mappings:
             - value: '1'
               newvalue: Up
@@ -1661,7 +1661,7 @@ zabbix_export:
             - value: '7'
               newvalue: 'Lower Layer Down'
         - uuid: e75ad32d175e4bc882730f78a60ae7f6
-          name: firebox.member.role.valuemap
+          name: member.role.valuemap
           mappings:
             - value: '1'
               newvalue: Rebooting
@@ -1670,7 +1670,7 @@ zabbix_export:
             - value: '3'
               newvalue: Master
         - uuid: 1ee381ecbce64a3eb2c75d9e4205954d
-          name: firebox.psu.status.valuemap
+          name: psu.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
