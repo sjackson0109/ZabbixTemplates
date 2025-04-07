@@ -53,6 +53,19 @@ zabbix_export:
       groups:
         - name: Firewall
       items:
+        - uuid: 01631f0dd4ee4fb294b78656cae137d6
+          name: 'Application Control Enabled'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.4.3.0
+          key: appcontrol.status
+          delay: 1h
+          value_type: FLOAT
+          status: DISABLED
+          valuemap:
+            name: feature.status.valuemap
+          tags:
+            - tag: Application
+              value: Licensing
         - uuid: 7764ebd9d3964b758933e1a988dc55ab
           name: 'Primary Member Health'
           type: SNMP_AGENT
@@ -65,7 +78,7 @@ zabbix_export:
           triggers:
             - uuid: 699e7464cc994663bd9b85045925a840
               expression: 'last(/Watchguard/cluster.primary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
-              name: 'Cluster Member Health Critical'
+              name: 'Cluster Primary Member Health Critical'
               priority: HIGH
               tags:
                 - tag: Component
@@ -115,7 +128,7 @@ zabbix_export:
           triggers:
             - uuid: 331665304e98422198d81d4c24943e57
               expression: 'last(/Watchguard/cluster.secondary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
-              name: 'Cluster Member Health Critical'
+              name: 'Cluster Secondary Member Health Critical'
               priority: HIGH
               tags:
                 - tag: Component
@@ -153,6 +166,18 @@ zabbix_export:
           tags:
             - tag: Component
               value: HA
+        - uuid: 7635cc08a4d548b3a439f042050dffe8
+          name: 'High Availability Enabled'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.1.0
+          key: cluster.status
+          delay: 1h
+          value_type: FLOAT
+          valuemap:
+            name: cluster.status.valuemap
+          tags:
+            - tag: Component
+              value: Clustering
         - uuid: 9e291445b25c49009f02b0ebf8221c28
           name: 'Cluster Synchronisation Status'
           type: SNMP_AGENT
@@ -176,31 +201,48 @@ zabbix_export:
                   value: HA
                 - tag: EventType
                   value: SyncIssue
-        - uuid: 01631f0dd4ee4fb294b78656cae137d6
-          name: 'Application Control Enabled'
+        - uuid: 7bf47d4cf3f0427c90077b3070d9ae01
+          name: 'Active Connections'
           type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.4.3.0
-          key: appcontrol.status
-          delay: 1h
+          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.1.0
+          key: connections.active
           value_type: FLOAT
-          status: DISABLED
-          valuemap:
-            name: feature.status.valuemap
+          units: connections
+          description: 'Current active firewall connections'
+          triggers:
+            - uuid: b29b0981202f43dfa0f9fed286962c04
+              expression: 'last(/Watchguard/connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}'
+              name: 'Possible DDoS Attack'
+              priority: AVERAGE
+              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
+              tags:
+                - tag: Component
+                  value: Connections
+        - uuid: e756a8c29bf64b5bb507238cd6314304
+          name: 'Connection Rate'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.2.0
+          key: connections.rate
+          value_type: FLOAT
+          units: conn/s
+          description: 'Current connection rate'
+          tags:
+            - tag: Performance
+              value: Metrics
+        - uuid: 0a7d17d617f849748f83fcf2521f54b5
+          name: 'Device Description'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysDescr.0'
+          key: description
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'A textual description of the entity.  This value should include the full name and version identification of the system''s hardware type, software operating-system, and networking software.'
+          inventory_link: HARDWARE
           tags:
             - tag: Application
-              value: Licensing
-        - uuid: 7635cc08a4d548b3a439f042050dffe8
-          name: 'High Availability Enabled'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.6.6.1.0
-          key: cluster.status
-          delay: 1h
-          value_type: FLOAT
-          valuemap:
-            name: cluster.status.valuemap
-          tags:
-            - tag: Component
-              value: Clustering
+              value: General
         - uuid: 13f42e02f8a44c1396c7bfe6b30b4c21
           name: 'Device Firmware'
           type: SNMP_AGENT
@@ -228,6 +270,11 @@ zabbix_export:
           value_type: TEXT
           trends: '0'
           description: 'Should detect the Service enablement of'
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - '<gav_version:(\d+)>'
+                - \1
           tags:
             - tag: Application
               value: Licensing
@@ -244,6 +291,11 @@ zabbix_export:
           delay: 1h
           value_type: TEXT
           trends: '0'
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - '<ips_version:([\d\.]+)>'
+                - \1
           tags:
             - tag: Application
               value: Licensing
@@ -252,6 +304,20 @@ zabbix_export:
               expression: length(last(/Watchguard/ips.version))=0
               name: 'Intrusion Protection System (IPS) Disabled, Not Installed or No Updating'
               priority: WARNING
+        - uuid: 529287f4ce164be1be0a1eabead176a5
+          name: 'Device Location'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysLocation.0'
+          key: location
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'The physical location of this node (e.g., `telephone closet, 3rd floor'').  If the location is unknown, the value is the zero-length string.'
+          inventory_link: LOCATION
+          tags:
+            - tag: Application
+              value: General
         - uuid: 3fb0eec716ee423a819486947d8666d0
           name: 'Device Model'
           type: SNMP_AGENT
@@ -266,34 +332,20 @@ zabbix_export:
           tags:
             - tag: Application
               value: General
-        - uuid: 7bf47d4cf3f0427c90077b3070d9ae01
-          name: 'Active Connections'
+        - uuid: 5f9f37467ceb4deba44592bed7bff233
+          name: 'Device Name'
           type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.1.0
-          key: active_connections
-          value_type: FLOAT
-          units: connections
-          description: 'Current active firewall connections'
-          triggers:
-            - uuid: b29b0981202f43dfa0f9fed286962c04
-              expression: 'last(/Watchguard/active_connections) > {$WATCHGUARD_MAX_CONNECTIONS}'
-              name: 'Possible DDoS Attack'
-              priority: AVERAGE
-              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
-              tags:
-                - tag: Component
-                  value: Connections
-        - uuid: e756a8c29bf64b5bb507238cd6314304
-          name: 'Connection Rate'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.3097.5.1.2.2.0
-          key: connections_rate
-          value_type: FLOAT
-          units: conn/s
-          description: 'Current connection rate'
+          snmp_oid: 'SNMPv2-MIB::sysName.0'
+          key: name
+          delay: '30'
+          history: 1w
+          value_type: CHAR
+          trends: '0'
+          description: 'An administratively-assigned name for this managed node. By convention, this is the node''s fully-qualified domain name.  If the name is unknown, the value is the zero-length string.'
+          inventory_link: NAME
           tags:
-            - tag: Performance
-              value: Metrics
+            - tag: Application
+              value: General
         - uuid: 9ae35f6ab16d42ae84acc6bb6b91316f
           name: 'Traffic: Inbound'
           type: SNMP_AGENT
@@ -330,48 +382,6 @@ zabbix_export:
           tags:
             - tag: Performance
               value: Metrics
-        - uuid: 0a7d17d617f849748f83fcf2521f54b5
-          name: 'Device Description'
-          type: SNMP_AGENT
-          snmp_oid: 'SNMPv2-MIB::sysDescr.0'
-          key: description
-          delay: '30'
-          history: 1w
-          value_type: CHAR
-          trends: '0'
-          description: 'A textual description of the entity.  This value should include the full name and version identification of the system''s hardware type, software operating-system, and networking software.'
-          inventory_link: HARDWARE
-          tags:
-            - tag: Application
-              value: General
-        - uuid: 529287f4ce164be1be0a1eabead176a5
-          name: 'Device Location'
-          type: SNMP_AGENT
-          snmp_oid: 'SNMPv2-MIB::sysLocation.0'
-          key: location
-          delay: '30'
-          history: 1w
-          value_type: CHAR
-          trends: '0'
-          description: 'The physical location of this node (e.g., `telephone closet, 3rd floor'').  If the location is unknown, the value is the zero-length string.'
-          inventory_link: LOCATION
-          tags:
-            - tag: Application
-              value: General
-        - uuid: 5f9f37467ceb4deba44592bed7bff233
-          name: 'Device Name'
-          type: SNMP_AGENT
-          snmp_oid: 'SNMPv2-MIB::sysName.0'
-          key: name
-          delay: '30'
-          history: 1w
-          value_type: CHAR
-          trends: '0'
-          description: 'An administratively-assigned name for this managed node. By convention, this is the node''s fully-qualified domain name.  If the name is unknown, the value is the zero-length string.'
-          inventory_link: NAME
-          tags:
-            - tag: Application
-              value: General
         - uuid: 9d37f216afb040ae85a1f6dfda360251
           name: 'Device Uptime'
           type: SNMP_AGENT
@@ -466,6 +476,9 @@ zabbix_export:
                   name: 'BoVPN {#IFDESCR} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: BoVPN
             - uuid: 9eb3a3b320694e8b9b03ee60f7fe35c6
               name: 'BoVPN: {#IFDESCR} Errors Out'
               type: SNMP_AGENT
@@ -550,7 +563,7 @@ zabbix_export:
           name: Processors
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrProcessorLoad]'
-          key: cpu.discovery
+          key: discover.cpu
           delay: 1h
           description: 'Discover the processors of the firewall device'
           item_prototypes:
@@ -598,7 +611,7 @@ zabbix_export:
           name: Disks
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPVALUE},HOST-RESOURCES-MIB::hrStorageDescr]'
-          key: disk.discovery
+          key: discover.disk
           delay: 1h
           filter:
             conditions:
@@ -679,7 +692,7 @@ zabbix_export:
           name: 'Fan Sensors'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SNMPINDEX},1.3.6.1.4.1.3097.6.3.2.1.1]'
-          key: fan.discovery
+          key: discover.fan
           delay: 1h
           status: DISABLED
           filter:
@@ -744,7 +757,7 @@ zabbix_export:
           name: Interfaces
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#IFDESCR},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
-          key: int.discovery
+          key: discover.interfaces
           delay: 1h
           filter:
             conditions:
@@ -878,7 +891,7 @@ zabbix_export:
           name: 'Power Supplies'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#PSU_NAME},1.3.6.1.4.1.3097.6.4.2.1.1]'
-          key: psu.discovery
+          key: discover.psu
           delay: 1h
           status: DISABLED
           description: 'Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.'
@@ -1314,7 +1327,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: active_connections
+                        key: connections.active
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -1386,7 +1399,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: Watchguard
-                        key: connections_rate
+                        key: connections.rate
                     - type: INTEGER
                       name: show.0
                       value: '2'
