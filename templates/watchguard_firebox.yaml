@@ -62,7 +62,7 @@ zabbix_export:
           value_type: FLOAT
           status: DISABLED
           valuemap:
-            name: feature.status.valuemap
+            name: firebox.feature.status.valuemap
           tags:
             - tag: Application
               value: Licensing
@@ -77,7 +77,7 @@ zabbix_export:
               value: HA
           triggers:
             - uuid: 699e7464cc994663bd9b85045925a840
-              expression: 'last(/Watchguard/cluster.primary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+              expression: 'last(/Watchguard/cluster.primary.health)<{$WATCHGUARD_HA_HEALTH_PERCENT}'
               name: 'Cluster Primary Member Health Critical'
               priority: HIGH
               tags:
@@ -89,7 +89,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
           key: cluster.primary.role
           valuemap:
-            name: member.role.valuemap
+            name: firebox.ha.member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -127,7 +127,7 @@ zabbix_export:
               value: HA
           triggers:
             - uuid: 331665304e98422198d81d4c24943e57
-              expression: 'last(/Watchguard/cluster.secondary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+              expression: 'last(/Watchguard/cluster.secondary.health)<{$WATCHGUARD_HA_HEALTH_PERCENT}'
               name: 'Cluster Secondary Member Health Critical'
               priority: HIGH
               tags:
@@ -139,7 +139,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
           key: cluster.secondary.role
           valuemap:
-            name: member.role.valuemap
+            name: firebox.ha.member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -174,7 +174,7 @@ zabbix_export:
           delay: 1h
           value_type: FLOAT
           valuemap:
-            name: cluster.status.valuemap
+            name: firebox.ha.status.valuemap
           tags:
             - tag: Component
               value: Clustering
@@ -186,7 +186,7 @@ zabbix_export:
           delay: 30s
           value_type: FLOAT
           valuemap:
-            name: cluster.sync.valuemap
+            name: firebox.ha.sync.valuemap
           tags:
             - tag: Component
               value: HA
@@ -211,10 +211,10 @@ zabbix_export:
           description: 'Current active firewall connections'
           triggers:
             - uuid: b29b0981202f43dfa0f9fed286962c04
-              expression: 'last(/Watchguard/connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}'
+              expression: 'last(/Watchguard/connections.active) > {$WATCHGUARD_DDOS_THRESHOLD}'
               name: 'Possible DDoS Attack'
               priority: AVERAGE
-              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
+              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_DDOS_THRESHOLD})'
               tags:
                 - tag: Component
                   value: Connections
@@ -466,7 +466,7 @@ zabbix_export:
               key: 'bovpn.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of BoVPN {#IFDESCR}'
               valuemap:
-                name: interface.status.valuemap
+                name: firebox.firebox.interface.status.valuemap
               tags:
                 - tag: Component
                   value: BoVPN
@@ -579,18 +579,18 @@ zabbix_export:
                   value: CPU
               trigger_prototypes:
                 - uuid: 8d877b6be7de4f35976e80c447681379
-                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_HIGH}'
-                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_HIGH}%'
+                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_ERROR}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_ERROR}%'
                   priority: WARNING
-                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_HIGH}%'
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_ERROR}%'
                   tags:
                     - tag: Value
                       value: '{ITEM.VALUE}'
                 - uuid: 09f704b658ec46ba8787211659adc66c
-                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_LOW}'
-                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_LOW}%'
+                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_WARNING}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_WARNING}%'
                   priority: AVERAGE
-                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_LOW}%'
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_WARNING}%'
                   manual_close: 'YES'
                   tags:
                     - tag: Value
@@ -663,12 +663,12 @@ zabbix_export:
                   value: 'Disk partitions'
           trigger_prototypes:
             - uuid: fc92586b426f452fb52d1651869c3333
-              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_LOW}'
-              name: 'ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_LOW}'
+              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_WARNING}'
+              name: 'ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_WARNING}'
               priority: AVERAGE
             - uuid: 350e4b4d1ab44c39a8ab44646dabb578
-              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_HIGH}'
-              name: 'WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_HIGH}'
+              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_ERROR}'
+              name: 'WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_ERROR}'
               priority: WARNING
           graph_prototypes:
             - uuid: 937ac52180a942408ab3fc921532ce33
@@ -732,7 +732,7 @@ zabbix_export:
               value_type: FLOAT
               description: 'Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)'
               valuemap:
-                name: fan.status.valuemap
+                name: firebox.fan.status.valuemap
               tags:
                 - tag: Component
                   value: Fan
@@ -781,11 +781,11 @@ zabbix_export:
                   value: Interfaces
               trigger_prototypes:
                 - uuid: 348b07d008854b899f9e94659405877f
-                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR}'
                   name: 'Interface {#IFDESCR} Inbound Errors'
                   priority: HIGH
                 - uuid: 1b9e2bce98494c6ebb34a9442aede8f6
-                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING}'
                   name: 'Interface {#IFDESCR} Inbound Warning'
                   priority: AVERAGE
             - uuid: 1bbe4491bab148d398ce4868d20fa140
@@ -812,7 +812,7 @@ zabbix_export:
               key: 'interface.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of interface {#IFDESCR}'
               valuemap:
-                name: interface.status.valuemap
+                name: firebox.firebox.interface.status.valuemap
               tags:
                 - tag: Application
                   value: Interfaces
@@ -903,7 +903,7 @@ zabbix_export:
               key: 'psu.status[{#PSU_NAME}]'
               value_type: FLOAT
               valuemap:
-                name: psu.status.valuemap
+                name: firebox.psu.status.valuemap
               tags:
                 - tag: Component
                   value: Power
@@ -948,18 +948,18 @@ zabbix_export:
                   value: Temperature
               trigger_prototypes:
                 - uuid: b86cb876da87465f8ccc9b7bbf9141d1
-                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_CRITICAL}'
+                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMPERATURE_ERROR}'
                   name: 'Critical Temperature on {#SENSOR_NAME}'
                   priority: HIGH
-                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMPERATURE_ERROR}°C)'
                   tags:
                     - tag: Component
                       value: Temperature
                 - uuid: dc6ffe6c7e1f47c48f691e3494a7d8d5
-                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_WARNING}'
+                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMPERATURE_WARNING}'
                   name: 'High Temperature Warning on {#SENSOR_NAME}'
                   priority: WARNING
-                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMPERATURE_WARNING}°C)'
                   tags:
                     - tag: Component
                       value: Temperature
@@ -1081,7 +1081,7 @@ zabbix_export:
               value_type: FLOAT
               description: 'Status of VPN tunnel {#TUNNEL_NAME} (1=up, 0=down)'
               valuemap:
-                name: interface.status.valuemap
+                name: firebox.firebox.interface.status.valuemap
               tags:
                 - tag: Component
                   value: VPN
@@ -1120,44 +1120,42 @@ zabbix_export:
         - tag: Author
           value: 'Simon Jackson'
       macros:
-        - macro: '{$BOVPN_ERROR_THRESHOLD}'
-          value: '10'
-        - macro: '{$BOVPN_WARNING_THRESHOLD}'
-          value: '1'
-        - macro: '{$GWVPN_ERROR_THRESHOLD}'
-          value: '10'
-        - macro: '{$GWVPN_WARNING_THRESHOLD}'
-          value: '1'
         - macro: '{$SNMP_COMMUNITY}'
           value: public
-        - macro: '{$WATCHGUARD_CACHED_THRESHOLD}'
-          value: '99'
-        - macro: '{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
+        - macro: '{$WATCHGUARD_HA_HEALTH_PERCENT}'
           value: '90'
-        - macro: '{$WATCHGUARD_CPU_HIGH}'
+        - macro: '{$WATCHGUARD_CPU_ERROR}'
           value: '90'
-        - macro: '{$WATCHGUARD_CPU_LOW}'
-          value: '70'
-        - macro: '{$WATCHGUARD_DISK_HIGH}'
+        - macro: '{$WATCHGUARD_CPU_WARNING}'
+          value: '80'
+        - macro: '{$WATCHGUARD_DISK_ERROR}'
           value: '90'
-        - macro: '{$WATCHGUARD_DISK_LOW}'
+        - macro: '{$WATCHGUARD_DISK_WARNING}'
           value: '80'
         - macro: '{$WATCHGUARD_FAN_MIN_SPEED}'
           value: '2000'
-        - macro: '{$WATCHGUARD_HIGH_THROUGHPUT}'
-          value: '1000000000'
-        - macro: '{$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
-          value: '1000'
-        - macro: '{$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
-          value: '100'
-        - macro: '{$WATCHGUARD_MAX_CONNECTIONS}'
-          value: '50000'
-        - macro: '{$WATCHGUARD_SWAP_THRESHOLD}'
+        - macro: '{$WATCHGUARD_RAM_CACHE_THRESHOLD}'
           value: '99'
-        - macro: '{$WATCHGUARD_TEMP_CRITICAL}'
+        - macro: '{$WATCHGUARD_RAM_SWAP_THRESHOLD}'
+          value: '99'
+        - macro: '{$WATCHGUARD_TEMPERATURE_ERROR}'
           value: '70'
-        - macro: '{$WATCHGUARD_TEMP_WARNING}'
+        - macro: '{$WATCHGUARD_TEMPERATURE_WARNING}'
           value: '60'
+        - macro: '{$WATCHGUARD_INTERFACE_ERROR}'
+          value: '1000'
+        - macro: '{$WATCHGUARD_INTERFACE_WARNING}'
+          value: '100'
+        - macro: '{$WATCHGUARD_DDOS_THRESHOLD}'
+          value: '50000'
+        - macro: '{$BOVPN_ERROR_THRESHOLD}'
+          value: '100'
+        - macro: '{$BOVPN_WARNING_THRESHOLD}'
+          value: '10'
+        - macro: '{$GWVPN_ERROR_THRESHOLD}'
+          value: '100'
+        - macro: '{$GWVPN_WARNING_THRESHOLD}'
+          value: '10'
       dashboards:
         - uuid: e056d7d058ee45309c64875fb4bfd5e1
           name: Firebox
@@ -1625,7 +1623,7 @@ zabbix_export:
                       value: '0'
       valuemaps:
         - uuid: 71a060a54ea2489b9997531e0de28103
-          name: cluster.status.valuemap
+          name: firebox.ha.status.valuemap
           mappings:
             - value: '0'
               newvalue: N/A
@@ -1634,14 +1632,14 @@ zabbix_export:
             - value: '2'
               newvalue: Standalone
         - uuid: bbe748f3a1a7405ab4c1e49d4e4eb75f
-          name: cluster.sync.valuemap
+          name: firebox.ha.sync.valuemap
           mappings:
             - value: '0'
               newvalue: 'Not Synchronized'
             - value: '1'
               newvalue: Synchronized
         - uuid: cddcb4c626d641759b26f30d7c8d129b
-          name: fan.status.valuemap
+          name: firebox.fan.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
@@ -1650,14 +1648,14 @@ zabbix_export:
             - value: '3'
               newvalue: 'Not Present'
         - uuid: ba5c23563caa4ec1aaf4657ccb304f23
-          name: feature.status.valuemap
+          name: firebox.feature.status.valuemap
           mappings:
             - value: '0'
               newvalue: Disabled
             - value: '1'
               newvalue: Enabled
         - uuid: 839e718ef97f40659f422cf5f603b17b
-          name: interface.status.valuemap
+          name: firebox.firebox.interface.status.valuemap
           mappings:
             - value: '1'
               newvalue: Up
@@ -1674,7 +1672,7 @@ zabbix_export:
             - value: '7'
               newvalue: 'Lower Layer Down'
         - uuid: e75ad32d175e4bc882730f78a60ae7f6
-          name: member.role.valuemap
+          name: firebox.ha.member.role.valuemap
           mappings:
             - value: '1'
               newvalue: Rebooting
@@ -1683,7 +1681,7 @@ zabbix_export:
             - value: '3'
               newvalue: Master
         - uuid: 1ee381ecbce64a3eb2c75d9e4205954d
-          name: psu.status.valuemap
+          name: firebox.psu.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
