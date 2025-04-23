@@ -16,27 +16,34 @@ Features:
     - **Endpoint Testing**: Each protocol-cipher pair is tested against the specified endpoint.
     - **Timeout Handling**: Includes a configurable timeout for socket connections.
     - **Cross-Platform**: Works on Linux, Windows, and is really designed to run in a Docker container (Zabbix?)
-    - **New arguments for Zabbix**: Now includes --discovery and --check arguments.
+    - **New arguments for Zabbix**: Now includes --discover and --check arguments.
 """
+import json
 import sys
 import ssl
 import socket
 import warnings
 from argparse import ArgumentParser
 
+if not sys.warnoptions:
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+protocol_map = {
+    "PROTOCOL_SSLv1": "SSLv1.0",
+    "PROTOCOL_SSLv2": "SSLv2.0",
+    "PROTOCOL_SSLv3": "SSLv3.0",
+    "PROTOCOL_TLSv1": "TLSv1.0",
+    "PROTOCOL_TLSv1_1": "TLSv1.1",
+    "PROTOCOL_TLSv1_2": "TLSv1.2",
+    "PROTOCOL_TLSv1_3": "TLSv1.3",
+}
+reverse_protocol_map = {v: k for k, v in protocol_map.items()}
+
 def get_available_protocols():
     """Dynamically detect all available SSL/TLS protocols from the ssl module."""
     available_protocols = []
     # Define a mapping of protocol constants to their display names
-    protocol_map = {
-        "PROTOCOL_SSLv1": "SSLv1.0",
-        "PROTOCOL_SSLv2": "SSLv2.0",
-        "PROTOCOL_SSLv3": "SSLv3.0",
-        "PROTOCOL_TLSv1": "TLSv1.0",
-        "PROTOCOL_TLSv1_1": "TLSv1.1",
-        "PROTOCOL_TLSv1_2": "TLSv1.2",
-        "PROTOCOL_TLSv1_3": "TLSv1.3",
-    }
+    
     for protocol_constant, protocol_name in protocol_map.items():
         try:
             # Check if the protocol constant exists in the ssl module
@@ -107,17 +114,14 @@ def test_endpoint(endpoint, port, protocol, cipher, timeout):
     """Test a specific endpoint with a given protocol and cipher."""
     try:
         # Convert protocol name to constant (e.g., "TLSv1.2" -> "PROTOCOL_TLSv1_2")
-        protocol_constant = {
-            "SSLv1.0": "PROTOCOL_SSLv1",
-            "SSLv2.0": "PROTOCOL_SSLv2",
-            "SSLv3.0": "PROTOCOL_SSLv3",
-            "TLSv1.0": "PROTOCOL_TLSv1",
-            "TLSv1.1": "PROTOCOL_TLSv1_1",
-            "TLSv1.2": "PROTOCOL_TLSv1_2",
-            "TLSv1.3": "PROTOCOL_TLSv1_3",
-        }.get(protocol, None)
-        if protocol_constant is None:
-            raise ValueError(f"Unsupported protocol: {protocol}")
+        proto_const = REVERSE_PROTOCOL_MAP.get(protocol)
+        # Protocol validation only applies to --check mode
+        if args.check:
+            if not proto_const or not hasattr(ssl, proto_const):
+                return 2  # Host OS cannot check this protocol
+            else:
+                raise ValueError(f"Unsupported protocol: {protocol}")
+
         # Suppress DeprecationWarning unless verbose is enabled
         with warnings.catch_warnings():
             if not args.verbose:
@@ -137,21 +141,33 @@ def test_endpoint(endpoint, port, protocol, cipher, timeout):
 
 def main():
     """Main function to execute the script."""
-    if args.discovery:
+    if args.discover:
         # Zabbix Discovery Mode: Output all compatible protocol-cipher pairs as JSON
         protocols = get_available_protocols()
         ciphers = get_available_ciphers()
         criteria = create_criteria_array(protocols, ciphers)
         compatible_criteria = filter_compatible_criteria(criteria)
-        discovery_data = [{"{#PROTOCOL}": p, "{#CIPHER}": c} for p, c in compatible_criteria]
-        print(json.dumps({"data": discovery_data}, indent=4))
+        discover_data = [{"{#PROTOCOL}": p, "{#CIPHER}": c} for p, c in compatible_criteria]
+        print(json.dumps({"data": discover_data}, indent=4))
     elif args.check:
-        # Zabbix Check Mode: Test a specific protocol-cipher pair
-        if not args.protocol or not args.cipher:
-            print("ERROR: --check requires --protocol and --cipher")
-            sys.exit(3)
-        status = test_endpoint(args.host, args.port, args.protocol, args.cipher, args.timeout)
-        print("1" if status else "0")
+        # Validate protocol exists on host OS first
+        if args.protocol not in get_available_protocols():
+            print(2)
+            sys.exit(2)
+            
+        # Validate cipher exists for protocol
+        try:
+            proto_const = reverse_protocol_map[args.protocol]
+            context = ssl.SSLContext(getattr(ssl, proto_const))
+            context.set_ciphers(args.cipher)
+        except (ssl.SSLError, ValueError):
+            print(2)
+            sys.exit(2)
+            
+        # Perform actual connection test
+        result = test_endpoint(args.host, args.port, args.protocol, args.cipher, args.timeout)
+        print(result)
+        sys.exit(result)
     else:
         # CLI Mode
         print("Testing Capabilities:")
@@ -197,10 +213,15 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout", type=int, default=4, help="Timeout in seconds (default: 4).")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output.")
     # Add Zabbix-specific arguments
-    parser.add_argument("--discovery", action="store_true", help="Output JSON for Zabbix discovery.")
+    parser.add_argument("--discover", action="store_true", help="Output JSON for Zabbix discover.")
     parser.add_argument("--check", action="store_true", help="Check a specific protocol and cipher.")
     parser.add_argument("--protocol", help="Protocol to check (use with --check).")
     parser.add_argument("--cipher", help="Cipher to check (use with --check).")
     args = parser.parse_args()
+
+    
+    # Global warning suppression
+    if not args.verbose:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     main()

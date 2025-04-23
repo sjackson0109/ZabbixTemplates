@@ -62,7 +62,7 @@ zabbix_export:
           value_type: FLOAT
           status: DISABLED
           valuemap:
-            name: firebox.feature.status.valuemap
+            name: feature.status.valuemap
           tags:
             - tag: Application
               value: Licensing
@@ -77,7 +77,7 @@ zabbix_export:
               value: HA
           triggers:
             - uuid: 699e7464cc994663bd9b85045925a840
-              expression: 'last(/Watchguard/cluster.primary.health)<{$WATCHGUARD_HA_HEALTH_PERCENT}'
+              expression: 'last(/Watchguard/cluster.primary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
               name: 'Cluster Primary Member Health Critical'
               priority: HIGH
               tags:
@@ -89,7 +89,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
           key: cluster.primary.role
           valuemap:
-            name: firebox.ha.member.role.valuemap
+            name: member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -127,7 +127,7 @@ zabbix_export:
               value: HA
           triggers:
             - uuid: 331665304e98422198d81d4c24943e57
-              expression: 'last(/Watchguard/cluster.secondary.health)<{$WATCHGUARD_HA_HEALTH_PERCENT}'
+              expression: 'last(/Watchguard/cluster.secondary.health)<{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
               name: 'Cluster Secondary Member Health Critical'
               priority: HIGH
               tags:
@@ -139,7 +139,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
           key: cluster.secondary.role
           valuemap:
-            name: firebox.ha.member.role.valuemap
+            name: member.role.valuemap
           tags:
             - tag: Component
               value: HA
@@ -174,7 +174,7 @@ zabbix_export:
           delay: 1h
           value_type: FLOAT
           valuemap:
-            name: firebox.ha.status.valuemap
+            name: cluster.status.valuemap
           tags:
             - tag: Component
               value: Clustering
@@ -186,7 +186,7 @@ zabbix_export:
           delay: 30s
           value_type: FLOAT
           valuemap:
-            name: firebox.ha.sync.valuemap
+            name: cluster.sync.valuemap
           tags:
             - tag: Component
               value: HA
@@ -211,12 +211,10 @@ zabbix_export:
           description: 'Current active firewall connections'
           triggers:
             - uuid: b29b0981202f43dfa0f9fed286962c04
-              expression: 'last(/Watchguard/connections.active) > {$WATCHGUARD_DDOS_THRESHOLD}'
+              expression: 'last(/Watchguard/connections.active) > {$WATCHGUARD_MAX_CONNECTIONS}'
               name: 'Possible DDoS Attack'
               priority: AVERAGE
-              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_DDOS_THRESHOLD})
-                  The DDOS threshold of 50,000 packets per second seems reasonable, as a lower limit might not trigger under
-                  normal traffic conditions, but higher would indicate a possible attack.'
+              description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$WATCHGUARD_MAX_CONNECTIONS})'
               tags:
                 - tag: Component
                   value: Connections
@@ -432,8 +430,7 @@ zabbix_export:
                   expression: 'last(/Watchguard/bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Inbound Errors (Error)'
                   priority: HIGH
-                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded error threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)
-                      BoVPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: BoVPN
@@ -441,8 +438,7 @@ zabbix_export:
                   expression: 'last(/Watchguard/bovpn.ifInErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Inbound Errors (Warning)'
                   priority: WARNING
-                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)
-                      BoVPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Inbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: BoVPN
@@ -470,7 +466,7 @@ zabbix_export:
               key: 'bovpn.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of BoVPN {#IFDESCR}'
               valuemap:
-                name: firebox.firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Component
                   value: BoVPN
@@ -499,10 +495,9 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: 34f1ab6cacf4415aa23c0d8d3cd12d12
                   expression: 'last(/Watchguard/bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_ERROR_THRESHOLD}'
-                  name: 'BoVPN {#IFDESCR} Outbound Errors (Error)'
+                  name: 'BoVPN {#IFDESCR} Outbound Errors (Critical)'
                   priority: HIGH
-                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded error threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)
-                      BoVPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded critical threshold ({ITEM.LASTVALUE} > {$BOVPN_ERROR_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: BoVPN
@@ -510,8 +505,7 @@ zabbix_export:
                   expression: 'last(/Watchguard/bovpn.ifOutErrors[{#IFDESCR}]) > {$BOVPN_WARNING_THRESHOLD}'
                   name: 'BoVPN {#IFDESCR} Outbound Errors (Warning)'
                   priority: WARNING
-                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)
-                      BoVPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Outbound errors on BoVPN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$BOVPN_WARNING_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: BoVPN
@@ -585,18 +579,18 @@ zabbix_export:
                   value: CPU
               trigger_prototypes:
                 - uuid: 8d877b6be7de4f35976e80c447681379
-                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_ERROR}'
-                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_ERROR}%'
+                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_HIGH}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_HIGH}%'
                   priority: WARNING
-                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_ERROR}%'
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_HIGH}%'
                   tags:
                     - tag: Value
                       value: '{ITEM.VALUE}'
                 - uuid: 09f704b658ec46ba8787211659adc66c
-                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_WARNING}'
-                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_WARNING}%'
+                  expression: 'last(/Watchguard/hrProcessorLoad[{#SNMPINDEX}],#1:now-300s)>{$WATCHGUARD_CPU_LOW}'
+                  name: 'Firebox CPU {#SNMPINDEX} Utilisation over {$WATCHGUARD_CPU_LOW}%'
                   priority: AVERAGE
-                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_WARNING}%'
+                  description: 'Firebox Master CPU on {HOST.NAME} is over {$WATCHGUARD_CPU_LOW}%'
                   manual_close: 'YES'
                   tags:
                     - tag: Value
@@ -669,12 +663,12 @@ zabbix_export:
                   value: 'Disk partitions'
           trigger_prototypes:
             - uuid: fc92586b426f452fb52d1651869c3333
-              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_WARNING}'
-              name: 'ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_WARNING}'
+              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_LOW}'
+              name: 'ALARM: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_LOW}'
               priority: AVERAGE
             - uuid: 350e4b4d1ab44c39a8ab44646dabb578
-              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_ERROR}'
-              name: 'WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_ERROR}'
+              expression: '(last(/Watchguard/hrStorageUsed[{#SNMPVALUE}]) / last(/Watchguard/hrStorageSize[{#SNMPVALUE}])) * 100 > {$WATCHGUARD_DISK_HIGH}'
+              name: 'WARNING: Disk {#SNMPVALUE} utilisation above {$WATCHGUARD_DISK_HIGH}'
               priority: WARNING
           graph_prototypes:
             - uuid: 937ac52180a942408ab3fc921532ce33
@@ -738,7 +732,7 @@ zabbix_export:
               value_type: FLOAT
               description: 'Operational status for fan {#FAN_NAME} (0 = normal, 1 = warning, 2 = critical)'
               valuemap:
-                name: firebox.fan.status.valuemap
+                name: fan.status.valuemap
               tags:
                 - tag: Component
                   value: Fan
@@ -787,11 +781,11 @@ zabbix_export:
                   value: Interfaces
               trigger_prototypes:
                 - uuid: 348b07d008854b899f9e94659405877f
-                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
                   name: 'Interface {#IFDESCR} Inbound Errors'
                   priority: HIGH
                 - uuid: 1b9e2bce98494c6ebb34a9442aede8f6
-                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING}'
+                  expression: 'last(/Watchguard/interface.ifInErrors[{#IFDESCR}]) > {$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
                   name: 'Interface {#IFDESCR} Inbound Warning'
                   priority: AVERAGE
             - uuid: 1bbe4491bab148d398ce4868d20fa140
@@ -818,7 +812,7 @@ zabbix_export:
               key: 'interface.ifOperStatus[{#IFDESCR}]'
               description: 'Operational status of interface {#IFDESCR}'
               valuemap:
-                name: firebox.firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Application
                   value: Interfaces
@@ -909,7 +903,7 @@ zabbix_export:
               key: 'psu.status[{#PSU_NAME}]'
               value_type: FLOAT
               valuemap:
-                name: firebox.psu.status.valuemap
+                name: psu.status.valuemap
               tags:
                 - tag: Component
                   value: Power
@@ -954,18 +948,18 @@ zabbix_export:
                   value: Temperature
               trigger_prototypes:
                 - uuid: b86cb876da87465f8ccc9b7bbf9141d1
-                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMPERATURE_ERROR}'
+                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_CRITICAL}'
                   name: 'Critical Temperature on {#SENSOR_NAME}'
                   priority: HIGH
-                  description: 'Temperature sensor {#SENSOR_NAME} is above error threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMPERATURE_ERROR}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}°C)'
                   tags:
                     - tag: Component
                       value: Temperature
                 - uuid: dc6ffe6c7e1f47c48f691e3494a7d8d5
-                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMPERATURE_WARNING}'
+                  expression: 'last(/Watchguard/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_WARNING}'
                   name: 'High Temperature Warning on {#SENSOR_NAME}'
                   priority: WARNING
-                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMPERATURE_WARNING}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}°C)'
                   tags:
                     - tag: Component
                       value: Temperature
@@ -1005,10 +999,9 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: ed96cd2938124583bf5e7ad54eb32e32
                   expression: 'last(/Watchguard/vpn.ifInErrors[{#TUNNEL_NAME}]) > {$GWVPN_ERROR_THRESHOLD}'
-                  name: 'Gateway VPN {#TUNNEL_NAME} Inbound Errors (Error)'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Inbound Errors (Critical)'
                   priority: HIGH
-                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded error threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)
-                      Gateway VPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: VPN
@@ -1016,8 +1009,7 @@ zabbix_export:
                   expression: 'last(/Watchguard/vpn.ifInErrors[{#TUNNEL_NAME}]) > {$GWVPN_WARNING_THRESHOLD}'
                   name: 'Gateway VPN {#TUNNEL_NAME} Inbound Errors (Warning)'
                   priority: WARNING
-                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)
-                      Gateway VPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Inbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: VPN
@@ -1050,10 +1042,9 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: 4561d362106243c0bef50d5357ae0f33
                   expression: 'last(/Watchguard/vpn.ifOutErrors[{#TUNNEL_NAME}]) > {$GWVPN_ERROR_THRESHOLD}'
-                  name: 'Gateway VPN {#TUNNEL_NAME} Outbound Errors (Error)'
+                  name: 'Gateway VPN {#TUNNEL_NAME} Outbound Errors (Critical)'
                   priority: HIGH
-                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded error threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)
-                      Gateway VPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: VPN
@@ -1061,8 +1052,7 @@ zabbix_export:
                   expression: 'last(/Watchguard/vpn.ifOutErrors[{#TUNNEL_NAME}]) > {$GWVPN_WARNING_THRESHOLD}'
                   name: 'Gateway VPN {#TUNNEL_NAME} Outbound Errors (Warning)'
                   priority: WARNING
-                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)
-                      Gateway VPN errors at or above 10% could indicate a misconfiguration of the VPN/ACL.'
+                  description: 'Outbound errors on Gateway VPN {#TUNNEL_NAME} exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s)'
                   tags:
                     - tag: Component
                       value: VPN
@@ -1091,7 +1081,7 @@ zabbix_export:
               value_type: FLOAT
               description: 'Status of VPN tunnel {#TUNNEL_NAME} (1=up, 0=down)'
               valuemap:
-                name: firebox.firebox.interface.status.valuemap
+                name: interface.status.valuemap
               tags:
                 - tag: Component
                   value: VPN
@@ -1130,42 +1120,42 @@ zabbix_export:
         - tag: Author
           value: 'Simon Jackson'
       macros:
-        - macro: '{$SNMP_COMMUNITY}'
-          value: public
-        - macro: '{$WATCHGUARD_HA_HEALTH_PERCENT}'
+        - macro: '{$BOVPN_ERROR_THRESHOLD}'
+          value: '10'
+        - macro: '{$BOVPN_WARNING_THRESHOLD}'
+          value: '1'
+        - macro: '{$GWVPN_ERROR_THRESHOLD}'
+          value: '10'
+        - macro: '{$GWVPN_WARNING_THRESHOLD}'
+          value: '1'
+        - macro: '{$WATCHGUARD_CACHED_THRESHOLD}'
+          value: '99'
+        - macro: '{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
           value: '90'
-        - macro: '{$WATCHGUARD_CPU_ERROR}'
+        - macro: '{$WATCHGUARD_CPU_HIGH}'
           value: '90'
-        - macro: '{$WATCHGUARD_CPU_WARNING}'
-          value: '80'
-        - macro: '{$WATCHGUARD_DISK_ERROR}'
+        - macro: '{$WATCHGUARD_CPU_LOW}'
+          value: '70'
+        - macro: '{$WATCHGUARD_DISK_HIGH}'
           value: '90'
-        - macro: '{$WATCHGUARD_DISK_WARNING}'
+        - macro: '{$WATCHGUARD_DISK_LOW}'
           value: '80'
         - macro: '{$WATCHGUARD_FAN_MIN_SPEED}'
           value: '2000'
-        - macro: '{$WATCHGUARD_RAM_CACHE_THRESHOLD}'
-          value: '99'
-        - macro: '{$WATCHGUARD_RAM_SWAP_THRESHOLD}'
-          value: '99'
-        - macro: '{$WATCHGUARD_TEMPERATURE_ERROR}'
-          value: '70'
-        - macro: '{$WATCHGUARD_TEMPERATURE_WARNING}'
-          value: '60'
-        - macro: '{$WATCHGUARD_INTERFACE_ERROR}'
+        - macro: '{$WATCHGUARD_HIGH_THROUGHPUT}'
+          value: '1000000000'
+        - macro: '{$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}'
           value: '1000'
-        - macro: '{$WATCHGUARD_INTERFACE_WARNING}'
+        - macro: '{$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}'
           value: '100'
-        - macro: '{$WATCHGUARD_DDOS_THRESHOLD}'
+        - macro: '{$WATCHGUARD_MAX_CONNECTIONS}'
           value: '50000'
-        - macro: '{$BOVPN_ERROR_THRESHOLD}'
-          value: '100'
-        - macro: '{$BOVPN_WARNING_THRESHOLD}'
-          value: '10'
-        - macro: '{$GWVPN_ERROR_THRESHOLD}'
-          value: '100'
-        - macro: '{$GWVPN_WARNING_THRESHOLD}'
-          value: '10'
+        - macro: '{$WATCHGUARD_SWAP_THRESHOLD}'
+          value: '99'
+        - macro: '{$WATCHGUARD_TEMP_CRITICAL}'
+          value: '70'
+        - macro: '{$WATCHGUARD_TEMP_WARNING}'
+          value: '60'
       dashboards:
         - uuid: e056d7d058ee45309c64875fb4bfd5e1
           name: Firebox
@@ -1470,22 +1460,34 @@ zabbix_export:
                       name: thresholds.1.threshold
                       value: '2'
                 - type: svggraph
-                  name: 'BoVPN: Bytes In'
+                  name: 'BoVPN: Bytes In/Out'
                   x: '21'
                   width: '51'
                   height: '5'
                   fields:
                     - type: STRING
                       name: ds.0.color
-                      value: 80FF00
+                      value: 00FF00
                     - type: INTEGER
                       name: ds.0.fill
-                      value: '0'
+                      value: '1'
                     - type: STRING
                       name: ds.0.items.0
                       value: 'BoVPN: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0080FF
+                    - type: INTEGER
+                      name: ds.1.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'BoVPN: * Bytes Out'
+                    - type: INTEGER
+                      name: ds.1.transparency
                       value: '3'
                     - type: INTEGER
                       name: legend_lines
@@ -1497,7 +1499,7 @@ zabbix_export:
                       name: righty
                       value: '0'
                 - type: svggraph
-                  name: 'BoVPN: Bytes Out'
+                  name: 'BoVPN: Errors In/Out'
                   x: '21'
                   'y': '5'
                   width: '51'
@@ -1505,135 +1507,40 @@ zabbix_export:
                   fields:
                     - type: STRING
                       name: ds.0.color
-                      value: FF8000
+                      value: 00FF00
                     - type: INTEGER
                       name: ds.0.fill
-                      value: '0'
+                      value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'BoVPN: * Bytes Out'
+                      value: 'BoVPN: * Errors In'
                     - type: INTEGER
                       name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0080FF
+                    - type: INTEGER
+                      name: ds.1.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'BoVPN: * Errors Out'
+                    - type: INTEGER
+                      name: ds.1.transparency
                       value: '3'
                     - type: INTEGER
                       name: legend_lines
                       value: '8'
                     - type: STRING
                       name: reference
-                      value: YSBLG
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-            - name: 'Gateway VPNs'
-              widgets:
-                - type: honeycomb
-                  name: 'Gateway VPN Statuses'
-                  width: '21'
-                  height: '10'
-                  fields:
-                    - type: STRING
-                      name: items.0
-                      value: '* Status'
-                    - type: INTEGER
-                      name: item_tags.0.operator
-                      value: '1'
-                    - type: STRING
-                      name: item_tags.0.tag
-                      value: Component
-                    - type: STRING
-                      name: item_tags.0.value
-                      value: VPN
-                    - type: INTEGER
-                      name: maintenance
-                      value: '1'
-                    - type: STRING
-                      name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN: (.+) Status$", "\1")}'
-                    - type: INTEGER
-                      name: primary_label_bold
-                      value: '1'
-                    - type: STRING
-                      name: primary_label_color
-                      value: '666699'
-                    - type: INTEGER
-                      name: primary_label_size
-                      value: '50'
-                    - type: STRING
-                      name: reference
-                      value: UUONL
-                    - type: INTEGER
-                      name: show.0
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: 80FF00
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '2'
-                - type: svggraph
-                  name: 'Gateway VPN: Bytes In'
-                  x: '21'
-                  width: '51'
-                  height: '5'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: 80FF00
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '0'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VPN: * Bytes In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '8'
-                    - type: STRING
-                      name: reference
-                      value: VGNJO
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                - type: svggraph
-                  name: 'Gateway VPN: Bytes Out'
-                  x: '21'
-                  'y': '5'
-                  width: '51'
-                  height: '5'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF8000
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '0'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VPN: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '8'
-                    - type: STRING
-                      name: reference
-                      value: SCSSE
+                      value: JAFCO
                     - type: INTEGER
                       name: righty
                       value: '0'
       valuemaps:
         - uuid: 71a060a54ea2489b9997531e0de28103
-          name: firebox.ha.status.valuemap
+          name: cluster.status.valuemap
           mappings:
             - value: '0'
               newvalue: N/A
@@ -1642,14 +1549,14 @@ zabbix_export:
             - value: '2'
               newvalue: Standalone
         - uuid: bbe748f3a1a7405ab4c1e49d4e4eb75f
-          name: firebox.ha.sync.valuemap
+          name: cluster.sync.valuemap
           mappings:
             - value: '0'
               newvalue: 'Not Synchronized'
             - value: '1'
               newvalue: Synchronized
         - uuid: cddcb4c626d641759b26f30d7c8d129b
-          name: firebox.fan.status.valuemap
+          name: fan.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
@@ -1658,14 +1565,14 @@ zabbix_export:
             - value: '3'
               newvalue: 'Not Present'
         - uuid: ba5c23563caa4ec1aaf4657ccb304f23
-          name: firebox.feature.status.valuemap
+          name: feature.status.valuemap
           mappings:
             - value: '0'
               newvalue: Disabled
             - value: '1'
               newvalue: Enabled
         - uuid: 839e718ef97f40659f422cf5f603b17b
-          name: firebox.firebox.interface.status.valuemap
+          name: interface.status.valuemap
           mappings:
             - value: '1'
               newvalue: Up
@@ -1682,7 +1589,7 @@ zabbix_export:
             - value: '7'
               newvalue: 'Lower Layer Down'
         - uuid: e75ad32d175e4bc882730f78a60ae7f6
-          name: firebox.ha.member.role.valuemap
+          name: member.role.valuemap
           mappings:
             - value: '1'
               newvalue: Rebooting
@@ -1691,7 +1598,7 @@ zabbix_export:
             - value: '3'
               newvalue: Master
         - uuid: 1ee381ecbce64a3eb2c75d9e4205954d
-          name: firebox.psu.status.valuemap
+          name: psu.status.valuemap
           mappings:
             - value: '1'
               newvalue: OK
