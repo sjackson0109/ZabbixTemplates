@@ -48,8 +48,8 @@ zabbix_export:
         - Firebox M400 running v12+ firmware 
         - Clustered and non-clustered firebox units
         
-        Inspired by: Ticau Tudor / @tudorticau
         Author: Simon Jackson / @sjackson0109
+        Inspired by: Ticau Tudor / @tudorticau
       groups:
         - name: Firewall
       items:

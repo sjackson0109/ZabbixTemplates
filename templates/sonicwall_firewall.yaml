@@ -14,8 +14,11 @@ zabbix_export:
         ITEMS:           
         - Basic Info: Uptime, Device Name, Model, Location, Description, Firmware, Ping, Latency, Packet-Loss
         - Firewall Info: Firmware Version, ROM Version
-        - Cluster Info: Primary/Secondary Status, Primary/Secondary Serial
-        - Traffic Info: Active Connections, CPU/Memory Utilisation
+        - HA Info: Primary/Secondary Status, Primary/Secondary Serial
+        - Device Utilisation: CPU, Cache, Memory, Swap (Not working yet)
+        - Temperature (Not available on any Sonicwall firmware yet)
+        - sonicStats: (Not available on some FW models)
+        - WAN Interfaces
         
         ITEM-TRIGGERS:
         - HA: State Changes, Peer Status Issues
@@ -26,13 +29,16 @@ zabbix_export:
         - Ethernet Interfaces: Status, Bytes In/Out, Errors In/Out
         - VLAN Interfaces: Status, Bytes In/Out, Errors In/Out
         - PortShield Interfaces: Status, Bytes In/Out, Errors In/Out
-        - VPN Tunnels: Status, Bytes In/Out
-        
+        - VPN Policies: Status, Bytes In/Out, Errors In/Out
+        - VTI Interfaces: Status, Bytes In/Out, Errors In/Out
+        - License Features: GAV, Mail, IDS/IPS, AntiSpyware(ASW)
+
+
         DISCOVERY ITEM-TRIGGERS:
         - Interfaces: Status Changed, Error thresholds
         - VPN Tunnels: Status Changed
         
-        + Graphs and Dashboards
+        + Graphs and Dashboards (Useful)
         
         TESTED ON:
         - SonicWall TZ, NSA, and SuperMassive series
@@ -1117,7 +1123,7 @@ zabbix_export:
                     host: Sonicwall
                     key: 'vlan.ifOutErrors[{#IFDESCR}]'
         - uuid: 5b8828f520044cb4aee1248934790d9b
-          name: VPNs
+          name: 'VPN Policies'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#VPNNAME},1.3.6.1.2.1.2.2.1.2,{#VPNINDEX},1.3.6.1.2.1.2.2.1.1,{#VPNADMIN},1.3.6.1.2.1.2.2.1.7,{#MODEL},1.3.6.1.4.1.8741.2.1.1.1.0]'
           key: vpn.discovery
@@ -1290,7 +1296,7 @@ zabbix_export:
                     host: Sonicwall
                     key: 'vpn.ifOutErrors[{#VPNNAME}]'
         - uuid: f6bb4d46dd22461c83472971b98a07c2
-          name: 'VTI Interfaces'
+          name: 'VPN Interfaces (VTI)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#IFINDEX},IF-MIB::ifIndex, {#VTINAME},IF-MIB::ifDescr, {#IFTYPE},IF-MIB::ifType]'
           key: vti.discovery
