@@ -213,10 +213,10 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout", type=int, default=4, help="Timeout in seconds (default: 4).")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output.")
     # Add Zabbix-specific arguments
-    parser.add_argument("--discover", action="store_true", help="Output JSON for Zabbix discover.")
-    parser.add_argument("--check", action="store_true", help="Check a specific protocol and cipher.")
-    parser.add_argument("--protocol", help="Protocol to check (use with --check).")
-    parser.add_argument("--cipher", help="Cipher to check (use with --check).")
+    parser.add_argument("-d", "--discover", action="store_true", help="Output JSON for Zabbix discover.")
+    parser.add_argument("-c", "--check", action="store_true", help="Check a specific protocol and cipher.")
+    parser.add_argument("-k", "--protocol", help="Protocol to check (use with --check).")
+    parser.add_argument("-y", "--cipher", help="Cipher to check (use with --check).")
     args = parser.parse_args()
 
     
