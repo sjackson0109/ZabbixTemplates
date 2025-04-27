@@ -59,7 +59,9 @@ zabbix_export:
         - Suitable for HA deployments, VPN-heavy environments, and security-focused monitoring.
 
         Author: Simon Jackson / @sjackson0109
-
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
       groups:
         - name: Firewall
       items:
@@ -1751,9 +1753,7 @@ zabbix_export:
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'fwstats.sonicCurrentRAMUtil[{#INDEX}]'
-      tags:
-        - tag: Author
-          value: 'Simon Jackson'
+
       macros:
         - macro: '{$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
           value: '30'

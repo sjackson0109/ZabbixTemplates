@@ -62,6 +62,9 @@ zabbix_export:
         - VPN tunnel monitoring uses BoVPN tunnel statistics; dynamic tunnels (e.g., Mobile VPNs) are not fully covered.
 
         Author: Simon Jackson / @sjackson0109
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
       groups:
         - name: Firewall
       items:
@@ -1128,9 +1131,6 @@ zabbix_export:
                   item:
                     host: 'Watchguard Firewall'
                     key: 'vpn.ifOutOctets[{#TUNNEL_NAME}]'
-      tags:
-        - tag: Author
-          value: 'Simon Jackson'
       macros:
         - macro: '{$BOVPN_ERROR_THRESHOLD}'
           value: '10'
