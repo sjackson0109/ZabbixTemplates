@@ -1379,14 +1379,15 @@ zabbix_export:
             evaltype: AND
             conditions:
               - macro: '{#VPNNAME}'
-                value: '^(?!.*BACKEND).*'
+                value: '{$SONICWALL_VPN_IGNORE_REGEX}'
+                operator: NOT_MATCHES_REGEX
                 formulaid: A
           description: 'Discovers IPsec Phase-2 VPN tunnels by Security Association name (sonicSAStatUserName). Avoids reliance on legacy interface-based VPN detection.'
           item_prototypes:
             - uuid: ddd196ba48194cf0a8c5e66222ef3e5d
-              name: 'VPN Policy: {#VPNNAME} Bytes In'
+              name: 'VPN Policy: {#VPNNAME} Decrypt Bytes In'
               type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#VPNINDEX}'
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#VPNINDEX}'
               key: 'vpn.policy.bytesIn[{#VPNNAME},{#VPNINDEX}]'
               units: Bps
               preprocessing:
@@ -1404,9 +1405,9 @@ zabbix_export:
                 - tag: VPN
                   value: Policy
             - uuid: 9882b0fbcf2c42daa1a030cf75c97b28
-              name: 'VPN Policy: {#VPNNAME} Bytes Out'
+              name: 'VPN Policy: {#VPNNAME} Encrypt Bytes Out'
               type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#VPNINDEX}'
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#VPNINDEX}'
               key: 'vpn.policy.bytesOut[{#VPNNAME},{#VPNINDEX}]'
               history: 3h
               trends: 1d
@@ -1492,9 +1493,10 @@ zabbix_export:
                 value: ^1$
                 formulaid: B
               - macro: '{#VPNNAME}'
-                value: '^(?!.*BACKEND).*'
+                value: '{$SONICWALL_VPN_IGNORE_REGEX}'
+                operator: NOT_MATCHES_REGEX
                 formulaid: C
-          description: 'Discover policy-based VPN tunnels. Excluding \n - NSM based "BACKEND" tunnels \n - Tunnels administratively DISABLED \n - Firewalls with "NSa 3650" model, firmware never exposed tunnel statistics over snmp.'
+          description: 'Discover policy-based VPN tunnels. Excluding these [{#SONICWALL_VPN_IGNORE_REGEX}] \n - Tunnels administratively DISABLED \n - Firewalls with "NSa 3650" model, firmware never exposed tunnel statistics over snmp.'
           item_prototypes:
             - uuid: 3c1bb76ca478444db54d7f394e046c23
               name: 'VPN Route: {#VPNNAME} Errors In'
@@ -1518,7 +1520,7 @@ zabbix_export:
                   value: Route
               trigger_prototypes:
                 - uuid: b2f59c886b324cd88518d38dca6c0244
-                  expression: 'last(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}]) > {$SONICWALL_VPN_CRITICAL_THRESHOLD}'
+                  expression: 'avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],3m) > {$SONICWALL_VPN_CRITICAL_THRESHOLD}'
                   name: 'VPN Route: {#VPNNAME} Inbound Errors (Error)'
                   priority: HIGH
                   description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
@@ -1528,7 +1530,7 @@ zabbix_export:
                     - tag: VPN
                       value: Route
                 - uuid: 0b5b79c341af4a4382c02676b245dd38
-                  expression: 'last(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}]) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
+                  expression: 'avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],3m) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
                   name: 'VPN Route: {#VPNNAME} Inbound Errors (Warning)'
                   priority: AVERAGE
                   description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
@@ -1826,46 +1828,73 @@ zabbix_export:
       macros:
         - macro: '{$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
           value: '30'
+          description: 'Trigger threshold for Gateway Anti-Spyware scan time (seconds).'
         - macro: '{$SONICWALL_ASW_THREAT_THRESHOLD}'
           value: '10'
+          description: 'Threshold for detected Gateway Anti-Spyware threat count.'
         - macro: '{$SONICWALL_CPU_ERROR}'
           value: '90'
+          description: 'CPU usage (%) that triggers an error-level alert.'
         - macro: '{$SONICWALL_CPU_WARNING}'
           value: '80'
+          description: 'CPU usage (%) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_DDOS_THRESHOLD}'
           value: '50000'
+          description: 'Threshold for total detected DDoS packets before triggering an alert.'
         - macro: '{$SONICWALL_DISK_ERROR}'
           value: '90'
+          description: 'Disk usage (%) that triggers an error-level alert.'
         - macro: '{$SONICWALL_DISK_WARNING}'
           value: '80'
+          description: 'Disk usage (%) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_GAV_VIRUS_THRESHOLD}'
           value: '5'
+          description: 'Threshold for detected viruses by Gateway Anti-Virus before triggering an alert.'
         - macro: '{$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}'
-          value: '10000'
+          value: '375000'
+          description: 'Minimum expected cluster role status value to indicate active HA state. Adjust per firewall model.'
         - macro: '{$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD}'
-          value: '100'
+          value: '500'
+          description: 'Threshold below which HA secondary state is considered anomalous.'
         - macro: '{$SONICWALL_INTERFACE_ERROR}'
           value: '10'
+          description: 'Threshold for interface input/output errors before triggering an alert.'
         - macro: '{$SONICWALL_IPS_ATTACK_THRESHOLD}'
           value: '10'
+          description: 'Threshold for Intrusion Prevention System (IPS) detected attacks.'
         - macro: '{$SONICWALL_MEMORY_ERROR}'
           value: '90'
+          description: 'Memory usage (%) that triggers an error-level alert.'
         - macro: '{$SONICWALL_MEMORY_WARNING}'
           value: '80'
+          description: 'Memory usage (%) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_SWAP_WARNING}'
           value: '70'
+          description: 'Swap usage (%) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_TEMP_ERROR}'
           value: '70'
+          description: 'Temperature (°C) that triggers an error-level alert.'
         - macro: '{$SONICWALL_TEMP_WARNING}'
           value: '60'
+          description: 'Temperature (°C) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_VLAN_ERROR}'
           value: '10'
+          description: 'Threshold for input/output errors on VLAN interfaces.'
         - macro: '{$SONICWALL_VLAN_WARNING}'
           value: '10'
+          description: 'Threshold for input/output warnings on VLAN interfaces.'
         - macro: '{$SONICWALL_VPN_ERROR}'
           value: '5'
+          description: 'Threshold for input/output errors on VPN interfaces before triggering an error-level alert.'
+        - macro: '{$SONICWALL_VPN_IGNORE_REGEX}'
+          value: '^(?i:BACKEND|TEST|MONITORING).*'
+          description: 'Regex to exclude VPN tunnels (by name) from discovery. Adjust for tunnel naming conventions.'
         - macro: '{$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}'
           value: '100'
+          description: 'Minimum expected average VPN traffic (bps) over 3 hours before considering a tunnel idle.'
+        - macro: '{$SONICWALL_VPN_WARNING_THRESHOLD}'
+          value: '2'
+          description: 'Threshold for VPN tunnel errors that triggers a warning alert.'
       dashboards:
         - uuid: abbbec0248734fc58ae96712a5cf32e6
           name: 'SonicWALL Firewalls'
@@ -2214,8 +2243,8 @@ zabbix_export:
             - name: VLANs
               widgets:
                 - type: honeycomb
-                  name: 'VLAN Errors (unsupported)'
-                  width: '8'
+                  name: 'VLAN Errors'
+                  width: '10'
                   height: '13'
                   fields:
                     - type: INTEGER
@@ -2229,7 +2258,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: item_tags.0.tag
-                      value: Component
+                      value: Interface
                     - type: STRING
                       name: item_tags.0.value
                       value: VLAN
@@ -2247,27 +2276,39 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: thresholds.0.color
-                      value: '666699'
+                      value: 00FF00
                     - type: STRING
                       name: thresholds.0.threshold
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
-                      value: 80FF00
+                      value: FFFF00
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: FF465C
+                      value: FF8000
                     - type: STRING
                       name: thresholds.2.threshold
-                      value: '2'
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '100'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '1000'
                 - type: graphprototype
                   name: 'VLAN: Traffic'
-                  x: '8'
+                  x: '10'
                   width: '39'
-                  height: '5'
+                  height: '13'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2280,10 +2321,13 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: AGVQQ
+                    - type: INTEGER
+                      name: rows
+                      value: '4'
             - name: 'VPNs (VTI)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Tunnels (unsupported)'
+                  name: 'VPN Tunnels'
                   width: '21'
                   height: '5'
                   fields:
@@ -2304,7 +2348,7 @@ zabbix_export:
                       value: Route
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+) Status$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2355,7 +2399,7 @@ zabbix_export:
                       value: VTI
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VTI: (.+) Status$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2384,7 +2428,7 @@ zabbix_export:
                       name: thresholds.2.threshold
                       value: '2'
                 - type: svggraph
-                  name: 'VPN Tunnel: Bytes In/Out'
+                  name: 'VPN Route: Bytes In/Out'
                   x: '21'
                   width: '51'
                   height: '4'
@@ -2526,8 +2570,8 @@ zabbix_export:
             - name: 'VPNs (Policy)'
               widgets:
                 - type: honeycomb
-                  name: 'VTI Statuses'
-                  width: '22'
+                  name: 'VPN Statuses (unsupported)'
+                  width: '21'
                   height: '8'
                   fields:
                     - type: INTEGER
@@ -2547,7 +2591,7 @@ zabbix_export:
                       value: VPN
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN: (.+) Status$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2576,32 +2620,56 @@ zabbix_export:
                       name: thresholds.2.threshold
                       value: '2'
                 - type: svggraph
-                  name: 'VPN: Bytes In/Out'
-                  x: '22'
-                  width: '50'
+                  name: 'VPN Policy: Decrypt/Encrypt Bytes In/Out'
+                  x: '21'
+                  width: '51'
                   height: '4'
                   fields:
+                    - type: INTEGER
+                      name: ds.0.aggregate_function
+                      value: '5'
+                    - type: INTEGER
+                      name: ds.0.aggregate_grouping
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.aggregate_interval
+                      value: 1m
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
                     - type: STRING
                       name: ds.0.color
-                      value: FF465C
+                      value: 00FF00
                     - type: INTEGER
                       name: ds.0.fill
                       value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'VPN: * Bytes In'
+                      value: 'VPN Policy: * Encrypt Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
+                    - type: INTEGER
+                      name: ds.1.aggregate_function
+                      value: '5'
+                    - type: INTEGER
+                      name: ds.1.aggregate_grouping
+                      value: '1'
+                    - type: STRING
+                      name: ds.1.aggregate_interval
+                      value: 1m
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
                     - type: STRING
                       name: ds.1.color
-                      value: FFD54F
+                      value: 00BFFF
                     - type: INTEGER
                       name: ds.1.fill
                       value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'VPN: * Bytes Out'
+                      value: 'VPN Policy: * Encrypt Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
@@ -2614,55 +2682,6 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: TGCPP
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
-                - type: svggraph
-                  name: 'VPN: Errors In/Out'
-                  x: '22'
-                  'y': '4'
-                  width: '50'
-                  height: '4'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VPN: * Errors In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'VPN: * Errors Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
-                    - type: STRING
-                      name: reference
-                      value: CWMGQ
                     - type: INTEGER
                       name: righty
                       value: '0'
