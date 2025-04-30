@@ -154,6 +154,52 @@ zabbix_export:
               tags:
                 - tag: Component
                   value: HA
+        - uuid: 14096a620e294fe192b5717da09b9af8
+          name: 'FireCluster Primary Member Role'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.3.0
+          key: 'cluster.role[primary]'
+          delay: 5m
+          description: 'Cluster Member Role'
+          valuemap:
+            name: member.role.valuemap
+          tags:
+            - tag: Component
+              value: HA
+          triggers:
+            - uuid: 7598eecfb9d44707a111a8f1f7f10dad
+              expression: 'min(/Watchguard Firewall/cluster.role[primary],5m)<>2 and min(/Watchguard Firewall/cluster.role[primary],5m)<>3'
+              name: 'FireCluster Role Unexpected or Unstable'
+              priority: WARNING
+              description: 'Cluster member is neither Master nor Standby. May be stuck in reboot, transition state, or out of sync.'
+              tags:
+                - tag: Component
+                  value: HA
+                - tag: Type
+                  value: RoleState
+        - uuid: 086bd2fdd99843039fc5b04c68153225
+          name: 'FireCluster Secondary Member Role'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.3097.6.6.9.0
+          key: 'cluster.role[secondary]'
+          delay: 5m
+          description: 'Cluster Member Role'
+          valuemap:
+            name: member.role.valuemap
+          tags:
+            - tag: Component
+              value: HA
+          triggers:
+            - uuid: 213bbdbfa19547fd8f1ab113ec090b04
+              expression: 'min(/Watchguard Firewall/cluster.role[secondary],5m)<>2 and min(/Watchguard Firewall/cluster.role[secondary],5m)<>3'
+              name: 'FireCluster Role Unexpected or Unstable'
+              priority: WARNING
+              description: 'Cluster member is neither Master nor Standby. May be stuck in reboot, transition state, or out of sync.'
+              tags:
+                - tag: Component
+                  value: HA
+                - tag: Type
+                  value: RoleState
         - uuid: 7635cc08a4d548b3a439f042050dffe8
           name: 'FireCluster Status'
           type: SNMP_AGENT
@@ -1420,9 +1466,63 @@ zabbix_export:
                     - type: INTEGER
                       name: units_show
                       value: '0'
+                - type: honeycomb
+                  name: 'FireCluster Roles'
+                  x: '38'
+                  width: '7'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'FireCluster * Member Role'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: HA
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^FireCluster (Primary|Secondary) Member Role$", "\1")}'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: STRING
+                      name: reference
+                      value: FUODG
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '36'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFE082
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 80FF00
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
                 - type: svggraph
                   name: 'FireCluster Health'
-                  x: '38'
+                  x: '45'
                   width: '22'
                   height: '4'
                   fields:
