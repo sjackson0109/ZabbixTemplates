@@ -62,58 +62,6 @@ zabbix_export:
       groups:
         - name: Firewall
       items:
-        - uuid: 20e0a189142d496e9bc1d1f0137a3027
-          name: 'Traffic: Inbound'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.8741.2.3.2.1.2.0
-          key: firewall.total.bytes.in
-          delay: 30s
-          history: 7d
-          value_type: FLOAT
-          status: DISABLED
-          units: bps
-          description: |
-            Total number of bytes received by the firewall across all interfaces, converted to bits per second.
-            
-            UNSUPPORTED IN FIRMWARE DURING TESTING
-          preprocessing:
-            - type: CHANGE_PER_SECOND
-              parameters:
-                - ''
-            - type: MULTIPLIER
-              parameters:
-                - '8'
-          tags:
-            - tag: Component
-              value: Firewall
-            - tag: Metrics
-              value: Traffic
-        - uuid: 1277ab1becff4a1b8b1d16f9bc5ba1d7
-          name: 'Traffic: Outbound'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.8741.2.3.2.1.3.0
-          key: firewall.total.bytes.out
-          delay: 30s
-          history: 7d
-          value_type: FLOAT
-          status: DISABLED
-          units: bps
-          description: |
-            Total number of bytes sent by the firewall across all interfaces, converted to bits per second.
-            
-            UNSUPPORTED IN FIRMWARE DURING TESTING
-          preprocessing:
-            - type: CHANGE_PER_SECOND
-              parameters:
-                - ''
-            - type: MULTIPLIER
-              parameters:
-                - '8'
-          tags:
-            - tag: Component
-              value: Firewall
-            - tag: Metrics
-              value: Traffic
         - uuid: ab8294f669e54a40acd47663fafb1a27
           name: 'Active Connections'
           type: SNMP_AGENT
@@ -132,8 +80,8 @@ zabbix_export:
               priority: AVERAGE
               description: 'Total connections ({ITEM.LASTVALUE}) exceeded threshold ({$SONICWALL_DDOS_THRESHOLD})'
               tags:
-                - tag: Metrics
-                  value: Performance
+                - tag: Condition
+                  value: 'DDOS-Attack?'
         - uuid: 10e12f7f3d434f9fa8f182223973cc09
           name: 'Device Administrator'
           type: SNMP_AGENT
@@ -166,20 +114,16 @@ zabbix_export:
               priority: HIGH
               description: 'System processor usage exceeded critical threshold ({ITEM.LASTVALUE} > {$SONICWALL_CPU_ERROR%), on average over past 5 minutes'
               tags:
-                - tag: Component
-                  value: Memory
-                - tag: Metrics
-                  value: Performance
+                - tag: Condition
+                  value: Threshold
             - uuid: 7950a7db6ea94a9d981c7de4d92d56b4
               expression: 'avg(/Sonicwall Firewall/sonicwall.cpu.utilisation,5m) > {$SONICWALL_CPU_WARNING}'
               name: 'High CPU Usage (Warning)'
               priority: AVERAGE
               description: 'System processor usage exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_CPU_WARNING%), on average over past 5 minutes'
               tags:
-                - tag: Component
-                  value: Memory
-                - tag: Metrics
-                  value: Performance
+                - tag: Condition
+                  value: Threshold
         - uuid: 000e78a73db74e568cf407866d5a3113
           name: 'Device Firmware Version'
           type: SNMP_AGENT
@@ -299,20 +243,16 @@ zabbix_export:
               priority: HIGH
               description: 'System processor usage exceeded critical threshold ({ITEM.LASTVALUE} > {$SONICWALL_RAM_ERROR)%, on average over past 5 minutes'
               tags:
-                - tag: Component
-                  value: Memory
-                - tag: Metrics
-                  value: Performance
+                - tag: Condition
+                  value: Threshold
             - uuid: b3a99759295f4ed0a47d88be3b07b6a8
               expression: 'avg(/Sonicwall Firewall/sonicwall.ram.utilisation,5m) > {$SONICWALL_RAM_WARNING}'
               name: 'High RAM Usage (Warning)'
               priority: AVERAGE
               description: 'System processor usage exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_RAM_WARNING)%, on average over past 5 minutes'
               tags:
-                - tag: Component
-                  value: Memory
-                - tag: Metrics
-                  value: Performance
+                - tag: Condition
+                  value: Threshold
         - uuid: e8866dac9055439ca020af54663cdc3e
           name: 'Device ROM Version'
           type: SNMP_AGENT
@@ -387,16 +327,16 @@ zabbix_export:
               priority: HIGH
               description: 'Device temperature ({ITEM.LASTVALUE}°C) exceeded critical threshold ({$SONICWALL_TEMP_ERROR}°C)'
               tags:
-                - tag: Component
-                  value: Temperature
+                - tag: Condition
+                  value: Threshold
             - uuid: 183528caeae54f58a5c4b3f086a412bd
               expression: 'last(/Sonicwall Firewall/temperature) > {$SONICWALL_TEMP_WARNING}'
               name: 'Device Temperature Warning (>{$SONICWALL_TEMP_WARNING}°C)'
               priority: WARNING
               description: 'Device temperature ({ITEM.LASTVALUE}°C) exceeded warning threshold ({$SONICWALL_TEMP_WARNING}°C)'
               tags:
-                - tag: Component
-                  value: Temperature
+                - tag: Condition
+                  value: Threshold
         - uuid: 07050a4878c549e894e016a7fe24181d
           name: 'Device Uptime'
           type: SNMP_AGENT
@@ -415,18 +355,21 @@ zabbix_export:
         - uuid: 41667e9384114b828459fb25a4c605d5
           name: 'Licensed Features [ASW]'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#ASW_LICENSE},1.3.6.1.4.1.8741.1.3.1.8.0]'
+          snmp_oid: 'discovery[{#ASW_LICENSE},1.3.6.1.2.1.2.2.1.1]'
           key: asw.discovery
           delay: 1h
           filter:
             conditions:
               - macro: '{#ASW_LICENSE}'
-                value: '1'
+                value: ^1$
                 formulaid: A
-              - macro: '{#ASW_LICENSE}'
-                value: '3'
-                formulaid: B
           lifetime: 1d
+          description: |
+            Discovers Gateway Anti-Spyware statistics including scan request counts, average scan time, and detected or blocked spyware threats.
+            
+            Data is derived from SNMP scalar metrics under the Anti-Spyware MIB, activated only if the ASW license is active.
+            
+            These metrics help evaluate scanning workload and effectiveness of signature updates or traffic volume changes.
           item_prototypes:
             - uuid: 776cea823ebd460dac46fed8a3338892
               name: 'AntiSpyware Scan Requests ({#ASW_LICENSE})'
@@ -440,8 +383,12 @@ zabbix_export:
                   parameters:
                     - ''
               tags:
-                - tag: Security
-                  value: AntiSpyware
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: ASW
             - uuid: eec8f68d142b46b6b5baf0239d055d89
               name: 'AntiSpyware Scan Time ({#ASW_LICENSE})'
               type: SNMP_AGENT
@@ -450,8 +397,12 @@ zabbix_export:
               units: ms
               description: 'Average time taken for AntiSpyware scans'
               tags:
-                - tag: Metrics
-                  value: AntiSpyware
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: ASW
               trigger_prototypes:
                 - uuid: 20fedba77e2e428fa6c39e68e941ecb8
                   expression: 'avg(/Sonicwall Firewall/asw.scan.time[{#ASW_LICENSE}],5m) > {$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
@@ -462,6 +413,9 @@ zabbix_export:
                     while at least one CPU core was > {$SONICWALL_CPU_WARNING}% (min: Core1={min(/Sonicwall Firewall/hrProcessorLoad[1],5m)}%, Core2={min(/Sonicwall Firewall/hrProcessorLoad[2],5m)}%).
                     Security scanning may be impacted by CPU contention.
                   manual_close: 'YES'
+                  tags:
+                    - tag: Condition
+                      value: Threshold
             - uuid: 9419bf5f668246d7be619a72363502aa
               name: 'AntiSpyware Threats Blocked ({#ASW_LICENSE})'
               type: SNMP_AGENT
@@ -474,8 +428,12 @@ zabbix_export:
                   parameters:
                     - ''
               tags:
-                - tag: Security
-                  value: AntiSpyware
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: ASW
             - uuid: 580aa84226934bffa927cac6e1ca4238
               name: 'AntiSpyware Threats Detected ({#ASW_LICENSE})'
               type: SNMP_AGENT
@@ -487,8 +445,12 @@ zabbix_export:
                   parameters:
                     - ''
               tags:
-                - tag: Security
-                  value: AntiSpyware
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: ASW
               trigger_prototypes:
                 - uuid: 0949580e893b42ecb17d1fd26910f4b7
                   expression: 'avg(/Sonicwall Firewall/asw.threats.detected[{#ASW_LICENSE}],300s) > {$SONICWALL_ASW_THREAT_THRESHOLD}'
@@ -496,6 +458,9 @@ zabbix_export:
                   priority: WARNING
                   description: 'AntiSpyware threat detection rate ({ITEM.LASTVALUE}/s) exceeded threshold ({$SONICWALL_ASW_THREAT_THRESHOLD}/s)'
                   manual_close: 'YES'
+                  tags:
+                    - tag: Condition
+                      value: Threshold
           graph_prototypes:
             - uuid: adaefe8c889742488a4721d049569573
               name: 'AntiSpyware Threats Detected vs Blocked'
@@ -527,6 +492,8 @@ zabbix_export:
               units: '%'
               description: 'The average, over the last minute, of the percentage of time that this processor was not idle. Implementations may approximate this one minute smoothing period if necessary.'
               tags:
+                - tag: Component
+                  value: System
                 - tag: CPU
                   value: Utilisation
               trigger_prototypes:
@@ -539,8 +506,8 @@ zabbix_export:
                   priority: HIGH
                   description: 'CPU {#CPUFWID} on {HOST.NAME} is over {$SONICWALL_CPU_ERROR}%'
                   tags:
-                    - tag: CPU
-                      value: Utilisation
+                    - tag: Condition
+                      value: Threshold
           graph_prototypes:
             - uuid: 282f59dcf7854b6cab11bde4636e56f5
               name: 'Processor Utilisation{#CPUFWID}'
@@ -573,7 +540,21 @@ zabbix_export:
               - macro: '{#IFTYPE}'
                 value: ^(6|117|127|128|161|560|561|800)$
                 formulaid: C
-          description: 'Discover Ethernet interfaces (ifType = 6|117|127|128|161|560|561|800)'
+          description: |
+            Discover physical Ethernet interfaces on the firewall.
+            
+            This includes standard RJ-45 interfaces and some vendor-specific virtual Ethernet types.
+            Interface detection is based on:
+             - `ifType = 6` (ethernetCsmacd)
+             - Extended types such as `117`, `127`, `128`, `161`, `560–561`, `800` (used on various SonicWall models)
+            
+            Filtering is applied to:
+             - Exclude HA-link interfaces
+             - Exclude unassigned or "Portshield(ed) To Host" pseudo-interfaces
+            
+            Note:
+             - This rule does not detect LAG (Link Aggregation) interfaces — see `Interfaces (LAG/Bonded)` for that.
+             - SonicWall sometimes reports bonded or VLAN-tagged interfaces under `ifType=6`; rely on `ifDescr` + interface naming to classify appropriately.
           item_prototypes:
             - uuid: ea03a12ce8ce47b0aa0cf8d91ebb623a
               name: 'Interface: {#IFDESCR} Errors In'
@@ -590,6 +571,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Ethernet
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: 1ea5c9dfb4cd47fab81c6174bd81fa26
                   expression: 'count(/Sonicwall Firewall/ethernet.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR}) > 2'
@@ -597,20 +580,16 @@ zabbix_export:
                   priority: WARNING
                   description: 'Inbound errors on interface {#IFDESCR} exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_INTERFACE_ERROR} over the past 5 mins)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Ethernet
+                    - tag: Condition
+                      value: Threshold
                 - uuid: c5fdc6304b3b4b24a51668859dded4ef
                   expression: 'count(/Sonicwall Firewall/ethernet.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR}) > 2'
                   name: 'Interface {#IFDESCR} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Ethernet
+                    - tag: Condition
+                      value: Threshold
             - uuid: 975303619c04411bb9bf189f4c535c5e
               name: 'Interface: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
@@ -647,6 +626,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Ethernet
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: ddc2036479e042f69748eb221cf1aa26
                   expression: 'count(/Sonicwall Firewall/ethernet.ifOutErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR}) > 2'
@@ -654,10 +635,8 @@ zabbix_export:
                   priority: WARNING
                   description: 'Outbound errors on interface {#IFDESCR} exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_INTERFACE_ERROR} over the past 5 mins)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Ethernet
+                    - tag: Condition
+                      value: Flap/Disconnect/SwitchPort
             - uuid: 690b15f964de4ab7af94c963249d2816
               name: 'Interface: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
@@ -692,6 +671,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Ethernet
+                - tag: Metrics
+                  value: State
           graph_prototypes:
             - uuid: 45a4bba63890410ba1e796a7319d08c7
               name: 'Ethernet Interface: {#IFDESCR} Traffic'
@@ -743,7 +724,22 @@ zabbix_export:
               - macro: '{#IFTYPE}'
                 value: ^(39|48|56|195|243|244|559|562)$
                 formulaid: D
-          description: 'Discover fibre optic interfaces (ifType = 39|48|56|195|243|244|559|562)'
+          description: |
+            Discover fibre-optic or high-speed physical interfaces, typically SFP/SFP+ ports, used for WAN uplinks, interconnects, or high-throughput LAN segments.
+            
+            Fibre interface detection is based on `ifType` values such as:
+             - `39`, `48`, `56` (various Optical types)
+             - `195`, `243`, `244` (SONET/SDH, VDSL2, GPON)
+             - `559`, `562` (SonicWall-specific or reserved high-speed interface types)
+            
+            Filters are applied to exclude:
+             - HA-link ports
+             - PortShield(ed) pseudo-interfaces
+             - Unassigned ports
+            
+            Note:
+             - SonicWall does not consistently separate copper vs fibre via `ifType` — verify against `ifDescr` when interface mapping is critical.
+             - Some bonded fibre interfaces may appear here if not caught by the LAG discovery rule.
           item_prototypes:
             - uuid: 80a6509934c042d18d44c2321c7029a6
               name: 'Interface: {#IFDESCR} Errors In'
@@ -760,6 +756,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Fibre
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: 7050d75c76f5494daa70252deaa640c6
                   expression: 'count(/Sonicwall Firewall/fibre.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR})>2'
@@ -767,20 +765,16 @@ zabbix_export:
                   priority: WARNING
                   description: 'Inbound errors on interface {#IFDESCR} exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_INTERFACE_ERROR}/s)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Fibre
+                    - tag: Condition
+                      value: Threshold
                 - uuid: 0fe58fa2581a4def957450ad5878f92d
                   expression: 'count(/Sonicwall Firewall/fibre.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR}) > 2'
                   name: 'Interface {#IFDESCR} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Fibre
+                    - tag: Condition
+                      value: Threshold
             - uuid: 08dee29cfa0848e48b06fc2bb4dd932a
               name: 'Interface: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
@@ -817,6 +811,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Fibre
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: 45e15536b2fb4f2e9b0078d305d6d4e8
                   expression: 'count(/Sonicwall Firewall/fibre.ifOutErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR})>2'
@@ -824,10 +820,8 @@ zabbix_export:
                   priority: WARNING
                   description: 'Outbound errors on interface {#IFDESCR} exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_INTERFACE_ERROR}/s)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: Fibre
+                    - tag: Condition
+                      value: Threshold
             - uuid: 34d6bdd82895488bba990f6ebdbda2ed
               name: 'Interface: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
@@ -862,6 +856,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: Fibre
+                - tag: Metrics
+                  value: State
           graph_prototypes:
             - uuid: da4b3b51b35840b7a72ff35943048c5c
               name: 'Fibre Interface: {#IFDESCR} Traffic'
@@ -915,7 +911,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: Firewall
+                - tag: Service
+                  value: CF
             - uuid: 88215cb400a44578ae9c9ce5899d2d17
               name: 'Connnection Cache Entries [{#INDEX}]'
               type: SNMP_AGENT
@@ -924,7 +922,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: Firewall
+                - tag: Metrics
+                  value: Performance
             - uuid: 8075dddd2d4e4ceba3ca21a255c96d2e
               name: 'CPU Utilisation [{#INDEX}]'
               type: SNMP_AGENT
@@ -933,7 +933,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: System
+                - tag: Metrics
+                  value: Performance
             - uuid: df750f31668449b09e55c22544c7eb2e
               name: 'CPU Utilisation [{#INDEX}] - Forward And Inspect'
               type: SNMP_AGENT
@@ -942,7 +944,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: System
+                - tag: Metrics
+                  value: Performance
             - uuid: 5af6a549048349efa150c9b33a643d97
               name: 'CPU Utilisation [{#INDEX}] - Management Plane'
               type: SNMP_AGENT
@@ -951,7 +955,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: System
+                - tag: Metrics
+                  value: Performance
             - uuid: 3e39c1102a09435da7def1f6f7c82d0b
               name: 'RAM Utilisation [{#INDEX}]'
               type: SNMP_AGENT
@@ -960,7 +966,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: System
+                - tag: Metrics
+                  value: Performance
               trigger_prototypes:
                 - uuid: 52f99c32e8f1491691e40c31c519f5d2
                   expression: 'avg(/Sonicwall Firewall/fwstats.sonicCurrentRAMUtil[{#INDEX}],5m) > {$SONICWALL_MEMORY_ERROR}'
@@ -968,16 +976,16 @@ zabbix_export:
                   priority: HIGH
                   description: 'System memory usage exceeded critical threshold ({ITEM.LASTVALUE} > {$SONICWALL_MEMORY_ERROR}%)'
                   tags:
-                    - tag: Component
-                      value: Memory
+                    - tag: Condition
+                      value: Threshold
                 - uuid: 7c566e3d0d584c1889b9cd468485ecf4
                   expression: 'avg(/Sonicwall Firewall/fwstats.sonicCurrentRAMUtil[{#INDEX}],5m) > {$SONICWALL_MEMORY_WARNING}'
                   name: 'High Memory Usage (Warning) [{#INDEX}]'
                   priority: AVERAGE
                   description: 'System memory usage exceeded warning threshold ({ITEM.LASTVALUE} > {$SONICWALL_MEMORY_WARNING}%)'
                   tags:
-                    - tag: Component
-                      value: Memory
+                    - tag: Condition
+                      value: Threshold
             - uuid: 68433a0bf31442139f9c588683b84825
               name: 'Max Connection Cache Entries [{#INDEX}]'
               type: SNMP_AGENT
@@ -986,7 +994,9 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
+                  value: System
+                - tag: Metrics
+                  value: Performance
             - uuid: 91dd0953373049f186a0472510eba808
               name: 'NAT Translation Count [{#INDEX}]'
               type: SNMP_AGENT
@@ -995,28 +1005,27 @@ zabbix_export:
               description: 'Metrics returned from the sonicwallFwStats table'
               tags:
                 - tag: Component
-                  value: FwStats
-          graph_prototypes:
-            - uuid: a7920ce8aaba44939c4c699d59f0759d
-              name: 'Memory Utilisation'
-              graph_items:
-                - sortorder: '2'
-                  color: 00BFFF
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'fwstats.sonicCurrentRAMUtil[{#INDEX}]'
+                  value: Firewall
+                - tag: Metrics
+                  value: Performance
         - uuid: d4f4a7d0e4d04102b7092c4b8d7b8fe1
           name: 'Licensed Features [GAV]'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#GAV_LICENSE},1.3.6.1.4.1.8741.1.3.1.7.0]'
+          snmp_oid: 'discovery[{#GAV_LICENSE},1.3.6.1.2.1.2.2.1.1]'
           key: gav.discovery
           delay: 1h
           filter:
             conditions:
               - macro: '{#GAV_LICENSE}'
-                value: '1'
+                value: ^1$
                 formulaid: A
           lifetime: 1d
+          description: |
+            Discovers Gateway Anti-Virus (GAV) activity, including total scans and virus detections.
+            
+            GAV provides inline malware scanning on ingress and egress traffic and is activated per security profile or rule base.
+            
+            Metrics are collected if a valid GAV license is present, and are useful for correlating threat trends with interface or tunnel activity.
           item_prototypes:
             - uuid: 230a69f6142c4499a605bced9bf6e7e3
               name: 'GAV Scan Count ({#GAV_LICENSE})'
@@ -1027,6 +1036,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: GAV
             - uuid: 50f9cd82709c47ee831a5ff9749ac0ee
               name: 'GAV Virus Count ({#GAV_LICENSE})'
               type: SNMP_AGENT
@@ -1036,6 +1052,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: GAV
           graph_prototypes:
             - uuid: eb59ecdb7abf40819950450993c1069c
               name: 'GAV Activity'
@@ -1054,15 +1077,21 @@ zabbix_export:
         - uuid: 92c2c17fc43047128f217364187b0b6b
           name: 'Licensed Features [IDS]'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#IDS_LICENSE},1.3.6.1.4.1.8741.1.3.1.10.0]'
+          snmp_oid: 'discovery[{#IDS_LICENSE},1.3.6.1.2.1.2.2.1.1]'
           key: ids.discovery
           delay: 1h
           filter:
             conditions:
               - macro: '{#IDS_LICENSE}'
-                value: '1'
+                value: ^1$
                 formulaid: A
           lifetime: 1d
+          description: |
+            Discovers IPS statistics including the number of blocked intrusion attempts.
+            
+            This feature provides deep packet inspection for known attack signatures. The item is only active if IPS licensing is valid.
+            
+            Metrics can help correlate traffic spikes or threat activity on specific interfaces or tunnel paths.
           item_prototypes:
             - uuid: ad876b04a8dd491f9a01adfad5ce71b8
               name: 'IDS Attacks Blocked ({#IDS_LICENSE})'
@@ -1071,6 +1100,13 @@ zabbix_export:
               key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
               units: attacks
               description: 'Total number of attacks blocked by IDS'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: IDS
             - uuid: 5700d4114d5849d5b714ba54dd36641d
               name: 'IDS Attacks Detected ({#IDS_LICENSE})'
               type: SNMP_AGENT
@@ -1080,6 +1116,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: IDS
           graph_prototypes:
             - uuid: 121c202e42784b0aaae631d498e14b68
               name: 'IDS Activity'
@@ -1098,15 +1141,21 @@ zabbix_export:
         - uuid: e42cd2dc421e45fdb7e834ff217fc226
           name: 'Licensed Features [IPS]'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#IPS_LICENSE},1.3.6.1.4.1.8741.1.3.1.9.0]'
+          snmp_oid: 'discovery[{#IPS_LICENSE},1.3.6.1.2.1.2.2.1.1]'
           key: ips.discovery
           delay: 1h
           filter:
             conditions:
               - macro: '{#IPS_LICENSE}'
-                value: '1'
+                value: ^1$
                 formulaid: A
           lifetime: 1d
+          description: |
+            Discovers IPS statistics including the number of blocked intrusion attempts.
+            
+            This feature provides deep packet inspection for known attack signatures. The item is only active if IPS licensing is valid.
+            
+            Metrics can help correlate traffic spikes or threat activity on specific interfaces or tunnel paths.
           item_prototypes:
             - uuid: fabb8b1fd2284e52ab804e1b3aeba46d
               name: 'IPS Attacks Blocked ({#IPS_LICENSE})'
@@ -1117,6 +1166,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: IPS
           graph_prototypes:
             - uuid: c79aa1516dc245ddafa244c074b4d396
               name: 'IPS Attacks Blocked'
@@ -1126,18 +1182,196 @@ zabbix_export:
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'ips.blocked.count[{#IPS_LICENSE}]'
+        - uuid: 8857ec72720e45ae9b3c0badc3d8e5f1
+          name: 'Interfaces (LAG/Bonded)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFDESCR},IF-MIB::ifDescr,{#IFTYPE},IF-MIB::ifType]'
+          key: lag.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#IFTYPE}'
+                value: ^(161|166)$
+                formulaid: A
+          description: |
+            Discover bonded or aggregated interfaces on the firewall, such as Link Aggregation Groups (LAGs) or PortChannel interfaces.
+              
+            This rule targets interfaces with:
+             - `ifType = 161` (IEEE 802.3ad Link Aggregation)
+             - `ifType = 166` (MPLS Tunnel — occasionally used for VPN encapsulation in LAG contexts)
+              
+            These interfaces:
+             - Represent logical bundles of physical links
+             - Are often used for uplinks, high-availability paths, or VPN redundancy  - Report aggregate traffic and error metrics across all member ports
+            
+             Note:
+             - LAG interfaces may coexist with Ethernet or Fibre entries; no deduplication is applied.
+             - SonicWall interface naming is inconsistent across models — validate `ifDescr` labels per deployment.
+          item_prototypes:
+            - uuid: c72f0151f79c418e89c8838f2d961678
+              name: 'LAG: {#IFDESCR} Errors In'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
+              key: 'lag.ifInErrors[{#IFDESCR}]'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: LAG
+                - tag: Metrics
+                  value: Errors
+              trigger_prototypes:
+                - uuid: 70c4c487c4bf47fbbfa9ef726caec3bc
+                  expression: 'count(/Sonicwall Firewall/lag.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR})>2'
+                  name: 'LAG {#IFDESCR} Inbound Errors'
+                  priority: AVERAGE
+                  tags:
+                    - tag: Condition
+                      value: Threshold
+            - uuid: 0ed5af57dfe04b55afc3e7e0db859163
+              name: 'LAG: {#IFDESCR} Bytes In'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
+              key: 'lag.ifInOctets[{#IFDESCR}]'
+              units: Bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: LAG
+                - tag: Metrics
+                  value: Traffic
+            - uuid: 069d7489a9f244758cc7b6cda5ffa535
+              name: 'LAG: {#IFDESCR} Errors Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
+              key: 'lag.ifOutErrors[{#IFDESCR}]'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: LAG
+                - tag: Metrics
+                  value: Errors
+              trigger_prototypes:
+                - uuid: 33ed21d43f414eb5a2948c79c0b79c26
+                  expression: 'count(/Sonicwall Firewall/lag.ifOutErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_INTERFACE_ERROR})>2'
+                  name: 'LAG {#IFDESCR} Outbound Errors'
+                  priority: AVERAGE
+                  tags:
+                    - tag: Condition
+                      value: Threshold
+            - uuid: b4ba7bc8fbf746cabe9e45187e7410ce
+              name: 'LAG: {#IFDESCR} Bytes Out'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
+              key: 'lag.ifOutOctets[{#IFDESCR}]'
+              units: Bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: LAG
+                - tag: Metrics
+                  value: Traffic
+            - uuid: 196f611499b94fb894049bc6cd2eda70
+              name: 'LAG: {#IFDESCR} Status'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
+              key: 'lag.status[{#IFDESCR}]'
+              valuemap:
+                name: sonicwall.interface.status.valuemap
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: LAG
+                - tag: Metrics
+                  value: State
+              trigger_prototypes:
+                - uuid: e9c18edffa4f4676a9326199a9f828c6
+                  expression: 'count(/Sonicwall Firewall/lag.status[{#IFDESCR}],5m,"ne")>2 and nodata(/Sonicwall Firewall/lag.status[{#IFDESCR}],120s)=0'
+                  name: 'LAG {#IFDESCR} status changed'
+                  priority: WARNING
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Condition
+                      value: Flap/Config
+          graph_prototypes:
+            - uuid: 931a7ef6afcc4b9aaa149555942b8df1
+              name: 'LAG: {#IFDESCR} Traffic'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'lag.ifInOctets[{#IFDESCR}]'
+                - sortorder: '1'
+                  color: 00BFFF
+                  calc_fnc: ALL
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'lag.ifOutOctets[{#IFDESCR}]'
+                - sortorder: '2'
+                  drawtype: FILLED_REGION
+                  color: FF8000
+                  calc_fnc: ALL
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'lag.ifInErrors[{#IFDESCR}]'
+                - sortorder: '3'
+                  drawtype: FILLED_REGION
+                  color: FF0000
+                  calc_fnc: ALL
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'lag.ifOutErrors[{#IFDESCR}]'
         - uuid: 298be1eb79004ae9ba28995aeff057e0
           name: 'Licensed Features [MAIL]'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#MAIL_LICENSE},1.3.6.1.4.1.8741.1.3.1.6.0]'
+          snmp_oid: 'discovery[{#MAIL_LICENSE},1.3.6.1.2.1.2.2.1.1]'
           key: mail.discovery
           delay: 1h
           filter:
             conditions:
               - macro: '{#MAIL_LICENSE}'
-                value: '1'
+                value: ^1$
                 formulaid: A
           lifetime: 1d
+          description: |
+            Discovers SMTP-related mail security metrics, including total messages, spam detected, viruses blocked, and legitimate mail allowed.
+            
+            These values are only exposed via SNMP when the Mail Security license is active and email protection is enabled on relevant policies.
+            
+            Useful for tracking unsolicited email volume and correlating spam events with DNS blacklists or attachment handling rules.
           item_prototypes:
             - uuid: 583a9eb670824e8fbc2748bcc1902a0f
               name: 'Mail Good Allowed ({#MAIL_LICENSE})'
@@ -1148,6 +1382,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: Mail
             - uuid: f215d1044787409c8ed1d801e376781d
               name: 'Mail Spam Detected ({#MAIL_LICENSE})'
               type: SNMP_AGENT
@@ -1157,6 +1398,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: Mail
             - uuid: 71f2827827694e27950efdc26b648135
               name: 'Mail Total Count ({#MAIL_LICENSE})'
               type: SNMP_AGENT
@@ -1166,6 +1414,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: Mail
             - uuid: 13e7fa716385460b8280ff5afd54537b
               name: 'Mail Virus Detected ({#MAIL_LICENSE})'
               type: SNMP_AGENT
@@ -1175,6 +1430,13 @@ zabbix_export:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
                     - '3600'
+              tags:
+                - tag: Component
+                  value: Feature
+                - tag: Feature
+                  value: Security
+                - tag: Service
+                  value: Mail
           graph_prototypes:
             - uuid: 2a3c1e7af149448eafe0f7cc126476b9
               name: 'Mail Security Activity'
@@ -1217,7 +1479,21 @@ zabbix_export:
               - macro: '{#IFTYPE}'
                 value: ^(53|135)$
                 formulaid: A
-          description: 'Discover interfaces where ifType = 53 (Layer 2 VLAN) or 135 (Layer 3 SubInterface) and filter names. eg "X0.V10".'
+          description: |
+            Discover VLAN-tagged interfaces, including both Layer 2 and Layer 3 subinterfaces configured on physical or virtual ports.
+            
+            This rule targets:
+             - `ifType = 53` (propVirtual — common for VLAN-tagged Layer 2)
+             - `ifType = 135` (l3ipvlan — Layer 3 subinterface with VLAN ID)
+            
+            These interfaces typically appear as:
+             - `X0.V10`, `X2.V50`, etc. (e.g., `interface.vlan`)
+             - Tagged subinterfaces used for segmentation, guest networks, or zone isolation
+            
+            Notes:
+             - SonicWall reports some VLANs as independent `ifIndex` values, allowing direct SNMP polling
+             - If these interfaces are not routable, traffic counters may show zero despite being active
+             - This rule does not apply to VLANs on VTI tunnels or PortShield bridges — use dedicated discovery rules for those
           item_prototypes:
             - uuid: 2a15151dc9bb4deaab667f5e44dc963b
               name: 'VLAN: {#IFDESCR} Errors In'
@@ -1234,7 +1510,7 @@ zabbix_export:
                 - tag: Interface
                   value: VLAN
                 - tag: Metrics
-                  value: Traffic
+                  value: Errors
               trigger_prototypes:
                 - uuid: a62f49f6073740658b7c9b19f3d43ef4
                   expression: 'count(/Sonicwall Firewall/vlan.ifInErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_VLAN_WARNING})>2'
@@ -1242,10 +1518,8 @@ zabbix_export:
                   priority: WARNING
                   description: 'Inbound errors on VLAN {#IFDESCR} exceeded warning threshold ({ITEM.LASTVALUE} > {$SONICWALL_VLAN_WARNING}/s)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: VLAN
+                    - tag: Condition
+                      value: Threshold
             - uuid: 10866c4d787342cba3ebfa2360488962
               name: 'VLAN: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
@@ -1273,10 +1547,8 @@ zabbix_export:
                   priority: INFO
                   description: 'The VLAN {#IFDESCR} has had {$SONICWALL_VLAN_NO_TRAFFIC} bytes of traffic Inbound over the past 5mins'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: VLAN
+                    - tag: Condition
+                      value: Threshold
             - uuid: 3ec81e3336ea4d57885ff531ad3630d0
               name: 'VLAN: {#IFDESCR} Errors Out'
               type: SNMP_AGENT
@@ -1291,6 +1563,8 @@ zabbix_export:
                   value: Interface
                 - tag: Interface
                   value: VLAN
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: f9492c04fd4c42919b71178695288620
                   expression: 'count(/Sonicwall Firewall/vlan.ifOutErrors[{#IFDESCR}],5m,"gt",{$SONICWALL_VLAN_WARNING})>2'
@@ -1298,10 +1572,8 @@ zabbix_export:
                   priority: WARNING
                   description: 'Outbound errors on VLAN {#IFDESCR} exceeded threshold ({ITEM.LASTVALUE} > {$SONICWALL_VLAN_WARNING}/s)'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: VLAN
+                    - tag: Condition
+                      value: Threshold
             - uuid: f82c20ffb87143afb0f0606bfe47f98e
               name: 'VLAN: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
@@ -1329,10 +1601,8 @@ zabbix_export:
                   priority: INFO
                   description: 'The VLAN {#IFDESCR} has had {$SONICWALL_VLAN_NO_TRAFFIC} bytes of traffic Outbound over the past 5mins'
                   tags:
-                    - tag: Component
-                      value: Interface
-                    - tag: Interface
-                      value: VLAN
+                    - tag: Condition
+                      value: Threshold
             - uuid: 8d5922eadc904e529e9c8f5499c8832c
               name: 'VLAN: {#IFDESCR} Status'
               type: SNMP_AGENT
@@ -1340,6 +1610,13 @@ zabbix_export:
               key: 'vlan.status[{#IFDESCR}]'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              tags:
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: VLAN
+                - tag: Metrics
+                  value: State
           graph_prototypes:
             - uuid: 2b7646f0fbf341c2983e8d62b13562b6
               name: 'VLAN: {#IFDESCR} Traffic'
@@ -1382,13 +1659,28 @@ zabbix_export:
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
                 formulaid: A
-          description: 'Discovers IPsec Phase-2 VPN tunnels by Security Association name (sonicSAStatUserName). Avoids reliance on legacy interface-based VPN detection.'
+          description: |
+            Discover active IPsec Phase-2 Security Associations (SAs) for policy-based VPNs.
+              
+            Each discovered entity corresponds to a live SA, indexed by a dynamic SNMP index ({#VPNINDEX}), with an associated tunnel identifier ({#VPNNAME}) pulled from `sonicSAStatUserName`.
+            
+            Policy-based VPNs:
+             - Define explicit encryption domains (local/remote subnets)
+             - Do not create interface representations in SNMP
+             - Are represented only while an SA is active
+              
+            Important:
+             - SonicWall does not expose static VPN definitions via SNMP
+             - SAs expire and rekey frequently — this discovery can yield hundreds of short-lived entries
+             - Use strict regex filters and reduced retention to control template scale and history growth
           item_prototypes:
             - uuid: ddd196ba48194cf0a8c5e66222ef3e5d
-              name: 'VPN Policy: {#VPNNAME} Decrypt Bytes In'
+              name: 'VPN Policy: {#VPNNAME} Bytes In'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#VPNINDEX}'
               key: 'vpn.policy.bytesIn[{#VPNNAME},{#VPNINDEX}]'
+              history: 1d
+              trends: 1d
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -1405,11 +1697,11 @@ zabbix_export:
                 - tag: VPN
                   value: Policy
             - uuid: 9882b0fbcf2c42daa1a030cf75c97b28
-              name: 'VPN Policy: {#VPNNAME} Encrypt Bytes Out'
+              name: 'VPN Policy: {#VPNNAME} Bytes Out'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#VPNINDEX}'
               key: 'vpn.policy.bytesOut[{#VPNNAME},{#VPNINDEX}]'
-              history: 3h
+              history: 1d
               trends: 1d
               units: Bps
               preprocessing:
@@ -1431,7 +1723,7 @@ zabbix_export:
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.7.{#VPNINDEX}'
               key: 'vpn.policy.sa.create_time[{#VPNNAME},{#VPNINDEX}]'
-              history: 3h
+              history: 1d
               value_type: CHAR
               trends: '0'
               tags:
@@ -1454,29 +1746,8 @@ zabbix_export:
                 This trigger is informational and intended to highlight long-idle SAs for review.
               manual_close: 'YES'
               tags:
-                - tag: Behaviour
+                - tag: Condition
                   value: Idle
-                - tag: Component
-                  value: VPN
-                - tag: VPN
-                  value: Policy
-          graph_prototypes:
-            - uuid: b7d8d7f5f17b4ffcb1d6a3e0db0f5c04
-              name: 'VPN Policy: Traffic ({#VPNNAME},{#VPNINDEX})'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  type: GRAPH_SUM
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'vpn.policy.bytesIn[{#VPNNAME},{#VPNINDEX}]'
-                - sortorder: '1'
-                  color: FF0000
-                  calc_fnc: ALL
-                  type: GRAPH_SUM
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'vpn.policy.bytesOut[{#VPNNAME},{#VPNINDEX}]'
         - uuid: 5b8828f520044cb4aee1248934790d9b
           name: 'VPN Tunnels (Route Based)'
           type: SNMP_AGENT
@@ -1496,7 +1767,19 @@ zabbix_export:
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
                 formulaid: C
-          description: 'Discover policy-based VPN tunnels. Excluding these [{#SONICWALL_VPN_IGNORE_REGEX}] \n - Tunnels administratively DISABLED \n - Firewalls with "NSa 3650" model, firmware never exposed tunnel statistics over snmp.'
+          description: |
+            Discover dynamically instantiated route-based VPN TUNNEL interfaces (ifType=131).
+              
+            These represent the runtime IPsec tunnel state associated with route-based VPN SAs. The encryption domain is always 0.0.0.0/0 (match any), and SAs are tied to these tunnels.
+              
+            These interfaces provide:
+             - Real-time flap monitoring
+             - Byte and error counters
+             - Accurate tunnel usage insights
+              
+            This intentionally overlaps with VTI monitoring. Each layer serves a different purpose:
+             - VTI: persistent configuration and routing layer
+             - TUNNEL: dynamic SA interface for traffic visibility
           item_prototypes:
             - uuid: 3c1bb76ca478444db54d7f394e046c23
               name: 'VPN Route: {#VPNNAME} Errors In'
@@ -1515,7 +1798,7 @@ zabbix_export:
                 - tag: Component
                   value: VPN
                 - tag: Metrics
-                  value: Traffic
+                  value: Errors
                 - tag: VPN
                   value: Route
               trigger_prototypes:
@@ -1525,10 +1808,8 @@ zabbix_export:
                   priority: HIGH
                   description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
                   tags:
-                    - tag: Component
-                      value: VPN
-                    - tag: VPN
-                      value: Route
+                    - tag: Condition
+                      value: Threshold
                 - uuid: 0b5b79c341af4a4382c02676b245dd38
                   expression: 'avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],3m) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
                   name: 'VPN Route: {#VPNNAME} Inbound Errors (Warning)'
@@ -1544,7 +1825,6 @@ zabbix_export:
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInOctets.{#SNMPINDEX}'
               key: 'vpn.route.ifInOctets[{#VPNNAME}]'
-              status: DISABLED
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -1553,7 +1833,7 @@ zabbix_export:
               tags:
                 - tag: Component
                   value: VPN
-                - tag: Metric
+                - tag: Metrics
                   value: Traffic
                 - tag: VPN
                   value: Route
@@ -1573,7 +1853,7 @@ zabbix_export:
                 - tag: Component
                   value: VPN
                 - tag: Metrics
-                  value: Traffic
+                  value: Errors
                 - tag: VPN
                   value: Route
               trigger_prototypes:
@@ -1583,26 +1863,21 @@ zabbix_export:
                   priority: HIGH
                   description: 'IfOutErrors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
                   tags:
-                    - tag: Component
-                      value: VPN
-                    - tag: VPN
-                      value: Route
+                    - tag: Condition
+                      value: Threshold
                 - uuid: e8c4770f6c18443a89d3009bef1a2ce2
                   expression: 'last(/Sonicwall Firewall/vpn.route.ifOutErrors[{#VPNNAME}]) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
                   name: 'VPN Route: {#VPNNAME} Outbound Errors (Warning)'
                   priority: AVERAGE
                   description: 'IfOutErrors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
                   tags:
-                    - tag: Component
-                      value: VPN
-                    - tag: VPN
-                      value: Route
+                    - tag: Condition
+                      value: Threshold
             - uuid: 5c4f71c24d51433fa572275b0726f2f1
               name: 'VPN Route: {#VPNNAME} Bytes Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutOctets.{#SNMPINDEX}'
               key: 'vpn.route.ifOutOctets[{#VPNNAME}]'
-              status: DISABLED
               units: bps
               description: 'Bytes Out counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
@@ -1621,7 +1896,6 @@ zabbix_export:
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
               key: 'vpn.route.status[{#VPNNAME}]'
-              status: DISABLED
               valuemap:
                 name: sonicwall.vpn.status.valuemap
               tags:
@@ -1639,10 +1913,8 @@ zabbix_export:
                   description: 'Status counter not exposed during testing - Bug in the Sonicwall Firmware?'
                   manual_close: 'YES'
                   tags:
-                    - tag: Component
-                      value: VPN
-                    - tag: VPN
-                      value: Route
+                    - tag: Condition
+                      value: Threshold
                 - uuid: 7e5b193f9d734c2ea2745793eebfe8fc
                   expression: |
                     count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
@@ -1698,7 +1970,15 @@ zabbix_export:
               - macro: '{#IFTYPE}'
                 value: ^(131)$
                 formulaid: A
-          description: 'Discover route-based VPN interfaces (ifType=131)'
+          description: |
+            Discover route-based VPN interfaces (ifType=131).
+              
+            These interfaces represent Virtual Tunnel Interfaces (VTI) — persistent Layer-3 interfaces configured with IPs and routed using static or dynamic protocols (e.g., BGP).
+              
+            VTIs are the configuration layer and always exist. However, traffic counters may be idle if tunnels are unused.
+              
+            Note: These are distinct from the tunnel interfaces associated with active IPsec Security Associations (SAs).
+            Do not assume this discovery overlaps with route-based TUNNEL metrics; especially with more than one Phase 2 SA.
           item_prototypes:
             - uuid: c07868e00c92478a92098e28c7ef58fb
               name: 'VTI: {#VTINAME} Bytes In'
@@ -1714,7 +1994,11 @@ zabbix_export:
                   parameters:
                     - '8'
               tags:
-                - tag: VPN
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: VTI
+                - tag: Metrics
                   value: Traffic
             - uuid: b50e7769e7384bc190dc24773b45a2c4
               name: 'VTI: {#VTINAME} Bytes Out'
@@ -1730,7 +2014,11 @@ zabbix_export:
                   parameters:
                     - '8'
               tags:
-                - tag: VPN
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: VTI
+                - tag: Metrics
                   value: Traffic
             - uuid: f6aee31a88024fb490f2b94098327380
               name: 'VTI: {#VTINAME} Errors In'
@@ -1742,17 +2030,27 @@ zabbix_export:
                   parameters:
                     - ''
               tags:
-                - tag: VPN
-                  value: Traffic
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: VTI
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: 36326c71d1654a30aa3fbad79539eeda
                   expression: 'count(/Sonicwall Firewall/vti.errorsIn[{#VTINAME}],5m,"gt",{$SONICWALL_VPN_ERROR})>2'
                   name: 'VTI: {#VTINAME} Inbound Errors'
                   priority: HIGH
+                  tags:
+                    - tag: Condition
+                      value: Threshold
                 - uuid: bc04567371fe42b7839411dfc8da4f50
                   expression: 'count(/Sonicwall Firewall/vti.errorsIn[{#VTINAME}],5m,"gt",{$SONICWALL_VPN_WARNING_THRESHOLD})>2'
                   name: 'VTI: {#VTINAME} Inbound Warning'
                   priority: AVERAGE
+                  tags:
+                    - tag: Condition
+                      value: Threshold
             - uuid: 09ffdad6ae16442a9b10ba37c2b89842
               name: 'VTI: {#VTINAME} Errors Out'
               type: SNMP_AGENT
@@ -1763,17 +2061,27 @@ zabbix_export:
                   parameters:
                     - ''
               tags:
-                - tag: VPN
-                  value: Traffic
+                - tag: Component
+                  value: Interface
+                - tag: Interface
+                  value: VTI
+                - tag: Metrics
+                  value: Errors
               trigger_prototypes:
                 - uuid: 893bc0b990d64e118039f0d8e6b6bbf0
                   expression: 'count(/Sonicwall Firewall/vti.errorsOut[{#VTINAME}],5m,"gt",{$SONICWALL_VPN_ERROR})>2'
                   name: 'VTI: {#VTINAME} Outbound Errors'
                   priority: HIGH
+                  tags:
+                    - tag: Condition
+                      value: Threshold
                 - uuid: f6c4bd1e1ccb48e9a86586b9ff5c2a5f
                   expression: 'count(/Sonicwall Firewall/vti.errorsOut[{#VTINAME}],5m,"gt",{$SONICWALL_VPN_WARNING_THRESHOLD})>2'
                   name: 'VTI: {#VTINAME} Outbound Warning'
                   priority: AVERAGE
+                  tags:
+                    - tag: Condition
+                      value: Threshold
             - uuid: 7b173c18fc024e99a84e389f9706e21a
               name: 'VTI: {#VTINAME} Status'
               type: SNMP_AGENT
@@ -1783,7 +2091,11 @@ zabbix_export:
                 name: sonicwall.interface.status.valuemap
               tags:
                 - tag: Component
+                  value: Interface
+                - tag: Interface
                   value: VTI
+                - tag: Metrics
+                  value: State
               trigger_prototypes:
                 - uuid: f094bd2abb4a40a48fdfdf1aa71cb382
                   expression: 'count(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],5m,"ne")>2 and nodata(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],120s)=0'
@@ -1791,8 +2103,8 @@ zabbix_export:
                   priority: AVERAGE
                   manual_close: 'YES'
                   tags:
-                    - tag: Component
-                      value: VPN
+                    - tag: Condition
+                      value: Config
           graph_prototypes:
             - uuid: ac9b24f725a5471d9f3befefa3a5f43a
               name: 'VTI: {#VTINAME} Traffic'
@@ -1903,63 +2215,68 @@ zabbix_export:
               widgets:
                 - type: problemsbysv
                   width: '36'
-                  height: '1'
                   hide_header: 'YES'
                   fields:
                     - type: STRING
                       name: reference
                       value: YKUZB
-                - type: honeycomb
-                  name: 'Important Info'
-                  'y': '1'
-                  width: '26'
-                  height: '3'
-                  fields:
-                    - type: STRING
-                      name: items.0
-                      value: 'Device Firmware Version'
-                    - type: STRING
-                      name: items.1
-                      value: 'Device Model'
-                    - type: STRING
-                      name: items.2
-                      value: 'Device ROM Version'
-                    - type: STRING
-                      name: items.3
-                      value: 'Device Temperature'
-                    - type: STRING
-                      name: primary_label
-                      value: '{ITEM.NAME}'
-                    - type: STRING
-                      name: reference
-                      value: BFIFR
                 - type: svggraph
-                  name: 'Activity (unsupported during testing)'
-                  'y': '4'
+                  name: Activity
+                  'y': '2'
                   width: '36'
                   height: '3'
                   fields:
+                    - type: INTEGER
+                      name: ds.0.aggregate_function
+                      value: '5'
+                    - type: INTEGER
+                      name: ds.0.aggregate_grouping
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.aggregate_interval
+                      value: 1m
                     - type: STRING
                       name: ds.0.color
                       value: 00FFBF
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Traffic: Inbound'
                     - type: INTEGER
                       name: ds.0.fill
                       value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'Traffic: Inbound'
+                      value: 'Interface: * Bytes In'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'LAG: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
+                    - type: INTEGER
+                      name: ds.1.aggregate_function
+                      value: '5'
+                    - type: INTEGER
+                      name: ds.1.aggregate_grouping
+                      value: '1'
+                    - type: STRING
+                      name: ds.1.aggregate_interval
+                      value: 1m
                     - type: STRING
                       name: ds.1.color
                       value: 0080FF
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Traffic: Outbound'
                     - type: INTEGER
                       name: ds.1.fill
                       value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'Traffic: Outbound'
+                      value: 'Interface: * Bytes Out'
+                    - type: STRING
+                      name: ds.1.items.1
+                      value: 'LAG: * Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
@@ -1979,17 +2296,43 @@ zabbix_export:
                       name: simple_triggers
                       value: '1'
                 - type: item
-                  x: '26'
-                  'y': '1'
+                  name: Primary
+                  'y': '5'
                   width: '10'
-                  height: '3'
                   fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: sonicwall.primary.status
                     - type: INTEGER
                       name: show.0
                       value: '2'
                     - type: INTEGER
-                      name: show.1
-                      value: '4'
+                      name: units_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: units_show
+                      value: '0'
+                - type: item
+                  name: Secondary
+                  'y': '7'
+                  width: '10'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: sonicwall.secondary.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
                     - type: INTEGER
                       name: units_bold
                       value: '0'
@@ -1998,8 +2341,9 @@ zabbix_export:
                       value: '0'
                 - type: svggraph
                   name: 'HA Member Sync'
-                  x: '36'
-                  width: '23'
+                  x: '10'
+                  'y': '5'
+                  width: '26'
                   height: '4'
                   fields:
                     - type: STRING
@@ -2038,36 +2382,34 @@ zabbix_export:
                     - type: INTEGER
                       name: righty
                       value: '0'
-                - type: gauge
+                - type: honeycomb
+                  name: 'Important Info'
                   x: '36'
-                  'y': '4'
-                  width: '11'
+                  width: '26'
                   height: '3'
                   fields:
-                    - type: ITEM
-                      name: itemid.0
-                      value:
-                        host: 'Sonicwall Firewall'
-                        key: sonicwall.ram.utilisation
                     - type: STRING
-                      name: max
-                      value: '100'
+                      name: items.0
+                      value: 'Device Firmware Version'
                     - type: STRING
-                      name: min
-                      value: '0'
-                    - type: INTEGER
-                      name: show.0
-                      value: '2'
-                    - type: INTEGER
-                      name: show.1
-                      value: '4'
-                    - type: INTEGER
-                      name: show.2
-                      value: '5'
+                      name: items.1
+                      value: 'Device Model'
+                    - type: STRING
+                      name: items.2
+                      value: 'Device ROM Version'
+                    - type: STRING
+                      name: items.3
+                      value: 'Device Temperature'
+                    - type: STRING
+                      name: primary_label
+                      value: '{ITEM.NAME}'
+                    - type: STRING
+                      name: reference
+                      value: BFIFR
                 - type: gauge
-                  x: '47'
-                  'y': '4'
-                  width: '12'
+                  x: '36'
+                  'y': '3'
+                  width: '13'
                   height: '3'
                   fields:
                     - type: ITEM
@@ -2090,6 +2432,70 @@ zabbix_export:
                     - type: INTEGER
                       name: show.2
                       value: '5'
+                - type: gauge
+                  x: '36'
+                  'y': '6'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: temperature
+                    - type: STRING
+                      name: max
+                      value: '80'
+                    - type: STRING
+                      name: min
+                      value: '20'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0080FF
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '25'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '45'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '70'
+                - type: gauge
+                  x: '49'
+                  'y': '3'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: sonicwall.ram.utilisation
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
             - name: Interfaces
               widgets:
                 - type: honeycomb
@@ -2097,11 +2503,17 @@ zabbix_export:
                   width: '47'
                   fields:
                     - type: INTEGER
+                      name: evaltype_item
+                      value: '2'
+                    - type: INTEGER
                       name: interpolation
                       value: '1'
                     - type: STRING
                       name: items.0
                       value: 'Interface: * Status'
+                    - type: STRING
+                      name: items.1
+                      value: 'LAG: * Status'
                     - type: INTEGER
                       name: item_tags.0.operator
                       value: '1'
@@ -2174,6 +2586,30 @@ zabbix_export:
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: INTEGER
+                      name: ds.2.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'LAG: * Bytes In'
+                    - type: INTEGER
+                      name: ds.2.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: INTEGER
+                      name: ds.3.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'LAG: * Bytes Out'
+                    - type: INTEGER
+                      name: ds.3.transparency
+                      value: '3'
                     - type: INTEGER
                       name: legend_lines
                       value: '8'
@@ -2225,6 +2661,30 @@ zabbix_export:
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: INTEGER
+                      name: ds.2.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'LAG: * Errors In'
+                    - type: INTEGER
+                      name: ds.2.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: INTEGER
+                      name: ds.3.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'LAG: * Errors Out'
+                    - type: INTEGER
+                      name: ds.3.transparency
+                      value: '3'
                     - type: INTEGER
                       name: legend_lines_mode
                       value: '1'
@@ -2271,9 +2731,15 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: SVIZL
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
                     - type: INTEGER
-                      name: show.0
-                      value: '1'
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
                     - type: STRING
                       name: thresholds.0.color
                       value: 00FF00
@@ -2327,7 +2793,7 @@ zabbix_export:
             - name: 'VPNs (VTI)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Tunnels'
+                  name: 'VPN Tunnels (unsupported)'
                   width: '21'
                   height: '5'
                   fields:
@@ -2625,18 +3091,6 @@ zabbix_export:
                   width: '51'
                   height: '4'
                   fields:
-                    - type: INTEGER
-                      name: ds.0.aggregate_function
-                      value: '5'
-                    - type: INTEGER
-                      name: ds.0.aggregate_grouping
-                      value: '1'
-                    - type: STRING
-                      name: ds.0.aggregate_interval
-                      value: 1m
-                    - type: INTEGER
-                      name: ds.0.approximation
-                      value: '7'
                     - type: STRING
                       name: ds.0.color
                       value: 00FF00
@@ -2649,18 +3103,6 @@ zabbix_export:
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
-                    - type: INTEGER
-                      name: ds.1.aggregate_function
-                      value: '5'
-                    - type: INTEGER
-                      name: ds.1.aggregate_grouping
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.aggregate_interval
-                      value: 1m
-                    - type: INTEGER
-                      name: ds.1.approximation
-                      value: '7'
                     - type: STRING
                       name: ds.1.color
                       value: 00BFFF
@@ -2682,6 +3124,55 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: TGCPP
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                    - type: INTEGER
+                      name: simple_triggers
+                      value: '1'
+                    - type: INTEGER
+                      name: working_time
+                      value: '1'
+                - type: svggraph
+                  name: 'VPN: Bytes In/Out'
+                  x: '21'
+                  'y': '4'
+                  width: '51'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'VPN: * Bytes In'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: INTEGER
+                      name: ds.1.fill
+                      value: '1'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'VPN: * Bytes Out'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WVSXV
                     - type: INTEGER
                       name: righty
                       value: '0'
@@ -2755,5 +3246,5 @@ zabbix_export:
         Secondary: {avg(/Sonicwall Firewall/sonicwall.secondary.status,10m)}
       manual_close: 'YES'
       tags:
-        - tag: Component
-          value: HA
+        - tag: Condition
+          value: Threshold
