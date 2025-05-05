@@ -380,7 +380,7 @@ zabbix_export:
                   value: Performance
           graph_prototypes:
             - uuid: 8ce8b8eac68d4e66b07e10d4bb921f8c
-              name: 'File System Consumption'
+              name: 'FS: {#HRSTORAGEINDEX} Consumption'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -551,7 +551,7 @@ zabbix_export:
                       value: Flap/Down
           graph_prototypes:
             - uuid: 8c8a66a5190746db8d519d479803d17f
-              name: 'Interface Traffic'
+              name: 'Interface {#IFDESCR} Traffic'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -619,7 +619,7 @@ zabbix_export:
                   value: Performance
           graph_prototypes:
             - uuid: 8bfdf7e6cd1449f6aff2ce5c2195f40d
-              name: 'Memory Footprint'
+              name: 'Memory Footprint (#HRSTORAGEDESCR)'
               yaxismax: '0'
               show_work_period: 'NO'
               show_triggers: 'NO'
@@ -915,7 +915,7 @@ zabbix_export:
                       value: '{#VLANID}'
           graph_prototypes:
             - uuid: 40477aefd58d410cbb6341eb1efaf388
-              name: 'VLAN Traffic'
+              name: 'VLAN: {#VLANID} Traffic'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1098,7 +1098,7 @@ zabbix_export:
                       value: L2TP
           graph_prototypes:
             - uuid: ea54c6f4ffff4f05a2c43d2371dc9638
-              name: 'VPN Traffic (L2TP)'
+              name: 'VPN Traffic (L2TP - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1281,7 +1281,7 @@ zabbix_export:
                       value: OpenVPN
           graph_prototypes:
             - uuid: ab98bdbcb7b74a588ea28f8587bc8af4
-              name: 'VPN Traffic (OpenVPN)'
+              name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1463,7 +1463,7 @@ zabbix_export:
                       value: Policy
           graph_prototypes:
             - uuid: 3a5478bac279473887908f328cf3961f
-              name: 'VPN Traffic (Policy)'
+              name: 'VPN Traffic (Policy - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1646,7 +1646,7 @@ zabbix_export:
                       value: PPTP
           graph_prototypes:
             - uuid: 8fddb867a90544d3a6cfb1482d3a44f6
-              name: 'VPN Traffic (PPTP)'
+              name: 'VPN Traffic (PPTP - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1837,7 +1837,7 @@ zabbix_export:
                       value: Route
           graph_prototypes:
             - uuid: 6254f464c55e48829f9f984d6a1a0d48
-              name: 'VPN Traffic (Route)'
+              name: 'VPN Traffic (Route - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -2028,7 +2028,7 @@ zabbix_export:
                       value: Teleport
           graph_prototypes:
             - uuid: 9e351ef7d74b4af6b00b7ad2426d12f4
-              name: 'VPN Traffic (Teleport)'
+              name: 'VPN Traffic (Teleport - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -2221,7 +2221,7 @@ zabbix_export:
                       value: WireGuard
           graph_prototypes:
             - uuid: 9985f6b1c3d3408aa9459f172305873b
-              name: 'VPN Traffic (WireGuard)'
+              name: 'VPN Traffic (WireGuard - {#IFDESCR})'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -2633,7 +2633,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'File System Consumption'
+                        name: 'FS: {#HRSTORAGEINDEX} Consumption'
                     - type: STRING
                       name: reference
                       value: FOSTC
@@ -2827,7 +2827,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VLAN Traffic'
+                        name: 'VLAN: {#VLANID} Traffic'
                     - type: STRING
                       name: reference
                       value: JTKHG
@@ -2885,7 +2885,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Route)'
+                        name: 'VPN Traffic (Route - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: DNUDU
@@ -2902,7 +2902,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (OpenVPN)'
+                        name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: KCCZT
@@ -2919,7 +2919,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (WireGuard)'
+                        name: 'VPN Traffic (WireGuard - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: YIVFQ
@@ -2936,7 +2936,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (L2TP)'
+                        name: 'VPN Traffic (L2TP - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: VIFUD
@@ -2954,7 +2954,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Policy)'
+                        name: 'VPN Traffic (Policy - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: BMTPQ
@@ -2972,7 +2972,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Teleport)'
+                        name: 'VPN Traffic (Teleport - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: SSTSZ
@@ -2990,7 +2990,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (PPTP)'
+                        name: 'VPN Traffic (PPTP - {#IFDESCR})'
                     - type: STRING
                       name: reference
                       value: MRKHB
