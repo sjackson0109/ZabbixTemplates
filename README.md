@@ -4,8 +4,12 @@ This repository contains custom scripts designed for **Zabbix Monitoring**. Each
 ## Structure
 All custom monitoring scripts reside under this repository. Below are the available scripts with their respective documentation:
 
-### Available Scripts:
+### Available Templates
+- **[Zabbix Template: Sonicwall Firewall](README-Template_Sonicwall_Firewall.md)** - A complete MIB pack evaluation of what is possible to walk (discovery rules) and what can be created manually (items). Spent approx 2 weeks testing, and customising graphs, triggers and the device dashboard.
 - **[Zabbix Template: Watchguard Firebox](README-Template_Watchguard_Firebox.md)** - A very large expansion on the community module of the original `Watchguard Firebox M400`. I now have approx 500 metrics on a HA pair in our datacentre. Items, item-triggers, graphs and even dashboards are all discovered now.
+- **[Zabbix Template: Ubiquiti Firewall](README-Template_Ubiquiti_Firewall.md)** - Another complete seveeral MIB packs; tested on a UCG and USG, no other devices available to test against. Spent approx 1 weeks testing, and customising graphs, triggers and the device dashboard.
+
+### Available Scripts:
 - **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
 - **[get_tls_handshake.py](README-TLS-Handshake.md)** - A Python script designed to test TLS handshake capabilities of a specified HOST (Hostname, FQDN or IP endpoint). It dynamically detects the available SSL/TLS protocols and ciphers on the client-system, tests their compatibility against the supplied host/port, and provides a breakdown report of successful and failed connections.
 

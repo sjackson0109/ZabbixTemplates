@@ -4,6 +4,7 @@ Author: Simon Jackson (sjackson0109)
 Created: 2025/04/24
 Updated: 2025/04/24
 Version: 1.0
+Note:  NOT YET OPERATIONAL
 Description:
     Script that is designed to allow for the execution of SNMP GET/SET/WALK commands, via the Zabbix UI, without the need to install snmptools.
 Features:

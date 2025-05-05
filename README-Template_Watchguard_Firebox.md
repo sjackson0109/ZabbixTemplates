@@ -1,108 +1,127 @@
-# 📡 Zabbix Template: WatchGuard Firebox
+# Zabbix Template: WatchGuard Firebox
 
 ### Author: Simon Jackson / sjackson0109  
-### Created: 2025/04/01
-### Updated: 2025/04/04
+### Created: 2025/04/01  
+### Updated: 2025/05/01
 
+A production-grade Zabbix template for in-depth SNMPv2-based monitoring of WatchGuard Firebox appliances. Built using YAML v7.0 format, this template provides comprehensive visibility across system health, VPNs, clustering, interfaces, and application-layer metrics.
 
-A production-grade Zabbix template designed for in-depth SNMPv3-based monitoring of **WatchGuard Firebox** appliances. The template is compatible with Zabbix 6.0+ and 7.0 YAML format, and provides extensive visibility into system health, network interfaces, VPN tunnels, clustering, and performance metrics.
-
----
-
-## 📦 Features
+## Features
 
 This template provides:
 
-### ✅ System Health
-- CPU load
-- Temperature sensors
-- Fan status and RPM
-- System uptime
-- Memory and swap usage
-- Disk and storage cache visibility
+### System Health
+- CPU load (%), memory & swap usage, and cache utilisation
+- Temperature sensors with thresholds
+- Fan RPM and operational status
+- Uptime, system description, firmware version
+- Disk usage metrics (total, used %, thresholds)
 
-### ✅ Network Interfaces
-- Full interface discovery
-- Interface throughput (bps)
-- Error and discard counters
-- Interface status (up/down)
+### Network Interfaces
+- SNMP interface discovery using `ifDescr` and `ifType`
+- Per-interface throughput (bps), error/discard counters
+- Interface up/down state with value mapping
+- BoVPN-specific interfaces filtered by `ifType = 131`
 
-### ✅ VPN Monitoring
-- **Branch Office VPN (BoVPN)** discovery via `ifType = 131`
-- Per-tunnel traffic metrics
-- BoVPN interface status and availability
-- Packet loss and latency (when exposed)
+### VPN Monitoring
+- Branch Office VPN (BoVPN) discovery using `ifType = 131`
+- Per-BoVPN metrics: bytes in/out, error counters, status
+- Trigger prototypes for error thresholds, state changes
+- Graphs for VPN tunnel traffic, errors, and state
 
-### ✅ Cluster Awareness
-- Detection of High Availability (HA) roles
-- Cluster state and member serials
-- Peer role status and health (if configured)
+### Partial Policy-Based VPN (GwVPN) Support
+- GwVPN discovery is present but disabled by default
+- Firebox v12.10+ does not expose GwVPN SNMP OIDs consistently
+- Item prototypes exist but are limited due to platform limitations
 
-### ✅ Telemetry & Application Metrics
-- Inbound/outbound firewall bytes
-- Connection rate
-- Active connections
-- Stateful inspection counters
+### Cluster Awareness (FireCluster)
+- Role identification: Master / Standby
+- Synchronisation percentage
+- Per-node health (hardware, system, and interface)
+- Cluster operational state with alerting
+- Graphs and dashboard views
 
-### 🛠 Template Architecture
-- SNMPv3 compatible
-- Static and discovery-based item configuration
-- Modular layout using `Applications` and `Tags`
-- Designed for compatibility with Docker-hosted or proxy-based Zabbix environments
+### Application & Traffic Telemetry
+- Connection count & rate
+- Firewall bytes/packets in/out
+- GAV, IPS, Application Control status and versioning (some disabled)
 
----
+### Template Architecture
+- Zabbix 6.0–7.0 YAML syntax
+- Clean modular layout: tagged items, application grouping
+- Static items + discovery-based VPN and interface metrics
+- Value mapping for cluster role/state, interface state
+- Dashboard included: FireCluster overview
 
-## ⚠ Caveats & Known Limitations
+## Discovery Rules
 
-### 🔒 Gateway VPN (GwVPN) Incompatibility
-This template does **not** support monitoring of **Gateway VPNs (GwVPNs)**, as WatchGuard does not expose policy-based VPN tunnels through SNMP. Only **route-based tunnels** (BoVPNs) with interface bindings are exposed via `IF-MIB::ifType = 131`.
+| Rule                              | Key                   | Description                                 |
+|----------------------------------|------------------------|---------------------------------------------|
+| Interfaces (Generic)             | `net.if.discovery`     | All SNMP interfaces (filtered by type/name) |
+| VPN Tunnels (Route Based – BoVPN) | `bovpn.discovery`     | Discovers VTI-bound BoVPN tunnels           |
+| VPN Tunnels (Policy Based – GwVPN) | `gwvpn.discovery`     | Present but disabled due to platform limits |
 
-This is a platform limitation and not a template defect.
+## Caveats & Limitations
 
----
+### Policy-Based VPNs (GwVPN)
+- SNMP OIDs under `.1.3.6.1.4.1.3097.6.5.1.2.1.*` are defined in MIBs but not exposed on Firebox firmware ≥ v12.10.
+- Discovery rule `gwvpn.discovery` is present but disabled by default due to inconsistent SNMP availability.
 
-## 🧰 Requirements
+### Dynamic VPNs
+- Mobile VPNs (e.g. SSL, IPSec dial-in) are not discovered or monitored.
+- Only BoVPNs with interface bindings (route-based) are supported.
 
-- Zabbix Server/Proxy version: **6.0 LTS** or **7.0**
+## Requirements
+
+- Zabbix Server/Proxy 6.0 LTS or 7.0
 - WatchGuard Firebox:
-  - SNMPv3 enabled and accessible
-  - MIBs aligned with `WATCHGUARD-SYSTEM-MIB`
-- SNMP interface configured on target host
-- Host macros for thresholds (optional)
+  - SNMPv2 agent enabled
+  - MIBs consistent with `WATCHGUARD-SYSTEM-MIB`
+  - Firmware tested on M370, M470, M670 and compatible T-series models
+- SNMP interface configured in Zabbix
+- Host macros for tuning thresholds (see below)
 
----
+## Macros (Customisable)
 
-## ⚙ Macros (Optional)
+| Macro                              | Purpose                                      | Default |
+|-----------------------------------|----------------------------------------------|---------|
+| `{$WATCHGUARD_MAX_CONNECTIONS}`   | Connection count trigger threshold           | `50000` |
+| `{$WATCHGUARD_TEMP_WARNING}`      | Temperature warning threshold (°C)           | `60`    |
+| `{$WATCHGUARD_TEMP_CRITICAL}`     | Temperature critical threshold (°C)          | `70`    |
+| `{$WATCHGUARD_CPU_LOW}`           | CPU usage warning threshold (%)              | `70`    |
+| `{$WATCHGUARD_CPU_HIGH}`          | CPU usage critical threshold (%)             | `90`    |
+| `{$WATCHGUARD_SWAP_THRESHOLD}`    | Swap usage critical threshold (%)            | `99`    |
+| `{$WATCHGUARD_CACHED_THRESHOLD}`  | Cache usage warning threshold (%)            | `99`    |
+| `{$WATCHGUARD_DISK_LOW}`          | Disk usage warning threshold (%)             | `80`    |
+| `{$WATCHGUARD_DISK_HIGH}`         | Disk usage critical threshold (%)            | `90`    |
+| `{$WATCHGUARD_INTERFACE_WARNING_THRESHOLD}` | Interface error warning threshold (pps) | `100`   |
+| `{$WATCHGUARD_INTERFACE_ERROR_THRESHOLD}`   | Interface error critical threshold (pps)| `1000`  |
+| `{$WATCHGUARD_FAN_MIN_SPEED}`     | Fan minimum RPM threshold                    | `2000`  |
+| `{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}` | Expected HA sync (%)                     | `90`    |
+| `{$BOVPN_IGNORE_REGEX}`           | Regex to exclude BoVPN interfaces            | `(?i:BACKEND|TEST|MONITORING).*` |
+| `{$BOVPN_WARNING_THRESHOLD}`      | BoVPN warning error rate                     | `1`     |
+| `{$BOVPN_ERROR_THRESHOLD}`        | BoVPN critical error rate                    | `10`    |
 
-You can override default thresholds via host-level macros:
+## Dashboards
 
-| Macro                          | Purpose                        | Default |
-|-------------------------------|--------------------------------|---------|
-| `{$WATCHGUARD_MAX_CONNECTIONS}` | Connection count threshold     | `50000` |
-| `{$TEMP_WARN}`                 | Temperature warning threshold  | `75`    |
-| `{$FAN_WARN_RPM}`              | Fan speed warning threshold    | `1500`  |
+Includes a predefined "Watchguard Firebox" dashboard:
+- Cluster health & sync status
+- BoVPN traffic/error graphs
+- Interface summaries
+- Active connections & load indicators
 
----
+## Getting Started
 
-## 🚀 Getting Started
+1. Import `watchguard_firebox.yaml` via Configuration → Templates.
+2. Apply template to a Firebox host with SNMPv2 interface defined.
+3. Tune host macros as needed.
+4. Enable discovery and allow time for item population.
 
-1. Import the `watchguard_firebox.yaml` template into Zabbix via the **Templates** section.
-2. Link the template to a Firebox host with a valid **SNMPv3 interface**.
-3. Apply or tune macros as needed.
-4. Allow discovery items (e.g. BoVPNs, storage, sensors) to populate over the next polling interval.
+## Files
 
----
+- `watchguard_firebox.yaml` – Zabbix Template (v7.0 YAML)
+- `README.md` – Template overview and usage
 
-## 📁 Files
-
-- `watchguard_firebox.yaml`: Main Zabbix template in YAML v6.0/7.0 format.
-- `README.md`: This file.
-
----
-
-## 📜 License
+## License
 
 Distributed under a permissive license. Attribution appreciated.
-
----
-
