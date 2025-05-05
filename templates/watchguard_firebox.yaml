@@ -461,7 +461,7 @@ zabbix_export:
           key: watchguard.system.cpu.util
           delay: 30s
           units: '%'
-          description: 'CPU utilisation percentage over the last 1 minute.'
+          description: 'iy'
           preprocessing:
             - type: MULTIPLIER
               parameters:
@@ -1371,104 +1371,6 @@ zabbix_export:
                   item:
                     host: 'Watchguard Firewall'
                     key: 'temperature.sensor[{#SENSOR_NAME}]'
-        - uuid: 429651ed2eb24e55927cb2c7156fc782
-          name: 'VPN Tunnels (User Based) - Mobile VPN'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.8741.1.3.2.1.1.1.1,{#LOCALONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.24,{#LOCALTWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.25,{#REMOTEONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.20,{#REMOTETWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.21,{#VPNUSER},1.3.6.1.4.1.8741.1.3.2.1.1.1.14]'
-          key: vpn.user.discovery
-          delay: 5m
-          filter:
-            evaltype: AND
-            conditions:
-              - macro: '{#LOCALONE}'
-                value: '^((?!0\.0\.0\.0).)*$'
-                operator: NOT_MATCHES_REGEX
-                formulaid: A
-              - macro: '{#REMOTEONE}'
-                value: '^((?!0\.0\.0\.0).)*$'
-                operator: NOT_MATCHES_REGEX
-                formulaid: B
-          lifetime: 30d
-          item_prototypes:
-            - uuid: e781928f1fe94735b28f8a0758f76f37
-              name: 'User VPN: {#VPNUSER} Bytes In'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#VPNINDEX}'
-              key: 'vpn.session.bytesIn[{#VPNUSER}]'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-            - uuid: a287740593494efda670fe32d7ef9b67
-              name: 'User VPN: {#VPNUSER} Bytes Out'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#VPNINDEX}'
-              key: 'vpn.session.bytesOut[{#VPNUSER}]'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-            - uuid: 823a603f9e9944c7b58636370526e68c
-              name: 'User VPN: {#VPNUSER} Errors In'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.12.{#VPNINDEX}'
-              key: 'vpn.session.errorsIn[{#VPNUSER}]'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-            - uuid: 103ea22e7778436cbe8c96253345ce8f
-              name: 'User VPN: {#VPNUSER} Errors Out'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.13.{#VPNINDEX}'
-              key: 'vpn.session.errorsOut[{#VPNUSER}]'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-          graph_prototypes:
-            - uuid: e47e4d2d1f4241a4b17defe2287ab35d
-              name: 'User VPN: {#VPNUSER} Traffic'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.session.bytesIn[{#VPNUSER}]'
-                - sortorder: '1'
-                  color: 00BFFF
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.session.bytesOut[{#VPNUSER}]'
-                - sortorder: '2'
-                  drawtype: FILLED_REGION
-                  color: FF4000
-                  yaxisside: RIGHT
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.session.errorsIn[{#VPNUSER}]'
-                - sortorder: '3'
-                  drawtype: FILLED_REGION
-                  color: C62828
-                  yaxisside: RIGHT
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.session.errorsOut[{#VPNUSER}]'
       tags:
         - tag: Author
           value: 'Simon Jackson'
@@ -2185,24 +2087,6 @@ zabbix_export:
                     - type: STRING
                       name: tags.0.value
                       value: GwVPN
-            - name: 'Mobile VPNs'
-              widgets:
-                - type: graphprototype
-                  name: 'User VPN: Traffic'
-                  width: '62'
-                  height: '13'
-                  fields:
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
-                      value:
-                        host: 'Watchguard Firewall'
-                        name: 'User VPN: {#VPNUSER} Traffic'
-                    - type: STRING
-                      name: reference
-                      value: PPNLV
-                    - type: INTEGER
-                      name: rows
-                      value: '4'
       valuemaps:
         - uuid: 71a060a54ea2489b9997531e0de28103
           name: cluster.status.valuemap

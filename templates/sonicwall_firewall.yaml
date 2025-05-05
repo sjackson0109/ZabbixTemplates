@@ -351,131 +351,219 @@ zabbix_export:
           tags:
             - tag: Component
               value: System
-      discovery_rules:
-        - uuid: 41667e9384114b828459fb25a4c605d5
-          name: 'Licensed Features [ASW]'
+
+        - uuid: 776cea823ebd460dac46fed8a3338892
+          name: 'AntiSpyware Scan Requests ({#ASW_LICENSE})'
+          key: 'asw.scan.requests[{#ASW_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.1.0
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#ASW_LICENSE},1.3.6.1.2.1.2.2.1.1]'
-          key: asw.discovery
-          delay: 1h
-          filter:
-            conditions:
-              - macro: '{#ASW_LICENSE}'
-                value: ^1$
-                formulaid: A
-          lifetime: 1d
-          description: |
-            Discovers Gateway Anti-Spyware statistics including scan request counts, average scan time, and detected or blocked spyware threats.
-            
-            Data is derived from SNMP scalar metrics under the Anti-Spyware MIB, activated only if the ASW license is active.
-            
-            These metrics help evaluate scanning workload and effectiveness of signature updates or traffic volume changes.
-          item_prototypes:
-            - uuid: 776cea823ebd460dac46fed8a3338892
-              name: 'AntiSpyware Scan Requests ({#ASW_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.2.1.0
-              key: 'asw.scan.requests[{#ASW_LICENSE}]'
-              units: scans
-              description: 'Total number of AntiSpyware scan requests'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: ASW
-            - uuid: eec8f68d142b46b6b5baf0239d055d89
-              name: 'AntiSpyware Scan Time ({#ASW_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.2.4.0
-              key: 'asw.scan.time[{#ASW_LICENSE}]'
-              units: ms
-              description: 'Average time taken for AntiSpyware scans'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: ASW
-              trigger_prototypes:
-                - uuid: 20fedba77e2e428fa6c39e68e941ecb8
-                  expression: 'avg(/Sonicwall Firewall/asw.scan.time[{#ASW_LICENSE}],5m) > {$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
-                  name: 'High AntiSpyware Scan Time (CPU under load?)'
-                  priority: AVERAGE
-                  description: |
-                    AntiSpyware scan time elevated for 5+ minutes (avg: {avg(/Sonicwall Firewall/asw.scan.time,5m):.0f}ms)
-                    while at least one CPU core was > {$SONICWALL_CPU_WARNING}% (min: Core1={min(/Sonicwall Firewall/hrProcessorLoad[1],5m)}%, Core2={min(/Sonicwall Firewall/hrProcessorLoad[2],5m)}%).
-                    Security scanning may be impacted by CPU contention.
-                  manual_close: 'YES'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
-            - uuid: 9419bf5f668246d7be619a72363502aa
-              name: 'AntiSpyware Threats Blocked ({#ASW_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.2.3.0
-              key: 'asw.threats.blocked[{#ASW_LICENSE}]'
-              units: threats
-              description: 'Total number of spyware threats blocked'
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: ASW
-            - uuid: 580aa84226934bffa927cac6e1ca4238
-              name: 'AntiSpyware Threats Detected ({#ASW_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.2.2.0
-              key: 'asw.threats.detected[{#ASW_LICENSE}]'
-              units: threats
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: ASW
-              trigger_prototypes:
-                - uuid: 0949580e893b42ecb17d1fd26910f4b7
-                  expression: 'avg(/Sonicwall Firewall/asw.threats.detected[{#ASW_LICENSE}],300s) > {$SONICWALL_ASW_THREAT_THRESHOLD}'
-                  name: 'Unusual AntiSpyware Threat Detection Rate'
-                  priority: WARNING
-                  description: 'AntiSpyware threat detection rate ({ITEM.LASTVALUE}/s) exceeded threshold ({$SONICWALL_ASW_THREAT_THRESHOLD}/s)'
-                  manual_close: 'YES'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
-          graph_prototypes:
-            - uuid: adaefe8c889742488a4721d049569573
-              name: 'AntiSpyware Threats Detected vs Blocked'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'asw.threats.detected[{#ASW_LICENSE}]'
-                - sortorder: '1'
-                  color: F63100
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'asw.threats.blocked[{#ASW_LICENSE}]'
+          units: scans
+          description: 'Total number of AntiSpyware scan requests'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters: ['']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+
+        - uuid: 580aa84226934bffa927cac6e1ca4238
+          name: 'AntiSpyware Threats Detected ({#ASW_LICENSE})'
+          key: 'asw.threats.detected[{#ASW_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.2.0
+          type: SNMP_AGENT
+          units: threats
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters: ['']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+
+        - uuid: 9419bf5f668246d7be619a72363502aa
+          name: 'AntiSpyware Threats Blocked ({#ASW_LICENSE})'
+          key: 'asw.threats.blocked[{#ASW_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.3.0
+          type: SNMP_AGENT
+          units: threats
+          description: 'Total number of spyware threats blocked'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters: ['']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+
+        - uuid: eec8f68d142b46b6b5baf0239d055d89
+          name: 'AntiSpyware Scan Time ({#ASW_LICENSE})'
+          key: 'asw.scan.time[{#ASW_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.4.0
+          type: SNMP_AGENT
+          units: ms
+          description: 'Average time taken for AntiSpyware scans'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+
+        - uuid: 230a69f6142c4499a605bced9bf6e7e3
+          name: 'GAV Scan Count ({#GAV_LICENSE})'
+          key: 'gav.scan.count[{#GAV_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.1.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: GAV
+
+        - uuid: 50f9cd82709c47ee831a5ff9749ac0ee
+          name: 'GAV Virus Count ({#GAV_LICENSE})'
+          key: 'gav.virus.count[{#GAV_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.2.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: GAV
+
+        - uuid: ad876b04a8dd491f9a01adfad5ce71b8
+          name: 'IDS Attacks Blocked ({#IDS_LICENSE})'
+          key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.2.0
+          type: SNMP_AGENT
+          units: attacks
+          description: 'Total number of attacks blocked by IDS'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IDS
+
+        - uuid: 5700d4114d5849d5b714ba54dd36641d
+          name: 'IDS Attacks Detected ({#IDS_LICENSE})'
+          key: 'ids.detected[{#IDS_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IDS
+
+        - uuid: fabb8b1fd2284e52ab804e1b3aeba46d
+          name: 'IPS Attacks Blocked ({#IPS_LICENSE})'
+          key: 'ips.blocked.count[{#IPS_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.1.1.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IPS
+
+        - uuid: 71f2827827694e27950efdc26b648135
+          name: 'Mail Total Count ({#MAIL_LICENSE})'
+          key: 'mail.total.count[{#MAIL_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.4.1.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+
+        - uuid: 583a9eb670824e8fbc2748bcc1902a0f
+          name: 'Mail Good Allowed ({#MAIL_LICENSE})'
+          key: 'mail.good.allowed[{#MAIL_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.4.2.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+
+        - uuid: f215d1044787409c8ed1d801e376781d
+          name: 'Mail Spam Detected ({#MAIL_LICENSE})'
+          key: 'mail.spam.count[{#MAIL_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.4.3.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+
+        - uuid: 13e7fa716385460b8280ff5afd54537b
+          name: 'Mail Virus Detected ({#MAIL_LICENSE})'
+          key: 'mail.virus.detected[{#MAIL_LICENSE}]'
+          snmp_oid: 1.3.6.1.4.1.8741.4.5.0
+          type: SNMP_AGENT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters: ['3600']
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+
+      discovery_rules:
         - uuid: 58ebb24e494d4e7eb3437d95f9abfe58
           name: Processors
           type: SNMP_AGENT
@@ -1008,180 +1096,6 @@ zabbix_export:
                   value: Firewall
                 - tag: Metrics
                   value: Performance
-        - uuid: d4f4a7d0e4d04102b7092c4b8d7b8fe1
-          name: 'Licensed Features [GAV]'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#GAV_LICENSE},1.3.6.1.2.1.2.2.1.1]'
-          key: gav.discovery
-          delay: 1h
-          filter:
-            conditions:
-              - macro: '{#GAV_LICENSE}'
-                value: ^1$
-                formulaid: A
-          lifetime: 1d
-          description: |
-            Discovers Gateway Anti-Virus (GAV) activity, including total scans and virus detections.
-            
-            GAV provides inline malware scanning on ingress and egress traffic and is activated per security profile or rule base.
-            
-            Metrics are collected if a valid GAV license is present, and are useful for correlating threat trends with interface or tunnel activity.
-          item_prototypes:
-            - uuid: 230a69f6142c4499a605bced9bf6e7e3
-              name: 'GAV Scan Count ({#GAV_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.1.1.0
-              key: 'gav.scan.count[{#GAV_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: GAV
-            - uuid: 50f9cd82709c47ee831a5ff9749ac0ee
-              name: 'GAV Virus Count ({#GAV_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.5.1.2.0
-              key: 'gav.virus.count[{#GAV_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: GAV
-          graph_prototypes:
-            - uuid: eb59ecdb7abf40819950450993c1069c
-              name: 'GAV Activity'
-              graph_items:
-                - color: 00FF00
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'gav.scan.count[{#GAV_LICENSE}]'
-                - sortorder: '1'
-                  color: F63100
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'gav.virus.count[{#GAV_LICENSE}]'
-        - uuid: 92c2c17fc43047128f217364187b0b6b
-          name: 'Licensed Features [IDS]'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#IDS_LICENSE},1.3.6.1.2.1.2.2.1.1]'
-          key: ids.discovery
-          delay: 1h
-          filter:
-            conditions:
-              - macro: '{#IDS_LICENSE}'
-                value: ^1$
-                formulaid: A
-          lifetime: 1d
-          description: |
-            Discovers IPS statistics including the number of blocked intrusion attempts.
-            
-            This feature provides deep packet inspection for known attack signatures. The item is only active if IPS licensing is valid.
-            
-            Metrics can help correlate traffic spikes or threat activity on specific interfaces or tunnel paths.
-          item_prototypes:
-            - uuid: ad876b04a8dd491f9a01adfad5ce71b8
-              name: 'IDS Attacks Blocked ({#IDS_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.6.2.2.0
-              key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
-              units: attacks
-              description: 'Total number of attacks blocked by IDS'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: IDS
-            - uuid: 5700d4114d5849d5b714ba54dd36641d
-              name: 'IDS Attacks Detected ({#IDS_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
-              key: 'ids.detected[{#IDS_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: IDS
-          graph_prototypes:
-            - uuid: 121c202e42784b0aaae631d498e14b68
-              name: 'IDS Activity'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'ids.detected[{#IDS_LICENSE}]'
-                - sortorder: '1'
-                  color: F63100
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
-        - uuid: e42cd2dc421e45fdb7e834ff217fc226
-          name: 'Licensed Features [IPS]'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#IPS_LICENSE},1.3.6.1.2.1.2.2.1.1]'
-          key: ips.discovery
-          delay: 1h
-          filter:
-            conditions:
-              - macro: '{#IPS_LICENSE}'
-                value: ^1$
-                formulaid: A
-          lifetime: 1d
-          description: |
-            Discovers IPS statistics including the number of blocked intrusion attempts.
-            
-            This feature provides deep packet inspection for known attack signatures. The item is only active if IPS licensing is valid.
-            
-            Metrics can help correlate traffic spikes or threat activity on specific interfaces or tunnel paths.
-          item_prototypes:
-            - uuid: fabb8b1fd2284e52ab804e1b3aeba46d
-              name: 'IPS Attacks Blocked ({#IPS_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.1.6.1.1.0
-              key: 'ips.blocked.count[{#IPS_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: IPS
-          graph_prototypes:
-            - uuid: c79aa1516dc245ddafa244c074b4d396
-              name: 'IPS Attacks Blocked'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'ips.blocked.count[{#IPS_LICENSE}]'
         - uuid: 8857ec72720e45ae9b3c0badc3d8e5f1
           name: 'Interfaces (LAG/Bonded)'
           type: SNMP_AGENT
@@ -1354,119 +1268,6 @@ zabbix_export:
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'lag.ifOutErrors[{#IFDESCR}]'
-        - uuid: 298be1eb79004ae9ba28995aeff057e0
-          name: 'Licensed Features [MAIL]'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#MAIL_LICENSE},1.3.6.1.2.1.2.2.1.1]'
-          key: mail.discovery
-          delay: 1h
-          filter:
-            conditions:
-              - macro: '{#MAIL_LICENSE}'
-                value: ^1$
-                formulaid: A
-          lifetime: 1d
-          description: |
-            Discovers SMTP-related mail security metrics, including total messages, spam detected, viruses blocked, and legitimate mail allowed.
-            
-            These values are only exposed via SNMP when the Mail Security license is active and email protection is enabled on relevant policies.
-            
-            Useful for tracking unsolicited email volume and correlating spam events with DNS blacklists or attachment handling rules.
-          item_prototypes:
-            - uuid: 583a9eb670824e8fbc2748bcc1902a0f
-              name: 'Mail Good Allowed ({#MAIL_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.4.2.0
-              key: 'mail.good.allowed[{#MAIL_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: Mail
-            - uuid: f215d1044787409c8ed1d801e376781d
-              name: 'Mail Spam Detected ({#MAIL_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.4.3.0
-              key: 'mail.spam.count[{#MAIL_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: Mail
-            - uuid: 71f2827827694e27950efdc26b648135
-              name: 'Mail Total Count ({#MAIL_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.4.1.0
-              key: 'mail.total.count[{#MAIL_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: Mail
-            - uuid: 13e7fa716385460b8280ff5afd54537b
-              name: 'Mail Virus Detected ({#MAIL_LICENSE})'
-              type: SNMP_AGENT
-              snmp_oid: 1.3.6.1.4.1.8741.4.5.0
-              key: 'mail.virus.detected[{#MAIL_LICENSE}]'
-              preprocessing:
-                - type: DISCARD_UNCHANGED_HEARTBEAT
-                  parameters:
-                    - '3600'
-              tags:
-                - tag: Component
-                  value: Feature
-                - tag: Feature
-                  value: Security
-                - tag: Service
-                  value: Mail
-          graph_prototypes:
-            - uuid: 2a3c1e7af149448eafe0f7cc126476b9
-              name: 'Mail Security Activity'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'mail.good.allowed[{#MAIL_LICENSE}]'
-                - sortorder: '1'
-                  drawtype: BOLD_LINE
-                  color: BF00FF
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'mail.spam.count[{#MAIL_LICENSE}]'
-                - sortorder: '2'
-                  drawtype: DOTTED_LINE
-                  color: 2774A4
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'mail.total.count[{#MAIL_LICENSE}]'
-                - sortorder: '3'
-                  drawtype: BOLD_LINE
-                  color: FF0000
-                  calc_fnc: ALL
-                  item:
-                    host: 'Sonicwall Firewall'
-                    key: 'mail.virus.detected[{#MAIL_LICENSE}]'
         - uuid: d2640a528715449a88ff9ecbcd2086e5
           name: 'Interfaces (VLAN)'
           type: SNMP_AGENT
