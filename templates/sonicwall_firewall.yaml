@@ -62,6 +62,215 @@ zabbix_export:
       groups:
         - name: Firewall
       items:
+        - uuid: 776cea823ebd460dac46fed8a3338892
+          name: 'AntiSpyware Scan Requests ({#ASW_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.1.0
+          key: 'asw.scan.requests[{#ASW_LICENSE}]'
+          units: scans
+          description: 'Total number of AntiSpyware scan requests'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+        - uuid: eec8f68d142b46b6b5baf0239d055d89
+          name: 'AntiSpyware Scan Time ({#ASW_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.4.0
+          key: 'asw.scan.time[{#ASW_LICENSE}]'
+          units: ms
+          description: 'Average time taken for AntiSpyware scans'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+        - uuid: 9419bf5f668246d7be619a72363502aa
+          name: 'AntiSpyware Threats Blocked ({#ASW_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.3.0
+          key: 'asw.threats.blocked[{#ASW_LICENSE}]'
+          units: threats
+          description: 'Total number of spyware threats blocked'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+        - uuid: 580aa84226934bffa927cac6e1ca4238
+          name: 'AntiSpyware Threats Detected ({#ASW_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.2.0
+          key: 'asw.threats.detected[{#ASW_LICENSE}]'
+          units: threats
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: ASW
+        - uuid: 230a69f6142c4499a605bced9bf6e7e3
+          name: 'GAV Scan Count ({#GAV_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.1.0
+          key: 'gav.scan.count[{#GAV_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: GAV
+        - uuid: 50f9cd82709c47ee831a5ff9749ac0ee
+          name: 'GAV Virus Count ({#GAV_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.2.0
+          key: 'gav.virus.count[{#GAV_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: GAV
+        - uuid: ad876b04a8dd491f9a01adfad5ce71b8
+          name: 'IDS Attacks Blocked ({#IDS_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.2.0
+          key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
+          units: attacks
+          description: 'Total number of attacks blocked by IDS'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IDS
+        - uuid: 5700d4114d5849d5b714ba54dd36641d
+          name: 'IDS Attacks Detected ({#IDS_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
+          key: 'ids.detected[{#IDS_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IDS
+        - uuid: fabb8b1fd2284e52ab804e1b3aeba46d
+          name: 'IPS Attacks Blocked ({#IPS_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.1.1.0
+          key: 'ips.blocked.count[{#IPS_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IPS
+        - uuid: 583a9eb670824e8fbc2748bcc1902a0f
+          name: 'Mail Good Allowed ({#MAIL_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.4.2.0
+          key: 'mail.good.allowed[{#MAIL_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+        - uuid: f215d1044787409c8ed1d801e376781d
+          name: 'Mail Spam Detected ({#MAIL_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.4.3.0
+          key: 'mail.spam.count[{#MAIL_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+        - uuid: 71f2827827694e27950efdc26b648135
+          name: 'Mail Total Count ({#MAIL_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.4.1.0
+          key: 'mail.total.count[{#MAIL_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
+        - uuid: 13e7fa716385460b8280ff5afd54537b
+          name: 'Mail Virus Detected ({#MAIL_LICENSE})'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.4.5.0
+          key: 'mail.virus.detected[{#MAIL_LICENSE}]'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: Mail
         - uuid: ab8294f669e54a40acd47663fafb1a27
           name: 'Active Connections'
           type: SNMP_AGENT
@@ -351,218 +560,6 @@ zabbix_export:
           tags:
             - tag: Component
               value: System
-
-        - uuid: 776cea823ebd460dac46fed8a3338892
-          name: 'AntiSpyware Scan Requests ({#ASW_LICENSE})'
-          key: 'asw.scan.requests[{#ASW_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.1.0
-          type: SNMP_AGENT
-          units: scans
-          description: 'Total number of AntiSpyware scan requests'
-          preprocessing:
-            - type: CHANGE_PER_SECOND
-              parameters: ['']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: ASW
-
-        - uuid: 580aa84226934bffa927cac6e1ca4238
-          name: 'AntiSpyware Threats Detected ({#ASW_LICENSE})'
-          key: 'asw.threats.detected[{#ASW_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.2.0
-          type: SNMP_AGENT
-          units: threats
-          preprocessing:
-            - type: CHANGE_PER_SECOND
-              parameters: ['']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: ASW
-
-        - uuid: 9419bf5f668246d7be619a72363502aa
-          name: 'AntiSpyware Threats Blocked ({#ASW_LICENSE})'
-          key: 'asw.threats.blocked[{#ASW_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.3.0
-          type: SNMP_AGENT
-          units: threats
-          description: 'Total number of spyware threats blocked'
-          preprocessing:
-            - type: CHANGE_PER_SECOND
-              parameters: ['']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: ASW
-
-        - uuid: eec8f68d142b46b6b5baf0239d055d89
-          name: 'AntiSpyware Scan Time ({#ASW_LICENSE})'
-          key: 'asw.scan.time[{#ASW_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.2.4.0
-          type: SNMP_AGENT
-          units: ms
-          description: 'Average time taken for AntiSpyware scans'
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: ASW
-
-        - uuid: 230a69f6142c4499a605bced9bf6e7e3
-          name: 'GAV Scan Count ({#GAV_LICENSE})'
-          key: 'gav.scan.count[{#GAV_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.1.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: GAV
-
-        - uuid: 50f9cd82709c47ee831a5ff9749ac0ee
-          name: 'GAV Virus Count ({#GAV_LICENSE})'
-          key: 'gav.virus.count[{#GAV_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.5.1.2.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: GAV
-
-        - uuid: ad876b04a8dd491f9a01adfad5ce71b8
-          name: 'IDS Attacks Blocked ({#IDS_LICENSE})'
-          key: 'ids.attacks.blocked[{#IDS_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.2.0
-          type: SNMP_AGENT
-          units: attacks
-          description: 'Total number of attacks blocked by IDS'
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: IDS
-
-        - uuid: 5700d4114d5849d5b714ba54dd36641d
-          name: 'IDS Attacks Detected ({#IDS_LICENSE})'
-          key: 'ids.detected[{#IDS_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: IDS
-
-        - uuid: fabb8b1fd2284e52ab804e1b3aeba46d
-          name: 'IPS Attacks Blocked ({#IPS_LICENSE})'
-          key: 'ips.blocked.count[{#IPS_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.1.6.1.1.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: IPS
-
-        - uuid: 71f2827827694e27950efdc26b648135
-          name: 'Mail Total Count ({#MAIL_LICENSE})'
-          key: 'mail.total.count[{#MAIL_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.4.1.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: Mail
-
-        - uuid: 583a9eb670824e8fbc2748bcc1902a0f
-          name: 'Mail Good Allowed ({#MAIL_LICENSE})'
-          key: 'mail.good.allowed[{#MAIL_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.4.2.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: Mail
-
-        - uuid: f215d1044787409c8ed1d801e376781d
-          name: 'Mail Spam Detected ({#MAIL_LICENSE})'
-          key: 'mail.spam.count[{#MAIL_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.4.3.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: Mail
-
-        - uuid: 13e7fa716385460b8280ff5afd54537b
-          name: 'Mail Virus Detected ({#MAIL_LICENSE})'
-          key: 'mail.virus.detected[{#MAIL_LICENSE}]'
-          snmp_oid: 1.3.6.1.4.1.8741.4.5.0
-          type: SNMP_AGENT
-          preprocessing:
-            - type: DISCARD_UNCHANGED_HEARTBEAT
-              parameters: ['3600']
-          tags:
-            - tag: Component
-              value: Feature
-            - tag: Feature
-              value: Security
-            - tag: Service
-              value: Mail
-
       discovery_rules:
         - uuid: 58ebb24e494d4e7eb3437d95f9abfe58
           name: Processors

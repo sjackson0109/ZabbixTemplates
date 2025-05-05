@@ -461,7 +461,7 @@ zabbix_export:
           key: watchguard.system.cpu.util
           delay: 30s
           units: '%'
-          description: 'iy'
+          description: 'CPU utilisation percentage over the last 1 minute.'
           preprocessing:
             - type: MULTIPLIER
               parameters:
@@ -1112,7 +1112,10 @@ zabbix_export:
               - macro: '{#IFTYPE}'
                 value: ^6$
                 formulaid: A
-          description: 'Discover Interfaces (ifType = 6)'
+          description: |
+            Discover Interfaces (ifType = 6).
+            
+            Unfortuantely watchguards report VLANs layer3/sub-interfaces on a router (ifType=135) as ifType=6. This is clearly a bug in the firmware.
           item_prototypes:
             - uuid: 7d1ebdc1c66e45a4b6a8db1bb4b2be1c
               name: 'Interface: {#IFDESCR} Errors In'
