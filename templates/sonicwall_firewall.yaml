@@ -2591,7 +2591,7 @@ zabbix_export:
             - name: 'VPNs (VTI)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Tunnels (unsupported)'
+                  name: 'VPN Tunnels'
                   width: '21'
                   height: '5'
                   fields:
@@ -2612,7 +2612,7 @@ zabbix_export:
                       value: Route
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
+                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)_VTI \(VPN\) Status$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2657,13 +2657,13 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: item_tags.0.tag
-                      value: Component
+                      value: Interface
                     - type: STRING
                       name: item_tags.0.value
                       value: VTI
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
+                      value: '{{ITEM.NAME}.regsub("^VTI: (.+?)_VTI \(VPN\) Status.*$", "\1 (VTI)")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2849,13 +2849,13 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: item_tags.0.tag
-                      value: Component
-                    - type: STRING
-                      name: item_tags.0.value
                       value: VPN
                     - type: STRING
+                      name: item_tags.0.value
+                      value: Policy
+                    - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield|): (.+?) (Bytes|Errors|Status).*$", "\2")}'
+                      value: '{{ITEM.NAME}.regsub("^VPN Policy: (.+?) Status.*$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2986,6 +2986,8 @@ zabbix_export:
           mappings:
             - value: '0'
               newvalue: Standalone
+            - value: '100000'
+              newvalue: Active
             - value: '125000'
               newvalue: Active
             - value: '375000'
@@ -3019,9 +3021,11 @@ zabbix_export:
           name: sonicwall.vpn.status.valuemap
           mappings:
             - value: '0'
-              newvalue: Down
+              newvalue: Disabled
             - value: '1'
               newvalue: Up
+            - value: '2'
+              newvalue: Down
   triggers:
     - uuid: 0187ded2173647a7a1910004f02ea9e1
       expression: |
