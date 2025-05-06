@@ -193,7 +193,7 @@ zabbix_export:
         - uuid: 1c8baf30c99b4f0c8f2fc5718cabb436
           name: 'Active Sessions'
           type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.2021.255.1
+          snmp_oid: 1.3.6.1.4.1.2021.255.10.0
           key: ubiquiti.sessions.active
           description: 'Current number of active tracked sessions (e.g., via conntrack or session table). Requires custom SNMP extend.'
           tags:
@@ -380,7 +380,7 @@ zabbix_export:
                   value: Performance
           graph_prototypes:
             - uuid: 8ce8b8eac68d4e66b07e10d4bb921f8c
-              name: 'FS: {#HRSTORAGEINDEX} Consumption'
+              name: 'FS: {#HRSTORAGEDESCR} Consumption'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -587,7 +587,7 @@ zabbix_export:
           filter:
             conditions:
               - macro: '{#HRSTORAGEDESCR}'
-                value: '(?i)^(Virtual memory|Memory buffers|Cached memory|Shared memory|Swap space)$'
+                value: '^(Virtual memory|virtual memory|Memory buffers|memory buffers|Cached memory|cached memory|Shared memory|shared memory|Swap space|swap space)$'
                 formulaid: A
           description: 'Discovers memory-related storage segments such as virtual memory, buffers, cache, shared memory, and swap. This excludes physical memory and mounted file systems.'
           item_prototypes:
@@ -636,11 +636,6 @@ zabbix_export:
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.memory.used.bytes[{#HRSTORAGEINDEX}]'
-          preprocessing:
-            - type: REGEX
-              parameters:
-                - '^(Memory )buffers$'
-                - \1Buffers
         - uuid: e3b76b160d2e460ba3c8a6a45e6ab27b
           name: Processes
           type: SNMP_AGENT
@@ -699,79 +694,79 @@ zabbix_export:
         - uuid: e3713ab35f174dd6813c058b36eb91a5
           name: 'Route Table'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#ROUTEDEST},1.3.6.1.2.1.4.21.1.1,{#IFINDEX},1.3.6.1.2.1.4.21.1.2]'
+          snmp_oid: 'discovery[{#ROUTEDEST},1.3.6.1.2.1.4.21.1.1,{#ROUTEMASK},1.3.6.1.2.1.4.21.1.11,{#IFINDEX},1.3.6.1.2.1.4.21.1.2snmp_oid: ''discovery[{#ROUTEDEST},1.3.6.1.2.1.4.21.1.1,{#ROUTEMASK},1.3.6.1.2.1.4.21.1.11,{#IFINDEX},1.3.6.1.2.1.4.21.1.2,{#IFDESCR},1.3.6.1.2.1.2.2.1.2.{#IFINDEX}]'
           key: ubiquiti.route.discovery
           delay: 1h
           description: 'Discovers all entries in the IPv4 routing table, mapping route destinations to their outgoing interfaces.'
           item_prototypes:
             - uuid: daee526fbc8a42eba654b69161188b17
-              name: 'Route: {#ROUTEDEST} Interface Description'
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} Interface Description'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.2.2.1.2.{#IFINDEX}'
-              key: 'ubiquiti.route.ifdescr[{#ROUTEDEST}]'
+              key: 'ubiquiti.route.ifdescr[{#ROUTEDEST}/{#ROUTEMASK}]'
               delay: 1h
               value_type: CHAR
               trends: '0'
-              description: 'Textual name of the interface used for route to {#ROUTEDEST}.'
+              description: 'Textual name of the interface used for route to {#ROUTEDEST}/{#ROUTEMASK}.'
               tags:
                 - tag: Component
                   value: Routing
                 - tag: Route-Destination
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}{#ROUTEMASK}'
             - uuid: 377c2b53c13c42efa305066ac525507c
-              name: 'Route: {#ROUTEDEST} via {#IFDESCR}'
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} via {#IFDESCR}'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.4.21.1.2.{#ROUTEDEST}'
-              key: 'ubiquiti.route.ifindex[{#ROUTEDEST}]'
-              description: 'Interface index for destination {#ROUTEDEST} (based on ipRouteIfIndex).'
+              key: 'ubiquiti.route.ifindex[{#ROUTEDEST}/{#ROUTEMASK}]'
+              description: 'Interface index for destination {#ROUTEDEST}/{#ROUTEMASK} (based on ipRouteIfIndex).'
               tags:
                 - tag: Component
                   value: Routing
                 - tag: Route-Destination
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}{#ROUTEMASK}'
             - uuid: a09a10d1072547e78743dd68170c3377
-              name: 'Route: {#ROUTEDEST} Metric'
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} Metric'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.4.21.1.3.{#ROUTEDEST}'
-              key: 'ubiquiti.route.metric[{#ROUTEDEST}]'
-              description: 'Route metric (ipRouteMetric1) for destination {#ROUTEDEST}.'
+              key: 'ubiquiti.route.metric[{#ROUTEDEST}/{#ROUTEMASK}]'
+              description: 'Route metric (ipRouteMetric1) for destination {#ROUTEDEST}/{#ROUTEMASK}.'
               tags:
                 - tag: Component
                   value: Routing
                 - tag: Route-Destination
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}{#ROUTEMASK}'
             - uuid: 8a9055e8f137438d9d38f89de0ee5af1
-              name: 'Route: {#ROUTEDEST} Next Hop'
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} Next Hop'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.4.21.1.7.{#ROUTEDEST}'
-              key: 'ubiquiti.route.nexthop[{#ROUTEDEST}]'
-              description: 'IP address of the next hop for the route to {#ROUTEDEST}.'
+              key: 'ubiquiti.route.nexthop[{#ROUTEDEST}/{#ROUTEMASK}]'
+              description: 'IP address of the next hop for the route to {#ROUTEDEST}/{#ROUTEMASK}.'
               tags:
                 - tag: Component
                   value: Routing
                 - tag: Route-Destination
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}/{#ROUTEMASK}'
             - uuid: 4c04281fea6e414c855a8097ace951f8
-              name: 'Route: {#ROUTEDEST} Type'
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} Type'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.4.21.1.8.{#ROUTEDEST}'
-              key: 'ubiquiti.route.type[{#ROUTEDEST}]'
+              key: 'ubiquiti.route.type[{#ROUTEDEST}/{#ROUTEMASK}]'
               description: 'Indicates the route type (1: other, 2: invalid, 3: direct, 4: indirect).'
               tags:
                 - tag: Component
                   value: Routing
                 - tag: Route-Destination
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}/{#ROUTEMASK}'
           trigger_prototypes:
             - uuid: 5238a27d2a8146ac8d16fe25e44a7d0b
               expression: |
-                avg(/Ubiquiti Firewall/ubiquiti.route.ifindex[{#ROUTEDEST}],#5)<>last(/Ubiquiti Firewall/ubiquiti.route.ifindex[{#ROUTEDEST}])
+                avg(/Ubiquiti Firewall/ubiquiti.route.ifindex[{#ROUTEDEST}/{#ROUTEMASK}],#5)<>last(/Ubiquiti Firewall/ubiquiti.route.ifindex[{#ROUTEDEST}/{#ROUTEMASK}])
                     or
-                    avg(/Ubiquiti Firewall/ubiquiti.route.nexthop[{#ROUTEDEST}],#5)<>last(/Ubiquiti Firewall/ubiquiti.route.nexthop[{#ROUTEDEST}])
-              name: 'Route: {#ROUTEDEST} path changed'
+                    avg(/Ubiquiti Firewall/ubiquiti.route.nexthop[{#ROUTEDEST}/{#ROUTEMASK}],#5)<>last(/Ubiquiti Firewall/ubiquiti.route.nexthop[{#ROUTEDEST}/{#ROUTEMASK}])
+              name: 'Route: {#ROUTEDEST}/{#ROUTEMASK} path changed'
               priority: INFO
               description: |
-                Detected a stable change in routing for {#ROUTEDEST}.
+                Detected a stable change in routing for {#ROUTEDEST}/{#ROUTEMASK}.
                 The outgoing interface or next hop has altered consistently over 5 polling cycles.
                 This may indicate BGP convergence, VPN tunnel drop or fallback routing.
               manual_close: 'YES'
@@ -779,13 +774,146 @@ zabbix_export:
                 - tag: Component
                   value: Routing
                 - tag: Route
-                  value: '{#ROUTEDEST}'
+                  value: '{#ROUTEDEST}/{#ROUTEMASK}'
                 - tag: Type
                   value: PathChange
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.255
+                - '32'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.254
+                - '31'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.252
+                - '30'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.248
+                - '29'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.240
+                - '28'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.224
+                - '27'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.192
+                - '26'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.128
+                - '25'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.255.0
+                - '24'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.254.0
+                - '23'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.252.0
+                - '22'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.248.0
+                - '21'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.240.0
+                - '20'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.224.0
+                - '19'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.192.0
+                - '18'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.128.0
+                - '17'
+            - type: STR_REPLACE
+              parameters:
+                - 255.255.0.0
+                - '16'
+            - type: STR_REPLACE
+              parameters:
+                - 255.254.0.0
+                - '15'
+            - type: STR_REPLACE
+              parameters:
+                - 255.252.0.0
+                - '14'
+            - type: STR_REPLACE
+              parameters:
+                - 255.248.0.0
+                - '13'
+            - type: STR_REPLACE
+              parameters:
+                - 255.240.0.0
+                - '12'
+            - type: STR_REPLACE
+              parameters:
+                - 255.224.0.0
+                - '11'
+            - type: STR_REPLACE
+              parameters:
+                - 255.192.0.0
+                - '10'
+            - type: STR_REPLACE
+              parameters:
+                - 255.128.0.0
+                - '9'
+            - type: STR_REPLACE
+              parameters:
+                - 255.0.0.0
+                - '8'
+            - type: STR_REPLACE
+              parameters:
+                - 254.0.0.0
+                - '7'
+            - type: STR_REPLACE
+              parameters:
+                - 252.0.0.0
+                - '6'
+            - type: STR_REPLACE
+              parameters:
+                - 248.0.0.0
+                - '5'
+            - type: STR_REPLACE
+              parameters:
+                - 240.0.0.0
+                - '4'
+            - type: STR_REPLACE
+              parameters:
+                - 224.0.0.0
+                - '3'
+            - type: STR_REPLACE
+              parameters:
+                - 192.0.0.0
+                - '2'
+            - type: STR_REPLACE
+              parameters:
+                - 128.0.0.0
+                - '1'
+            - type: STR_REPLACE
+              parameters:
+                - 0.0.0.0
+                - '0'
         - uuid: ca54b14495fa4718a25c16a1e8ff6e63
           name: 'Interfaces (VLAN)'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#VLANID},1.3.6.1.2.1.17.7.1.4.3.1.4]'
+          snmp_oid: 'discovery[{#IFDESCR},1.3.6.1.2.1.2.2.1.2,{#IFTYPE},1.3.6.1.2.1.2.2.1.3]'
           key: ubiquiti.vlan.discovery
           delay: 1h
           filter:
@@ -798,10 +926,10 @@ zabbix_export:
                 formulaid: B
           item_prototypes:
             - uuid: 29c683bdf87c49659b169b3fe44bbf21
-              name: 'VLAN: {#VLANID} Bytes In'
+              name: 'VLAN: {#IFDESCR} Bytes In'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
-              key: 'vlan.bytes.in[{#VLANID}]'
+              key: 'vlan.bytes.in[{#IFDESCR}]'
               value_type: FLOAT
               units: Bps
               preprocessing:
@@ -819,12 +947,12 @@ zabbix_export:
                 - tag: Metrics
                   value: Traffic
                 - tag: VLAN
-                  value: '{#VLANID}'
+                  value: '{#IFDESCR}'
             - uuid: 9f094d5c80b34cb5a580ad0f41fdd78d
-              name: 'VLAN: {#VLANID} Bytes Out'
+              name: 'VLAN: {#IFDESCR} Bytes Out'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
-              key: 'vlan.bytes.out[{#VLANID}]'
+              key: 'vlan.bytes.out[{#IFDESCR}]'
               value_type: FLOAT
               units: Bps
               preprocessing:
@@ -842,12 +970,12 @@ zabbix_export:
                 - tag: Metrics
                   value: Traffic
                 - tag: VLAN
-                  value: '{#VLANID}'
+                  value: '{#IFDESCR}'
             - uuid: 24eceb0f0ee34baf8543e6bf821d9260
-              name: 'VLAN: {#VLANID} Errors In'
+              name: 'VLAN: {#IFDESCR} Errors In'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
-              key: 'vlan.errors.in[{#VLANID}]'
+              key: 'vlan.errors.in[{#IFDESCR}]'
               value_type: FLOAT
               units: Bps
               preprocessing:
@@ -862,11 +990,11 @@ zabbix_export:
                 - tag: Metrics
                   value: Traffic
                 - tag: VLAN
-                  value: '{#VLANID}'
+                  value: '{#IFDESCR}'
               trigger_prototypes:
                 - uuid: 2e20cf0f2b25465ebea2488eb737a547
-                  expression: 'avg(/Ubiquiti Firewall/vlan.errors.in[{#VLANID}],5m) > {$UBIQUITI_VLAN_ERROR_THRESHOLD}'
-                  name: 'VLAN: {#VLANID} Inbound Errors High'
+                  expression: 'avg(/Ubiquiti Firewall/vlan.errors.in[{#IFDESCR}],5m) > {$UBIQUITI_VLAN_ERROR_THRESHOLD}'
+                  name: 'VLAN: {#IFDESCR} Inbound Errors High'
                   priority: AVERAGE
                   manual_close: 'YES'
                   tags:
@@ -877,12 +1005,12 @@ zabbix_export:
                     - tag: Symptom
                       value: Config/Trunk
                     - tag: VLAN
-                      value: '{#VLANID}'
+                      value: '{#IFDESCR}'
             - uuid: 7c12699b501a4252848dffbd8b8f4af8
-              name: 'VLAN: {#VLANID} Errors Out'
+              name: 'VLAN: {#IFDESCR} Errors Out'
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
-              key: 'vlan.errors.out[{#VLANID}]'
+              key: 'vlan.errors.out[{#IFDESCR}]'
               value_type: FLOAT
               units: Bps
               preprocessing:
@@ -897,11 +1025,11 @@ zabbix_export:
                 - tag: Metrics
                   value: Traffic
                 - tag: VLAN
-                  value: '{#VLANID}'
+                  value: '{#IFDESCR}'
               trigger_prototypes:
                 - uuid: 3a51ad9b9c484e4daec8d0c8d4b4b457
-                  expression: 'avg(/Ubiquiti Firewall/vlan.errors.out[{#VLANID}],5m) > {$UBIQUITI_VLAN_ERROR_THRESHOLD}'
-                  name: 'VLAN: {#VLANID} Outbound Errors High'
+                  expression: 'avg(/Ubiquiti Firewall/vlan.errors.out[{#IFDESCR}],5m) > {$UBIQUITI_VLAN_ERROR_THRESHOLD}'
+                  name: 'VLAN: {#IFDESCR} Outbound Errors High'
                   priority: AVERAGE
                   manual_close: 'YES'
                   tags:
@@ -912,36 +1040,36 @@ zabbix_export:
                     - tag: Symptom
                       value: Config/Trunk
                     - tag: VLAN
-                      value: '{#VLANID}'
+                      value: '{#IFDESCR}'
           graph_prototypes:
             - uuid: 40477aefd58d410cbb6341eb1efaf388
-              name: 'VLAN: {#VLANID} Traffic'
+              name: 'VLAN: {#IFDESCR} Traffic'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
-                    key: 'vlan.bytes.in[{#VLANID}]'
+                    key: 'vlan.bytes.in[{#IFDESCR}]'
                 - sortorder: '1'
                   color: F63100
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
-                    key: 'vlan.bytes.out[{#VLANID}]'
+                    key: 'vlan.bytes.out[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
                   color: 2774A4
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
-                    key: 'vlan.errors.in[{#VLANID}]'
+                    key: 'vlan.errors.in[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
                   color: F7941D
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
-                    key: 'vlan.errors.out[{#VLANID}]'
+                    key: 'vlan.errors.out[{#IFDESCR}]'
         - uuid: 5c464c44670c472c971b12218461d884
           name: 'VPN Tunnels (L2TP Based)'
           type: SNMP_AGENT
@@ -2449,16 +2577,85 @@ zabbix_export:
             - name: Overview
               widgets:
                 - type: problemsbysv
-                  width: '36'
+                  width: '31'
                   fields:
                     - type: STRING
                       name: reference
                       value: AUBWZ
+                - type: honeycomb
+                  name: 'Important Info'
+                  'y': '2'
+                  width: '22'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Device Contact'
+                    - type: STRING
+                      name: items.1
+                      value: 'Device Location'
+                    - type: STRING
+                      name: items.2
+                      value: 'Device Name'
+                    - type: STRING
+                      name: items.3
+                      value: 'Device Uptime'
+                    - type: STRING
+                      name: primary_label
+                      value: '{ITEM.NAME}'
+                    - type: STRING
+                      name: reference
+                      value: DRJLE
+                - type: item
+                  name: Uptime
+                  x: '22'
+                  'y': '2'
+                  width: '9'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ubiquiti Firewall'
+                        key: system.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: value_color
+                      value: '666699'
+                - type: gauge
+                  x: '22'
+                  'y': '4'
+                  width: '9'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ubiquiti Firewall'
+                        key: ubiquiti.cpu.utilisation
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
                 - type: svggraph
                   name: 'Memory Usage'
-                  'y': '2'
-                  width: '27'
-                  height: '4'
+                  x: '31'
+                  width: '32'
+                  height: '3'
                   fields:
                     - type: STRING
                       name: ds.0.color
@@ -2514,80 +2711,11 @@ zabbix_export:
                     - type: INTEGER
                       name: righty
                       value: '0'
-                - type: gauge
-                  x: '27'
-                  'y': '2'
-                  width: '9'
-                  fields:
-                    - type: ITEM
-                      name: itemid.0
-                      value:
-                        host: 'Ubiquiti Firewall'
-                        key: ubiquiti.cpu.utilisation
-                    - type: STRING
-                      name: max
-                      value: '100'
-                    - type: STRING
-                      name: min
-                      value: '0'
-                    - type: INTEGER
-                      name: show.0
-                      value: '2'
-                    - type: INTEGER
-                      name: show.1
-                      value: '3'
-                    - type: INTEGER
-                      name: show.2
-                      value: '5'
-                - type: item
-                  name: Uptime
-                  x: '27'
-                  'y': '4'
-                  width: '9'
-                  fields:
-                    - type: INTEGER
-                      name: decimal_places
-                      value: '0'
-                    - type: ITEM
-                      name: itemid.0
-                      value:
-                        host: 'Ubiquiti Firewall'
-                        key: system.uptime
-                    - type: INTEGER
-                      name: show.0
-                      value: '2'
-                    - type: STRING
-                      name: value_color
-                      value: '666699'
-                - type: honeycomb
-                  name: 'Important Info'
-                  x: '36'
-                  width: '27'
-                  height: '3'
-                  fields:
-                    - type: STRING
-                      name: items.0
-                      value: 'Device Contact'
-                    - type: STRING
-                      name: items.1
-                      value: 'Device Location'
-                    - type: STRING
-                      name: items.2
-                      value: 'Device Name'
-                    - type: STRING
-                      name: items.3
-                      value: 'Device Uptime'
-                    - type: STRING
-                      name: primary_label
-                      value: '{ITEM.NAME}'
-                    - type: STRING
-                      name: reference
-                      value: DRJLE
                 - type: svggraph
-                  name: 'Disk Throughput'
-                  x: '36'
+                  name: 'Disk Throughput (Unsupported by older FW Models)'
+                  x: '31'
                   'y': '3'
-                  width: '27'
+                  width: '32'
                   height: '3'
                   fields:
                     - type: STRING
@@ -2623,8 +2751,8 @@ zabbix_export:
             - name: 'File System'
               widgets:
                 - type: graphprototype
-                  width: '52'
-                  height: '6'
+                  width: '67'
+                  height: '9'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2633,7 +2761,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'FS: {#HRSTORAGEINDEX} Consumption'
+                        name: 'FS: {#HRSTORAGEDESCR} Consumption'
                     - type: STRING
                       name: reference
                       value: FOSTC
@@ -2827,14 +2955,15 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VLAN: {#VLANID} Traffic'
+                        name: 'VLAN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: JTKHG
             - name: VPNs
               widgets:
                 - type: honeycomb
-                  width: '30'
+                  name: 'VPN Tunnel Statuses (All Types)'
+                  width: '48'
                   fields:
                     - type: STRING
                       name: items.0
@@ -2875,12 +3004,9 @@ zabbix_export:
                 - type: graphprototype
                   name: 'VPN Traffic (Route Based)'
                   'y': '2'
-                  width: '15'
+                  width: '48'
                   height: '5'
                   fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
                     - type: GRAPH_PROTOTYPE
                       name: graphid.0
                       value:
@@ -2890,66 +3016,11 @@ zabbix_export:
                       name: reference
                       value: DNUDU
                 - type: graphprototype
-                  name: 'VPN Traffic (OpenVPN)'
-                  'y': '7'
-                  width: '15'
-                  height: '5'
-                  fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
-                      value:
-                        host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
-                    - type: STRING
-                      name: reference
-                      value: KCCZT
-                - type: graphprototype
-                  name: 'VPN Traffic (WireGuard)'
-                  'y': '12'
-                  width: '15'
-                  height: '5'
-                  fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
-                      value:
-                        host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (WireGuard - {#IFDESCR})'
-                    - type: STRING
-                      name: reference
-                      value: YIVFQ
-                - type: graphprototype
-                  name: 'VPN Traffic (L2TP)'
-                  'y': '17'
-                  width: '15'
-                  height: '5'
-                  fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
-                      value:
-                        host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (L2TP - {#IFDESCR})'
-                    - type: STRING
-                      name: reference
-                      value: VIFUD
-                - type: graphprototype
                   name: 'VPN Traffic (Policy Based)'
-                  x: '15'
-                  'y': '2'
-                  width: '15'
+                  'y': '7'
+                  width: '48'
                   height: '5'
                   fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
                     - type: GRAPH_PROTOTYPE
                       name: graphid.0
                       value:
@@ -2960,9 +3031,8 @@ zabbix_export:
                       value: BMTPQ
                 - type: graphprototype
                   name: 'VPN Traffic (Teleport)'
-                  x: '15'
-                  'y': '7'
-                  width: '15'
+                  'y': '12'
+                  width: '24'
                   height: '5'
                   fields:
                     - type: INTEGER
@@ -2977,10 +3047,45 @@ zabbix_export:
                       name: reference
                       value: SSTSZ
                 - type: graphprototype
-                  name: 'VPN Traffic (PPTP)'
-                  x: '15'
+                  name: 'VPN Traffic (L2TP)'
                   'y': '17'
-                  width: '15'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Ubiquiti Firewall'
+                        name: 'VPN Traffic (L2TP - {#IFDESCR})'
+                    - type: STRING
+                      name: reference
+                      value: VIFUD
+                - type: graphprototype
+                  name: 'VPN Traffic (WireGuard)'
+                  x: '24'
+                  'y': '12'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Ubiquiti Firewall'
+                        name: 'VPN Traffic (WireGuard - {#IFDESCR})'
+                    - type: STRING
+                      name: reference
+                      value: YIVFQ
+                - type: graphprototype
+                  name: 'VPN Traffic (PPTP)'
+                  x: '24'
+                  'y': '17'
+                  width: '24'
                   height: '5'
                   fields:
                     - type: INTEGER
@@ -2994,6 +3099,24 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: MRKHB
+                - type: graphprototype
+                  name: 'VPN Traffic (OpenVPN)'
+                  x: '48'
+                  'y': '12'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Ubiquiti Firewall'
+                        name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
+                    - type: STRING
+                      name: reference
+                      value: KCCZT
       valuemaps:
         - uuid: 653407c61b9a417184d0bfd771dadd94
           name: interface.status.valuemap

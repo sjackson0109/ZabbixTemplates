@@ -1,0 +1,1311 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: edec55083af745beaed7cdb51656da0e
+      name: Environment
+  templates:
+    - uuid: 715c3827caa842aea3428c26c4cd4dfa
+      template: 'Denco pCO'
+      name: 'Denco pCO'
+      description: |
+        Technical Details:
+        https://www.rittal.com/imf/none/3_4342/3311320_Instructions_spec__EN
+        
+        MIB:
+        https://netopslife.wordpress.com/2017/10/12/nagios-snmp-denco-pco-web-carel/
+
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Classes
+        - name: Environment
+      items:
+        - uuid: 245ded6263b04f348c2529360ed1cf36
+          name: 'Alarm: Airflow Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.12]'
+          key: denco.alarm.airflow
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: b159a5fa3e7848fd90b8b5cd3f4d4be0
+          name: 'Alarm: Auxiliary Sensor'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.15]'
+          key: denco.alarm.auxilary
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: b73958aeda4f49858eacfef56eeb2371
+          name: 'Alarm: Circuit 1 (VRF) High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.27]'
+          key: denco.alarm.circuit.1.pressure.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: d0a202fcabe64d6c9d45d0d6adb6a5a0
+          name: 'Alarm: Circuit 1 (VRF) Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.33]'
+          key: denco.alarm.circuit.1.pressure.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 8b4ae66be9804bb5a1bfb3123f5cd389
+          name: 'Alarm: Circuit 2 (VRF) High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.28]'
+          key: denco.alarm.circuit.2.pressure.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 654563ba2e6d4b379ecfd1724f071130
+          name: 'Alarm: Circuit 2 (VRF) Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.34]'
+          key: denco.alarm.circuit.2.pressure.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 8884336e6d664e4486ab52c0d17e7fc0
+          name: 'Alarm: Compressor 1 High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.23]'
+          key: denco.alarm.compressor.1.temperature.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 83e1cbc2a64949d3ab1e988bc0ad1f1f
+          name: 'Alarm: Compressor 1 Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.29]'
+          key: denco.alarm.compressor.1.temperature.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 8706c584e31843c88bd881c4562710ba
+          name: 'Alarm: Compressor 2 High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.24]'
+          key: denco.alarm.compressor.2.temperature.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 80314f25219a46e8aa6f9bbdbc11ac54
+          name: 'Alarm: Compressor 2 Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.30]'
+          key: denco.alarm.compressor.2.temperature.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: a0f1b7ac9b24496d8d959cb722bca98d
+          name: 'Alarm: Compressor 3 High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.25]'
+          key: denco.alarm.compressor.3.temperature.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: b366b4d4a3c747c49bc736d446e8e63c
+          name: 'Alarm: Compressor 3 Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.31]'
+          key: denco.alarm.compressor.3.temperature.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: b25e45a6591f4abd98af29a5528a49df
+          name: 'Alarm: Compressor 4 High Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.26]'
+          key: denco.alarm.compressor.4.temperature.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 24c31687162e4600a034236500ba15a7
+          name: 'Alarm: Compressor 4 Low Pressure Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.32]'
+          key: denco.alarm.compressor.4.temperature.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 2679f47855764bc0a9c183153969c7be
+          name: 'Alarm: Condensing Pressure 1 Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.7]'
+          key: denco.alarm.condensing.pressure.1
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: a4acad836fc84a069ec33dee8b0d02c5
+          name: 'Alarm: Condensing Pressure 2 Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.8]'
+          key: denco.alarm.condensing.pressure.2
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 2560bfd16a9843e9919bd562b09a3c04
+          name: 'Alarm: Filter Blocked'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.13]'
+          key: denco.alarm.filter.blocked
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 810e6f48d5db40edb0cf257f0665e1c9
+          name: 'Alarm: Humidifier Refrigerant Leak Detection'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.85]'
+          key: denco.alarm.gas.leak
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 7d9f66e9c421481ea4121353e571ce63
+          name: 'Alarm: Humidifier High Current'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.36]'
+          key: denco.alarm.humidifier.current.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: d613f6f0756744c7a7e8f31baf73478f
+          name: 'Alarm: Humidifier Low Current'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.38]'
+          key: denco.alarm.humidifier.current.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 348d9886e7a1410d9f91e8610ea805e4
+          name: 'Alarm: Humidifier Refrigerant Exhausted'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.66]'
+          key: denco.alarm.humidifier.gas.exhausted
+          delay: 15m
+          description: 'Refrigerant gas is contained in a bottle/cylinder.'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 545cff2595884d288484ef0a3ab79b2a
+          name: 'Alarm: Humidifier Lack Of Water'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.37]'
+          key: denco.alarm.humidifier.water.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 12af336b8a8c47faa7387d358be1b786
+          name: 'Alarm: Supply Air Humidity Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.11]'
+          key: denco.alarm.humidity.air.supply
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: c639938049914c2996ef6382946a3c00
+          name: 'Alarm: High Control Humidity'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.18]'
+          key: denco.alarm.humidity.control.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 0dccda22cb454405876c62481bcd07b7
+          name: 'Alarm: Low Control Humidity'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.19]'
+          key: denco.alarm.humidity.control.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 10974ad524224663b366efce5c30b96d
+          name: 'Alarm: Return Air Humidity Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.6]'
+          key: denco.alarm.humidty.air.return
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: a82b2f3f73e8406cbd44d24f7daa8ccc
+          name: 'Alarm: Kilxon Trip'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.22]'
+          key: denco.alarm.klixon
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 9551e4e7bc0b4c2db0fb11e2508f3966
+          name: 'Alarm: Return Air Temperature Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.5]'
+          key: denco.alarm.temperature.air.return
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: d91d3bf4b0434c87bb9e2dc4383cc342
+          name: 'Alarm: Supply Air Temperature Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.10]'
+          key: denco.alarm.temperature.air.supply
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 91bcd03b12fb4a1d9fb9e15c9552f3e5
+          name: 'Alarm: High Control Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.16]'
+          key: denco.alarm.temperature.control.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 6da4ffe585cb4bbfae236c159c2cdedd
+          name: 'Alarm: Low Control Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.17]'
+          key: denco.alarm.temperature.control.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 9745026411cb4277b0df72c0e5615847
+          name: 'Alarm: High Supply Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.21]'
+          key: denco.alarm.temperature.supply.high
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: b94e8ed8d4f74e54a04f0a04d2678887
+          name: 'Alarm: Low Supply Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.20]'
+          key: denco.alarm.temperature.supply.low
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 7e72f851760d4677b39382e5e5adafd5
+          name: 'Alarm: Water Detection'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.14]'
+          key: denco.alarm.water
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: 42dc6e67b9884b4cadd32b1e76c9e510
+          name: 'Alarm: Water Temperature Sensor Fail'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.9]'
+          key: denco.alarm.water.temperature
+          delay: 15m
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: IN_RANGE
+              parameters:
+                - '0'
+                - '1'
+        - uuid: ab3b1fb28a3b4866a6ae4e6beeed3355
+          name: 'Measured Humidity (%RH)'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.2.2.0]'
+          key: denco.environment.humidity
+          delay: 2m
+          value_type: FLOAT
+          units: '%RH'
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '-858993460'
+                - '0'
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          triggers:
+            - uuid: 56d60ea42a93494b86bce52ad79bdeb9
+              expression: 'last(/Denco pCO/denco.environment.humidity,#1)>=70'
+              name: 'High Humidity'
+              priority: WARNING
+              manual_close: 'YES'
+        - uuid: 53b98cd17ee14edf94a241170c53f44b
+          name: 'Measured Temperature (C)'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.2.1.0]'
+          key: denco.environment.temperature
+          delay: 2m
+          value_type: FLOAT
+          units: C
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '-858993460'
+                - '0'
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+            - type: STR_REPLACE
+              parameters:
+                - '0000000000002'
+                - ''
+        - uuid: 316f21c8f7c54aa8b83234a225b7a076
+          name: 'Target Humidity (%HR)'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.9839.2.1.2.16.0]'
+          key: denco.system.setpoint.humidity
+          delay: 5m
+          value_type: FLOAT
+          units: '%HR'
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '-858993460'
+                - '0'
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+        - uuid: 2b92ab04841542719f28849b53854b80
+          name: 'Target Temperature (C)'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.9839.2.1.2.15.0]'
+          key: denco.system.setpoint.temperature
+          delay: 5m
+          value_type: FLOAT
+          units: C
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '-858993460'
+                - '0'
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+        - uuid: f7caaefac77b44c3ac81b1f2984f9b22
+          name: 'Unit Status'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.1.0]'
+          key: denco.system.status
+          description: 'Any NON-ZERO value should be investigated.'
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '-858993460'
+                - '2'
+          triggers:
+            - uuid: 4f82ead6055a4cf5abf29300543ad977
+              expression: 'last(/Denco pCO/denco.system.status,#1)=2'
+              name: 'Standby Unit'
+              opdata: denco.system.status
+              priority: INFO
+              manual_close: 'YES'
+            - uuid: 9719407341ad414e9b1c1b2c5cc423fa
+              expression: 'last(/Denco pCO/denco.system.status,#1)=1'
+              name: 'Status Alarm'
+              priority: WARNING
+              description: 'Unit System Status reporting non-zero value. As a result you should login to the webpage to investigate.'
+              manual_close: 'YES'
+        - uuid: a2d220c14b7642a19f95b9414ac09498
+          name: 'Supervisor Mode'
+          type: SNMP_AGENT
+          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.112.0]'
+          key: denco.system.supervisor.mode
+          delay: 5m
+          description: |
+            PCO Web Card - Set to 'Supervisor Mode' (0=OFF, 1=ON)
+            If it's ON, why is it on? Currently being serviced?
+        - uuid: 0a2784a34c2e47edb773477aa073de01
+          name: 'SNMP Trap Log'
+          type: SNMP_TRAP
+          key: snmptrap.fallback
+          delay: '0'
+          history: 90d
+          value_type: LOG
+          trends: '0'
+          description: 'Item is used to collect all SNMP traps unmatched by other snmptrap items'
+          logtimefmt: 'yyyy/MM/dd hh:mm:ss'
+          tags:
+            - tag: Component
+              value: Trap
+          triggers:
+            - uuid: 81c8d63f87b8480ca6f017ae59ed4fe1
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.12")=1'
+              name: 'Alarm Received: Airflow Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: aeb395f810ad471abf477745f88d3cae
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.15")=1'
+              name: 'Alarm Received: Auxiliary Alarm'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 1bac388e487c443abd175d89498ca10c
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.27")=1'
+              name: 'Alarm Received: Circuit 1 (VRF) High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: a4136050242642ff8226efdac7702cd4
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.33")=1'
+              name: 'Alarm Received: Circuit 1 (VRF) Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: cb1f5e2121e24580801db39d16c8ee69
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.28")=1'
+              name: 'Alarm Received: Circuit 2 (VRF) High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 878c98c1392440c6a9b9d7e210b06b6c
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.34")=1'
+              name: 'Alarm Received: Circuit 2 (VRF) Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 61bb3daa1f4a4627a4bdb850bc4c0943
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.23")=1'
+              name: 'Alarm Received: Compressor 1 High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 09660ddbee734b7f910878d56a5b8947
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.29")=1'
+              name: 'Alarm Received: Compressor 1 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 11911ee5f778479a9caff045d7e81872
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.24")=1'
+              name: 'Alarm Received: Compressor 2 High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: ef6365054ca94546adb9d1a281d3cf98
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.30")=1'
+              name: 'Alarm Received: Compressor 2 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 848f7a79037844a78293a7f3245beeed
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.25")=1'
+              name: 'Alarm Received: Compressor 3 High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: dac0f9de22ea44349e35a5330f80c596
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.31")=1'
+              name: 'Alarm Received: Compressor 3 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 55bec8ac026e4d4eb7be560a47e56cee
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.26")=1'
+              name: 'Alarm Received: Compressor 4 High Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: a620afe47fb140e6a91309f86056f2e4
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.32")=1'
+              name: 'Alarm Received: Compressor 4 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: a6d4f5005379400f8e51bcdad5b3d9e9
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.7")=1'
+              name: 'Alarm Received: Condensing Pressure 1 Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 42ce956bdd2540f5ac5d759c15c9bac7
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.8")=1'
+              name: 'Alarm Received: Condensing Pressure 2 Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 5c8fa3cbef4f43a1a8576583c2af759f
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.35")=1'
+              name: 'Alarm Received: DencoNet Comms'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: b8610fe7f2c141bea4565b81d54e4b9f
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.13")=1'
+              name: 'Alarm Received: Filter Blocked'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: e0846e26bcf94964b7d7ec38190245f4
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.18")=1'
+              name: 'Alarm Received: High Control Humidity'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 598cb028d3794899aac5d70004e7a297
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.16")=1'
+              name: 'Alarm Received: High Control Temperature'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 88d56af2d7894cbe9308b50df57e2d98
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.21")=1'
+              name: 'Alarm Received: High Supply Temperature'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: dd724dc2b3ff4335b0bf1bb2b1daaf43
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.66")=1'
+              name: 'Alarm Received: Humidifier Cylinder Exhausted'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 9e40b787ebb842529ec5cd7482ba3c4a
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.36")=1'
+              name: 'Alarm Received: Humidifier High Current'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 9a82d386fe0448b1a5f81f896bbb9127
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.37")=1'
+              name: 'Alarm Received: Humidifier Lack Of Water'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: f406ac4d47a942ea98bcca6051dabe05
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.38")=1'
+              name: 'Alarm Received: Humidifier Low Current'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: ad76911f2d7e4e638777d65de909ad47
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.22")=1'
+              name: 'Alarm Received: Kilxon Trip'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: b638754f0ea344cabc90beefa9738ee4
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.19")=1'
+              name: 'Alarm Received: Low Control Humidity'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: b66c19fbacac44018befff3b44529b46
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.17")=1'
+              name: 'Alarm Received: Low Control Temperature'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 7ce8f105cefe4b079610ae26d77158af
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.20")=1'
+              name: 'Alarm Received: Low Supply Temperature'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: daf35866bdec48de88ed36b71737cf27
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.85")=1'
+              name: 'Alarm Received: Refrigerant Leak Detected'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 21285f8ecb9e487aa952c98add59546e
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.6")=1'
+              name: 'Alarm Received: Return Air Humidity Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: f8397552dff4406a885951fdd9a14bfb
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.5")=1'
+              name: 'Alarm Received: Return Air Temperature Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 082bc59b6deb4659891775b3cf7c2156
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.11")=1'
+              name: 'Alarm Received: Supply Air Humidity Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 7efd4f94da8c42768a910987f6497ee5
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.10")=1'
+              name: 'Alarm Received: Supply Air Temperature Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: 92e3d065822c4c678616055b6bec7e83
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.14")=1'
+              name: 'Alarm Received: Water Detection'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+            - uuid: a6de41b4e3f245f9ba44e2aa71706e57
+              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.9")=1'
+              name: 'Alarm Received: Water Temperature Sensor Fail'
+              priority: AVERAGE
+              description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Trap
+        - uuid: 02a064efa76f4052bab589345dafd91d
+          name: 'System contact details'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.4.0
+          key: 'system.contact[sysContact.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          trends: '0'
+          description: |
+            MIB: SNMPv2-MIB
+            The textual identification of the contact person for this managed node, together with information on how to contact this person.  If no contact information is known, the value is the zero-length string.
+          inventory_link: CONTACT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: Application
+              value: General
+        - uuid: 0b08ef53c0ef496ea4b957795a7c2ea1
+          name: 'System description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.1.0
+          key: 'system.descr[sysDescr.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          trends: '0'
+          description: |
+            MIB: SNMPv2-MIB
+            A textual description of the entity. This value should
+            include the full name and version identification of the system's hardware type, software operating-system, and
+            networking software.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: Application
+              value: General
+        - uuid: f9f720869bb64d1d87ecc3d4b33b3fa8
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: 'system.location[sysLocation.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          trends: '0'
+          description: |
+            MIB: SNMPv2-MIB
+            The physical location of this node (e.g., `telephone closet, 3rd floor').  If the location is unknown, the value is the zero-length string.
+          inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: Application
+              value: General
+        - uuid: 3d17a89ed659413180ad8765bd766c0d
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: system.name
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          trends: '0'
+          description: |
+            MIB: SNMPv2-MIB
+            An administratively-assigned name for this managed node.By convention, this is the node's fully-qualified domain name.  If the name is unknown, the value is the zero-length string.
+          inventory_link: NAME
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: Application
+              value: General
+          triggers:
+            - uuid: 66bba5e28652406983046aa9dc3d58ca
+              expression: '(last(/Denco pCO/system.name,#1)<>last(/Denco pCO/system.name,#2))=1 and length(last(/Denco pCO/system.name))>0'
+              name: 'System name has changed (new name: {ITEM.VALUE})'
+              priority: INFO
+              description: 'System name has changed. Ack to close.'
+              manual_close: 'YES'
+        - uuid: 9b90fcb935c847058529189e320e5909
+          name: 'System object ID'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.2.0
+          key: 'system.objectid[sysObjectID.0]'
+          delay: 15m
+          history: 2w
+          value_type: CHAR
+          trends: '0'
+          description: |
+            MIB: SNMPv2-MIB
+            The vendor's authoritative identification of the network management subsystem contained in the entity.  This value is allocated within the SMI enterprises subtree (1.3.6.1.4.1) and provides an easy and unambiguous means for determining`what kind of box' is being managed.  For example, if vendor`Flintstones, Inc.' was assigned the subtree1.3.6.1.4.1.4242, it could assign the identifier 1.3.6.1.4.1.4242.1.1 to its `Fred Router'.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: Application
+              value: General
+        - uuid: 2bdc8f29393f45a3a8c542ff50eebd92
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: 'system.uptime[sysUpTime.0]'
+          delay: 30s
+          history: 2w
+          trends: 0d
+          units: uptime
+          description: |
+            MIB: SNMPv2-MIB
+            The time (in hundredths of a second) since the network management portion of the system was last re-initialized.
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: d764ffc453654248b54cad21534c43eb
+              expression: 'last(/Denco pCO/system.uptime[sysUpTime.0])<10m'
+              name: '{HOST.NAME} has been restarted (uptime < 10m)'
+              priority: WARNING
+              description: 'Uptime is less than 10 minutes'
+              manual_close: 'YES'
+              dependencies:
+                - name: 'No SNMP data collection'
+                  expression: 'max(/Denco pCO/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+        - uuid: 91b55333f09645a19efedc423c1618cd
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: aa79cb4b2942477bbe215ea07ca7487f
+              expression: 'max(/Denco pCO/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      dashboards:
+        - uuid: 431a0fd62e7e4ce3b474e70657807646
+          name: 'Denco Dashboard'
+          pages:
+            - widgets:
+                - type: svggraph
+                  name: Temperature
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 0080FF
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Measured Temperature (C)'
+                    - type: STRING
+                      name: ds.1.color
+                      value: BFFF00
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Target Temperature (C)'
+                    - type: STRING
+                      name: reference
+                      value: PXFPV
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: problems
+                  name: Problems
+                  'y': '5'
+                  width: '71'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: reference
+                      value: RFFNB
+                    - type: INTEGER
+                      name: show
+                      value: '3'
+                - type: svggraph
+                  name: Humidity
+                  x: '36'
+                  width: '35'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 0080FF
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Measured Humidity (%RH)'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFFF00
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Target Humidity (%HR)'
+                    - type: STRING
+                      name: reference
+                      value: JEERS
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+  triggers:
+    - uuid: 7d0cc66bb0874813bf8c2b3b63f726d2
+      expression: 'last(/Denco pCO/denco.environment.temperature,#1)>=25 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'High Temperature'
+      priority: HIGH
+    - uuid: 1056d2441aad4bdd9f3603334aa73fbc
+      expression: 'last(/Denco pCO/denco.environment.humidity,#1)<=25 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Low Humidity'
+      priority: HIGH
+      manual_close: 'YES'
+    - uuid: 9b85a82c1fa042e08a12598e51ef23f5
+      expression: 'last(/Denco pCO/denco.environment.temperature,#1)<=5 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Low Temperature'
+      priority: HIGH
+      manual_close: 'YES'
+    - uuid: 9168337f8438449f9305f9113760c340
+      expression: 'last(/Denco pCO/denco.environment.humidity,#1)>=90 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Very High Humidity'
+      priority: DISASTER
+      manual_close: 'YES'
+    - uuid: 97947a45fc514d959885df98ff2b7c9b
+      expression: 'last(/Denco pCO/denco.environment.temperature,#1)>=40 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Very High Temperature'
+      priority: DISASTER
+      manual_close: 'YES'
+    - uuid: f1073853c7bc4049916b60da12a16175
+      expression: 'last(/Denco pCO/denco.environment.humidity,#1)<=10 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Very Low Humidity'
+      priority: DISASTER
+      manual_close: 'YES'
+    - uuid: 237f03df75144db9afcf7c25af524c0d
+      expression: 'last(/Denco pCO/denco.environment.temperature,#1)<=0 and not last(/Denco pCO/denco.system.status,#1)=2'
+      name: 'Very Low Temperature'
+      priority: DISASTER
+      manual_close: 'YES'
+  graphs:
+    - uuid: 8437dab71987417a95e66876feb80655
+      name: Humidity
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: FF0080
+          calc_fnc: ALL
+          item:
+            host: 'Denco pCO'
+            key: denco.environment.humidity
+        - sortorder: '1'
+          color: FF4000
+          calc_fnc: ALL
+          item:
+            host: 'Denco pCO'
+            key: denco.system.setpoint.humidity
+    - uuid: 5a58eb1a2c074b269ac2df4a4a32a209
+      name: Temperature
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: 0080FF
+          item:
+            host: 'Denco pCO'
+            key: denco.environment.temperature
+        - sortorder: '1'
+          color: 00FF00
+          item:
+            host: 'Denco pCO'
+            key: denco.system.setpoint.temperature

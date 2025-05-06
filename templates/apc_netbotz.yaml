@@ -1,0 +1,1205 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: edec55083af745beaed7cdb51656da0e
+      name: Environment
+  templates:
+    - uuid: ce21dc36b7684b6dbe95d9958bfbbdd3
+      template: 'APC Netbotz'
+      name: 'APC Netbotz'
+      description: |
+        This Zabbix template provides comprehensive SNMP-based monitoring for APC NetBotz environmental monitoring devices. 
+        It includes support for the following device families:
+        
+        - **Schneider Electric NetBotz Series** (.1.3.6.1.4.1.5528.* OID range)
+        - **APC PowerNet Series** (.1.3.6.1.4.1.318.* OID range)
+        - **Legacy APC NetBotz Models** using older PowerNet SNMP schema
+        
+        Monitored components include:
+        - Temperature, Humidity, Dew Point, Audio, Air Flow, Current (Amps)
+        - Dry Contact and Door Switch sensors
+        - Enclosure status, Device inventory attributes
+        - Full support for SNMP traps and fallback logging
+        
+        Features:
+        - Discovery rules per sensor type with dynamic item, trigger, and graph prototypes
+        - Intelligent filtering of models using SNMP-based model detection
+        - Zabbix macros used to control threshold limits for sensor triggers
+        - Built-in honeycomb widget for device identity information
+        - Multiple value maps for sensor status decoding
+        
+        Notes:
+        - Template adapts based on SNMP model detection via {$NETBOTZ_LEGACY_MODELS}
+        - SNMP trap messages are captured in the fallback log and exposed in triggers
+        - Certain models (e.g., NBRK0250, NBWL0455) use legacy PowerNet OIDs and are handled separately
+        - OIDs and labels are consistent with APC/Schneider MIB specifications
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Environment
+      items:
+        - uuid: b1bbc43882dd4805a8c4326cefea0fb7
+          name: 'Device Contact'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.4.0
+          key: netbotz.contact
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'The contact person or team responsible for this APC Netbotz device, as configured in the device''s SNMP settings.'
+          inventory_link: CONTACT
+          tags:
+            - tag: Component
+              value: General
+        - uuid: f0ee7312ac4846789a5a9e0b22e413b4
+          name: 'Device Error'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.5528.100.100.0
+          key: netbotz.errorStatus
+          delay: 5m
+          description: |
+            Overall error status of the APC Netbotz device (1 = error, 0 = normal).
+            Note: Not supported by all PowerNet models.
+          tags:
+            - tag: Component
+              value: General
+        - uuid: 81d692b4e5d340108a095ec3062ee9f8
+          name: 'Device Firmware'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.318.1.1.10.3.1.3.0
+          key: netbotz.firmware
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Current firmware version running on the APC Netbotz device.'
+          inventory_link: SOFTWARE
+          tags:
+            - tag: Component
+              value: General
+        - uuid: 117e61014a7d4beb81fd8e87c9fcb925
+          name: 'Device Hostname'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.318.1.1.10.3.1.1.0
+          key: netbotz.hostname
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Hostname or system name of the APC Netbotz device.'
+          inventory_link: NAME
+          tags:
+            - tag: Component
+              value: General
+        - uuid: 8cb34992b2434197bc5b2e9d6afd8713
+          name: 'Device Location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: netbotz.location
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Physical location of the APC Netbotz device, as configured in SNMP.'
+          inventory_link: LOCATION
+          tags:
+            - tag: Component
+              value: General
+        - uuid: 9c1fbada90434d66b020d65674533b4a
+          name: 'Device Model'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.318.1.4.2.2.1.2.1
+          key: netbotz.model
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Model identifier of the APC Netbotz device.'
+          inventory_link: MODEL
+          tags:
+            - tag: Component
+              value: General
+        - uuid: 31beff4720c8483d8afb3182c4c4575f
+          name: 'Device Serial'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.318.1.1.10.3.1.6.0
+          key: netbotz.serial
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Serial number of the APC Netbotz device.'
+          inventory_link: SERIALNO_A
+          tags:
+            - tag: Component
+              value: General
+        - uuid: d318b28426f840e78c16a78d5a23d4b3
+          name: 'SNMP Trap Log'
+          type: SNMP_TRAP
+          key: snmptrap.fallback
+          delay: '0'
+          history: 90d
+          value_type: LOG
+          trends: '0'
+          description: 'Catches all unmatched SNMP traps from the APC Netbotz device. Used for debugging unexpected alerts.'
+          logtimefmt: 'yyyy/MM/dd hh:mm:ss'
+          tags:
+            - tag: Component
+              value: Trap
+          triggers:
+            - uuid: 0765e3a84c9f4865a8697567aef2a44f
+              expression: 'find(/APC Netbotz/snmptrap.fallback,,"like","sensor alarm")=1'
+              name: 'Trap: Sensor Alarm Received'
+              priority: AVERAGE
+              description: 'Raw SNMP Trap Payload: {ITEM.VALUE}'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: Device
+                - tag: Symptom
+                  value: TrapReceived
+      discovery_rules:
+        - uuid: 5debc36ba6984af9b3bc5f6e7146e2bb
+          name: 'Air Flow (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AIRFLOW_LABEL},1.3.6.1.4.1.5528.100.4.1.5.1.4]'
+          key: netbotz.airflow.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 0932e5cd6afb493aa7869c66f37cc742
+              name: '{#AIRFLOW_LABEL} Air Flow Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.5.1.3.{#SNMPINDEX}'
+              key: 'netbotz.airflow.errorStatus[{#AIRFLOW_LABEL}]'
+              value_type: FLOAT
+              units: CFM
+              description: 'Error status for the airflow sensor ''{#AIRFLOW_LABEL}'' (0 = OK, 1 = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: AirFlow
+              trigger_prototypes:
+                - uuid: 7bbeb5e7652e464c89757d0b092cf707
+                  expression: 'avg(/APC Netbotz/netbotz.airflow.errorStatus[{#AIRFLOW_LABEL}],#3)<>0'
+                  name: '{#AIRFLOW_LABEL} Air Flow Error Detected'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: AirFlow
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: 3b4e4ec45f7e4292ba42632b4b3aa6e0
+              name: '{#AIRFLOW_LABEL} Air Flow Rate'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.5.1.2.{#SNMPINDEX}'
+              key: 'netbotz.airflow[{#AIRFLOW_LABEL}]'
+              value_type: FLOAT
+              units: CFM
+              description: 'Airflow rate (in CFM) detected by sensor ''{#AIRFLOW_LABEL}''. Multiplied by 0.1 for correct unit scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: AirFlow
+              trigger_prototypes:
+                - uuid: 98fe43179c2d45c8882b8f490c1b663d
+                  expression: 'avg(/APC Netbotz/netbotz.airflow[{#AIRFLOW_LABEL}],#5)<{$NETBOTZ_AIRFLOW_LOW}'
+                  name: '{#AIRFLOW_LABEL} Air Flow Rate Low'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: AirFlow
+                    - tag: Symptom
+                      value: 'CheckFans?'
+          graph_prototypes:
+            - uuid: 18da3f2939b242e3a59b0736be4ff1db
+              name: '{#AIRFLOW_LABEL} Air Flow'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.airflow.errorStatus[{#AIRFLOW_LABEL}]'
+        - uuid: e788553b495046d4909a878528151aab
+          name: 'Current (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AMP_LABEL},1.3.6.1.4.1.5528.100.4.1.6.1.4]'
+          key: netbotz.amp.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 66f5909f341c4ceba53a6e86521fab05
+              name: '{#AMP_LABEL} Current Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.6.1.3.{#SNMPINDEX}'
+              key: 'netbotz.amp.errorStatus[{#AMP_LABEL}]'
+              value_type: FLOAT
+              description: 'Error status for current sensor ''{#AMP_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Amp Detection'
+              trigger_prototypes:
+                - uuid: e728fb8d117242d98b2f0db8d359d809
+                  expression: 'avg(/APC Netbotz/netbotz.amp.errorStatus[{#AMP_LABEL}],#5)<>0'
+                  name: '{#AMP_LABEL} Current Sensor Reading Error'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Current
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: a62d5befea734ec3a5426d660f6ed904
+              name: '{#AMP_LABEL} Current Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.6.1.2.{#SNMPINDEX}'
+              key: 'netbotz.amp[{#AMP_LABEL}]'
+              value_type: FLOAT
+              units: Amps
+              description: 'Current (in Amps) detected by sensor ''{#AMP_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Amp Detection'
+              trigger_prototypes:
+                - uuid: 9a6dd415f0004dc5ad66aee57b1e5137
+                  expression: 'avg(/APC Netbotz/netbotz.amp[{#AMP_LABEL}],#5)>{$NETBOTZ_AMP_HIGH}'
+                  name: '{#AMP_LABEL} Current High'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: 'Amp Detection'
+                - uuid: d4e7376c041949d48f6cfb1b803b61de
+                  expression: 'avg(/APC Netbotz/netbotz.amp[{#AMP_LABEL}],#5)<{$NETBOTZ_AMP_LOW}'
+                  name: '{#AMP_LABEL} Current Low'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: 'Amp Detection'
+          graph_prototypes:
+            - uuid: 31a6aec5433341c2b7d3125a6c0ee223
+              name: '{#AMP_LABEL} Current Levels'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.amp[{#AMP_LABEL}]'
+        - uuid: 3c615cdf348f45fb80293ad3fde97f57
+          name: 'Audio (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AUDIO_LABEL},1.3.6.1.4.1.5528.100.4.1.4.1.4]'
+          key: netbotz.audio.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 0344bb9028b14b62a39500d5e45094da
+              name: '{#AUDIO_LABEL} Audio Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.4.1.3.{#SNMPINDEX}'
+              key: 'netbotz.audio.errorStatus[{#AUDIO_LABEL}]'
+              value_type: FLOAT
+              units: dB
+              description: 'Error status for audio sensor ''{#AUDIO_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Sound
+              trigger_prototypes:
+                - uuid: 3efbb30c0acc49c2935244e007d3e057
+                  expression: 'avg(/APC Netbotz/netbotz.audio.errorStatus[{#AUDIO_LABEL}],#5)<>0'
+                  name: '{#AUDIO_LABEL} Audio Sensor Reading Error'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Audio
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: 271823e1909b4a279bef0a3340244a0f
+              name: '{#AUDIO_LABEL} Audio Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.4.1.2.{#SNMPINDEX}'
+              key: 'netbotz.audio[{#AUDIO_LABEL}]'
+              value_type: FLOAT
+              units: dB
+              description: 'Noise level (in dB) detected by sensor ''{#AUDIO_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Sound
+              trigger_prototypes:
+                - uuid: 35d81f8611a04e4ba9d0316d6de2781c
+                  expression: 'avg(/APC Netbotz/netbotz.audio[{#AUDIO_LABEL}],#5)>{$NETBOTZ_AUDIO_HIGH}'
+                  name: '{#AUDIO_LABEL} Sensor Audio High'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Audio
+                    - tag: Symptom
+                      value: LoudNoises
+                - uuid: 1cbb354797dc4383ac31353cca91b6bb
+                  expression: 'avg(/APC Netbotz/netbotz.audio[{#AUDIO_LABEL}],#5)>{$NETBOTZ_AUDIO_LOW}'
+                  name: '{#AUDIO_LABEL} Sensor Audio Low'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Audio
+                    - tag: Symptom
+                      value: UnusuallyQuiet
+          graph_prototypes:
+            - uuid: 1cc27107d9ec4b659b57a6acb68f6f04
+              name: '{#AUDIO_LABEL} Noise Levels'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.audio[{#AUDIO_LABEL}]'
+        - uuid: 2417a250b7344c63ac01281d73a9626f
+          name: 'Dew Point (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#DEWPOINT_LABEL},1.3.6.1.4.1.5528.100.4.1.3.1.4]'
+          key: netbotz.dew.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 4f38a0eb11d3430c929f24527de62def
+              name: '{#DEWPOINT_LABEL} Dew Point Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.3.1.3.{#SNMPINDEX}'
+              key: 'netbotz.dewpoint.errorStatus[{#DEWPOINT_LABEL}]'
+              value_type: FLOAT
+              units: C
+              description: 'Error status for dew point sensor ''{#DEWPOINT_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Dew Point'
+              trigger_prototypes:
+                - uuid: 5afc614b0f1d4b6eb59e5743f616ff31
+                  expression: 'avg(/APC Netbotz/netbotz.dewpoint.errorStatus[{#DEWPOINT_LABEL}],#5)<>0'
+                  name: '{#DEWPOINT_LABEL} Sensor Error'
+                  priority: WARNING
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Dew
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: a88061dae43f40b9a2f296c793a20001
+              name: '{#DEWPOINT_LABEL} Dew Point Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.3.1.2.{#SNMPINDEX}'
+              key: 'netbotz.dewpoint[{#DEWPOINT_LABEL}]'
+              value_type: FLOAT
+              units: C
+              description: 'Dew point temperature (in °C) detected by sensor ''{#DEWPOINT_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Dew Point'
+              trigger_prototypes:
+                - uuid: 5a18be4f4a6743c9b45a3ed041da90f4
+                  expression: 'avg(/APC Netbotz/netbotz.dewpoint[{#DEWPOINT_LABEL}],#5)>{$NETBOTZ_DEW_HIGH}'
+                  name: '{#DEWPOINT_LABEL} Dew Setpoint High'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Dew
+                - uuid: 35bc88ef369346a3ac34c029fee3b973
+                  expression: 'avg(/APC Netbotz/netbotz.dewpoint[{#DEWPOINT_LABEL}],#5)<{$NETBOTZ_DEW_LOW}'
+                  name: '{#DEWPOINT_LABEL} Dew Setpoint Low'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Dew
+        - uuid: 39bb98926d704737a4193057cdc3456d
+          name: 'Door Switch (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#DOOR_LABEL},1.3.6.1.4.1.5528.100.4.2.2.1.4]'
+          key: netbotz.door.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 59bed0c8a55140b78771b0775a970997
+              name: '{#DOOR_LABEL} Door Switch Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.2.2.1.3.{#SNMPINDEX}'
+              key: 'netbotz.door.errorStatus[{#DOOR_LABEL}]'
+              description: 'Error status for door sensor ''{#DOOR_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: DoorState
+              trigger_prototypes:
+                - uuid: 3f733052605e40c58cb29458f56da9ef
+                  expression: 'avg(/APC Netbotz/netbotz.door.errorStatus[{#DOOR_LABEL}],#5)<>0'
+                  name: '{#DOOR_LABEL} Door Sensor Error'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: DoorState
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: f584cc4dd0bf4e3bb7c09ad8d45664c4
+              name: '{#DOOR_LABEL} Door Switch State'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.2.2.1.2.{#SNMPINDEX}'
+              key: 'netbotz.door[{#DOOR_LABEL}]'
+              description: 'State of door sensor ''{#DOOR_LABEL}'' (1 = open, 0 = closed).'
+              valuemap:
+                name: netbotz.door.state.valuemap
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: DoorState
+              trigger_prototypes:
+                - uuid: 27f4b1c64da24a19aadae182b4660b4c
+                  expression: 'count(/APC Netbotz/netbotz.door[{#DOOR_LABEL}],5m,"eq","1")>0'
+                  name: '{#DOOR_LABEL} Door Open'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: DoorState
+                    - tag: Symptom
+                      value: SomeoneLeftTheDoorOpen
+        - uuid: 2ea8fec3c4c4458c8f1fcb588c75b68a
+          name: 'Dry Contact (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#DRY_LABEL},1.3.6.1.4.1.5528.100.4.2.1.1.4]'
+          key: netbotz.dry.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: a988742580d0472992ccba552e866934
+              name: '{#DRY_LABEL} Dry Contact Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.2.1.1.3.{#SNMPINDEX}'
+              key: 'netbotz.dry.errorStatus[{#DRY_LABEL}]'
+              description: 'Error status for dry contact sensor ''{#DRY_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Dry Contact'
+              trigger_prototypes:
+                - uuid: 4742ffdba0ff474883ded1670b260f16
+                  expression: 'avg(/APC Netbotz/netbotz.dry.errorStatus[{#DRY_LABEL}],#5)<>0'
+                  name: '{#DRY_LABEL} Dry Contact Sensor Error'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: 'Dry Contact'
+                    - tag: Symptom
+                      value: SensorDisconnected
+            - uuid: ede2886c2e044a4b94db4bb8662627ea
+              name: '{#DRY_LABEL} Dry Contact State'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.2.1.1.2.{#SNMPINDEX}'
+              key: 'netbotz.dry[{#DRY_LABEL}]'
+              description: 'State of dry contact sensor ''{#DRY_LABEL}'' (1 = triggered, 0 = normal).'
+              valuemap:
+                name: netbotz.dry.contact.state.valuemap
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: 'Dry Contact'
+              trigger_prototypes:
+                - uuid: 98ea695b02bf4668ab9272acdf2be8ad
+                  expression: 'avg(/APC Netbotz/netbotz.dry[{#DRY_LABEL}],#3)=1'
+                  name: '{#DRY_LABEL} Dry Contact Triggered'
+                  priority: DISASTER
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: 'Dry Contact'
+                    - tag: Symptom
+                      value: 'Liquid?'
+        - uuid: 43c5b63aaa864170ad916ecb8546a1a7
+          name: 'Enclosure (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#ENCLOSURE_INDEX},1.3.6.1.4.1.5528.100.2.1.1.1.1]'
+          key: netbotz.enclosure.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 7fb0ef7284cd4a0aa3a5c712caac4720
+              name: '{#ENCLOSURE_INDEX} Enclosure Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.2.1.1.1.3.{#SNMPINDEX}'
+              key: 'netbotz.enclosure.errorStatus[{#ENCLOSURE_INDEX}]'
+              description: 'Error status for enclosure sensor ''{#ENCLOSURE_INDEX}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Enclosure
+              trigger_prototypes:
+                - uuid: 822cdcfadcd542ff937712b22c01eab5
+                  expression: 'avg(/APC Netbotz/netbotz.enclosure.errorStatus[{#ENCLOSURE_INDEX}],#5)<>0'
+                  name: '{#ENCLOSURE_INDEX} Enclosure Error Detected'
+                  priority: AVERAGE
+                  tags:
+                    - tag: Component
+                      value: Enclosure
+                    - tag: Symptom
+                      value: SomeoneOpenedTheEnclosure
+            - uuid: fda36d5079274e919220b7aaff169841
+              name: '{#ENCLOSURE_INDEX} Enclosure Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.2.1.1.1.2.{#SNMPINDEX}'
+              key: 'netbotz.enclosure.status[{#ENCLOSURE_INDEX}]'
+              description: 'Status of enclosure ''{#ENCLOSURE_INDEX}'' (varies by model).'
+              valuemap:
+                name: netbotz.door.state.valuemap
+              tags:
+                - tag: Component
+                  value: Enclosure
+        - uuid: 8a87563886eb4246b143bd960492ae73
+          name: 'Humidity (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#HUMIDITY_LABEL},1.3.6.1.4.1.5528.100.4.1.2.1.4]'
+          key: netbotz.humidity.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 9f8c71a3ed3c46c49809520b3362a181
+              name: '{#HUMIDITY_LABEL} Humidity Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.2.1.3.{#SNMPINDEX}'
+              key: 'netbotz.humidity.errorStatus[{#HUMIDITY_LABEL}]'
+              value_type: FLOAT
+              units: '%RH'
+              description: 'Error status for humidity sensor ''{#HUMIDITY_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Humidity
+              trigger_prototypes:
+                - uuid: 4cdf03babaa749d4a2b0e800121b0466
+                  expression: 'avg(/APC Netbotz/netbotz.humidity.errorStatus[{#HUMIDITY_LABEL}],#5)<>0'
+                  name: '{#TEMP_LABEL} Sensor Error'
+                  priority: WARNING
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Humidity
+                    - tag: Symptom
+                      value: 'SensorDisconnected?'
+            - uuid: ea9f72e83700407fa1349d8e573fb885
+              name: '{#HUMIDITY_LABEL} Humidity Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.2.1.2.{#SNMPINDEX}'
+              key: 'netbotz.humidity[{#HUMIDITY_LABEL}]'
+              value_type: FLOAT
+              units: '%RH'
+              description: 'Relative humidity (in %RH) detected by sensor ''{#HUMIDITY_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Humidity
+              trigger_prototypes:
+                - uuid: af9dce3f6dff45808ae8390c84415938
+                  expression: 'avg(/APC Netbotz/netbotz.humidity[{#HUMIDITY_LABEL}],#5)<{$NETBOTZ_HUM_HIGH}'
+                  name: '{#HUMIDITY_LABEL} Sensor Humidity High'
+                  priority: AVERAGE
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Humidity
+                    - tag: Symptom
+                      value: HighMoistureInTheAir
+                - uuid: 2462dfe03726472cbf6d38c210d17dbd
+                  expression: 'avg(/APC Netbotz/netbotz.humidity[{#HUMIDITY_LABEL}],#5)<{$NETBOTZ_HUM_LOW}'
+                  name: '{#TEMP_LABEL} Sensor Humidity Low'
+                  priority: AVERAGE
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Humidity
+                    - tag: Symptom
+                      value: HighMoistureInTheAir
+          graph_prototypes:
+            - uuid: 5e03b2d37d1241aaabc99b9299002e28
+              name: '{#HUMIDITY_LABEL} Humidity'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.humidity[{#HUMIDITY_LABEL}]'
+        - uuid: 914d627190cc4213a20ad4fa8cc9c46b
+          name: 'Model Detection (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#NETBOTZ_MODEL},1.3.6.1.4.1.318.1.1.12.1.16.0]'
+          key: netbotz.model.discovery
+          delay: 1h
+          status: DISABLED
+        - uuid: 348b089d838546f8af06685967b36903
+          name: 'Legacy PowerNet Sensors (Legacy APC PowerNet Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SENSOR_LABEL},.1.3.6.1.4.1.318.1.1.4.4.2.1.3]'
+          key: netbotz.sensor.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 8c225603eeb745debae22dfa2503d553
+              name: 'Sensor: {#SENSOR_LABEL} Alarm'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.4.4.2.1.5.{#SNMPINDEX}'
+              key: 'netbotz.sensor.alarm[{#SENSOR_LABEL}]'
+              value_type: TEXT
+              trends: '0'
+              description: 'Alarm state of legacy PowerNet sensor ''{#SENSOR_LABEL}'' (varies by model).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Legacy
+                  value: 'True'
+                - tag: Metric
+                  value: Alarm
+            - uuid: 9012720e8ad845d59ec0e903e598d425
+              name: 'Sensor: {#SENSOR_LABEL} Label'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.4.4.2.1.3.{#SNMPINDEX}'
+              key: 'netbotz.sensor.label[{#SENSOR_LABEL}]'
+              value_type: TEXT
+              trends: '0'
+              description: 'Label/name of legacy PowerNet sensor ''{#SENSOR_LABEL}''.'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Legacy
+                  value: 'True'
+                - tag: Metric
+                  value: Label
+            - uuid: e795d5b7b59646dd89ddadb76155ec0d
+              name: 'Sensor: {#SENSOR_LABEL} Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.4.4.2.1.2.{#SNMPINDEX}'
+              key: 'netbotz.sensor.reading[{#SENSOR_LABEL}]'
+              value_type: TEXT
+              trends: '0'
+              description: 'Raw reading from legacy PowerNet sensor ''{#SENSOR_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Legacy
+                  value: 'True'
+                - tag: Metric
+                  value: Reading
+              trigger_prototypes:
+                - uuid: d8b184b5025a4a71a457ae2bebf26ff5
+                  expression: 'last(/APC Netbotz/netbotz.sensor.reading[{#SENSOR_LABEL}],#5)>{$POWERNET_TEMP_HIGH}'
+                  name: '{#SENSOR_LABEL} Temperature High'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensor
+                    - tag: Metric
+                      value: Temperature
+                - uuid: 81d8939ccea64ab19a412fb6976dcc25
+                  expression: 'last(/APC Netbotz/netbotz.sensor.reading[{#SENSOR_LABEL}],#5)<{$POWERNET_TEMP_LOW}'
+                  name: '{#SENSOR_LABEL} Temperature Low'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensor
+                    - tag: Metric
+                      value: Temperature
+            - uuid: ac13bff7ea4f408390023a2ffaae7057
+              name: 'Sensor: {#SENSOR_LABEL} Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.4.4.2.1.4.{#SNMPINDEX}'
+              key: 'netbotz.sensor.status[{#SENSOR_LABEL}]'
+              value_type: TEXT
+              trends: '0'
+              description: 'Status of legacy PowerNet sensor ''{#SENSOR_LABEL}'' (1 = normal, 2 = warning, 3 = critical).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Legacy
+                  value: 'True'
+                - tag: Metric
+                  value: Status
+              trigger_prototypes:
+                - uuid: d5e74c17cbad41bfb4bd2b9009f964de
+                  expression: 'last(/APC Netbotz/netbotz.sensor.status[{#SENSOR_LABEL}])<>1'
+                  name: '{#SENSOR_LABEL} Sensor Status Not OK'
+                  priority: WARNING
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Status
+        - uuid: 36231068b094426faf294b0dc885b128
+          name: 'Temperature (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#TEMP_LABEL},1.3.6.1.4.1.5528.100.4.1.1.1.4]'
+          key: netbotz.temperature.discovery
+          delay: 1h
+          status: DISABLED
+          item_prototypes:
+            - uuid: 081693a2ff874ef3b5f91ea820ee2576
+              name: '{#TEMP_LABEL} Temperature Error'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.1.1.3.{#SNMPINDEX}'
+              key: 'netbotz.temperature.errorStatus[{#TEMP_LABEL}]'
+              value_type: FLOAT
+              units: C
+              description: 'Error status for temperature sensor ''{#TEMP_LABEL}'' (0 = OK, non-zero = error).'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Temperature
+              trigger_prototypes:
+                - uuid: 406dce240d324c22a6cb0945ba79e7ac
+                  expression: 'avg(/APC Netbotz/netbotz.temperature.errorStatus[{#TEMP_LABEL}],#5)<>0'
+                  name: '{#TEMP_LABEL} Sensor Error'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Temperature
+                    - tag: Symptom
+                      value: 'Unplugged?'
+            - uuid: 64855bbda31c41c88da58a2e4f095c0f
+              name: '{#TEMP_LABEL} Temperature Reading'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.5528.100.4.1.1.1.2.{#SNMPINDEX}'
+              key: 'netbotz.temperature[{#TEMP_LABEL}]'
+              value_type: FLOAT
+              units: C
+              description: 'Temperature (in °C) detected by sensor ''{#TEMP_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Temperature
+              trigger_prototypes:
+                - uuid: 108419cecaeb42f2ada1790c35bf7aaf
+                  expression: 'avg(/APC Netbotz/netbotz.temperature[{#TEMP_LABEL}],#5)>{$NETBOTZ_TEMP_HIGH}'
+                  name: '{#TEMP_LABEL} Sensor Temperature High'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Temperature
+                - uuid: d048444d9ce04b63bf1e6fd2f715ff39
+                  expression: 'avg(/APC Netbotz/netbotz.temperature[{#TEMP_LABEL}],#5)<{$NETBOTZ_TEMP_HIGH}'
+                  name: '{#TEMP_LABEL} Sensor Temperature Low'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Temperature
+          graph_prototypes:
+            - uuid: 2987f4f5ad6e43fdbcd1734efe78d06e
+              name: '{#TEMP_LABEL} Temperature'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.temperature[{#TEMP_LABEL}]'
+        - uuid: e75fa3a5809e4b7381673d7dee884932
+          name: 'PowerNet Sensors (APC PowerNet Series)'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SENSOR_LABEL},1.3.6.1.4.1.318.1.1.10.4.2.3.1.3]'
+          key: powernet.sensor.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 6949e261aa884cd099e6d5a60419779e
+              name: '{#SENSOR_LABEL} Humidity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.10.4.2.3.1.6.{#SNMPINDEX}'
+              key: 'powernet.sensor.humidity[{#SENSOR_LABEL}]'
+              value_type: FLOAT
+              units: '% RH'
+              description: 'Humidity (in %RH) detected by newer PowerNet sensor ''{#SENSOR_LABEL}''.'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Humidity
+              trigger_prototypes:
+                - uuid: 418b2df876d948cdb7d17134417b041b
+                  expression: 'avg(/APC Netbotz/powernet.sensor.humidity[{#SENSOR_LABEL}],#5)>{$NETBOTZ_HUM_HIGH}'
+                  name: '{#SENSOR_LABEL} Humidity High'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Humidity
+                    - tag: Symptom
+                      value: TooHigh
+                - uuid: 887ce98d9e8c4963903a51d454fefe2c
+                  expression: 'avg(/APC Netbotz/powernet.sensor.humidity[{#SENSOR_LABEL}],#5)<{$NETBOTZ_HUM_LOW}'
+                  name: '{#SENSOR_LABEL} Humidity Low'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Humidity
+                    - tag: Symptom
+                      value: TooCold
+            - uuid: c741c96867bc4df4b4c5c8d1011b94dc
+              name: '{#SENSOR_LABEL} Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.318.1.1.10.4.2.3.1.5.{#SNMPINDEX}'
+              key: 'powernet.sensor.temp[{#SENSOR_LABEL}]'
+              value_type: FLOAT
+              units: C
+              description: 'Temperature (in °C) detected by newer PowerNet sensor ''{#SENSOR_LABEL}''.'
+              tags:
+                - tag: Component
+                  value: Sensors
+                - tag: Metric
+                  value: Temperature
+              trigger_prototypes:
+                - uuid: 6dfb4f420cf44adf93b2024fa2850117
+                  expression: 'avg(/APC Netbotz/powernet.sensor.temp[{#SENSOR_LABEL}],#5)>{$NETBOTZ_TEMP_HIGH}'
+                  name: '{#SENSOR_LABEL} Temperature High'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Temperature
+                    - tag: Symptom
+                      value: TooHot
+                - uuid: 2f59b3b088214d6781bd991893bc0f25
+                  expression: 'avg(/APC Netbotz/powernet.sensor.temp[{#SENSOR_LABEL}],#5)<{$NETBOTZ_TEMP_LOW}'
+                  name: '{#SENSOR_LABEL} Temperature Low'
+                  priority: HIGH
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: Sensors
+                    - tag: Metric
+                      value: Temperature
+                    - tag: Symptom
+                      value: TooCold
+          graph_prototypes:
+            - uuid: 855d7f46c1a14ed6b306321a77c1b233
+              name: '{#SENSOR_LABEL} Humidity'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'powernet.sensor.humidity[{#SENSOR_LABEL}]'
+            - uuid: fa3e6fe5af874b40baee1d98f2298fd2
+              name: '{#SENSOR_LABEL} Temperature'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'powernet.sensor.temp[{#SENSOR_LABEL}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$NETBOTZ_AMP_HIGH}'
+          value: '5'
+          description: 'High threshold for AMP sensors'
+        - macro: '{$NETBOTZ_AMP_LOW}'
+          value: '0.2'
+          description: 'Low threshold for AMP sensors'
+        - macro: '{$NETBOTZ_AUDIO_HIGH}'
+          value: '90'
+          description: 'High threshold for audio sensor in dB'
+        - macro: '{$NETBOTZ_AUDIO_LOW}'
+          value: '20'
+          description: 'Low threshold for audio sensor in dB'
+        - macro: '{$NETBOTZ_DEW_HIGH}'
+          value: '15'
+          description: 'Threshold for high dew alarms'
+        - macro: '{$NETBOTZ_DEW_LOW}'
+          value: '-9'
+          description: 'Threshold for low dew alarms'
+        - macro: '{$NETBOTZ_HUM_HIGH}'
+          value: '75'
+          description: 'Threshold for high humidity alarms'
+        - macro: '{$NETBOTZ_HUM_LOW}'
+          value: '25'
+          description: 'Threshold for low humidity alarms'
+        - macro: '{$NETBOTZ_LEGACY_MODELS}'
+          value: ^(NBRK0250|NBWL0455|NBRK0200|NBPD0123|NBPD0155|NBRK0570|NBPD0180|NBPD0170)$
+          description: 'These models use the older `APC Enterprise OID` .1.3.6.1.4.1.318.*.  Newer models use the ''Schneider Electric Enterprise OID'' .1.3.6.1.4.1.5528.*'
+        - macro: '{$NETBOTZ_TEMP_HIGH}'
+          value: '35'
+          description: 'Threshold for high temperature alarms'
+        - macro: '{$NETBOTZ_TEMP_LOW}'
+          value: '5'
+          description: 'Threshold for low temperature alarms'
+        - macro: '{$POWERNET_TEMP_HIGH}'
+          value: '35'
+          description: 'Threshold for high temperature alarms (legacy models)'
+        - macro: '{$POWERNET_TEMP_LOW}'
+          value: '4'
+          description: 'Threshold for low temperature alarms (legacy models)'
+      dashboards:
+        - uuid: 830f2f99d9234f23b0d0eeab2cbf6240
+          name: NetBotz
+          pages:
+            - name: NetBotz
+              widgets:
+                - type: graphprototype
+                  name: 'Module Temperatures'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#TEMP_LABEL} Temperature'
+                    - type: STRING
+                      name: reference
+                      value: TRHZE
+                - type: graphprototype
+                  name: 'Module Humidity'
+                  'y': '4'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#HUMIDITY_LABEL} Humidity'
+                    - type: STRING
+                      name: reference
+                      value: TZBKB
+                - type: graphprototype
+                  name: 'Module Noise Levels'
+                  'y': '8'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#AUDIO_LABEL} Noise Levels'
+                    - type: STRING
+                      name: reference
+                      value: SAMPB
+                - type: graphprototype
+                  name: 'Module Air Flow'
+                  'y': '12'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#AIRFLOW_LABEL} Air Flow'
+                    - type: STRING
+                      name: reference
+                      value: WEUHI
+                - type: graphprototype
+                  name: 'Module Current Levels'
+                  'y': '16'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#AMP_LABEL} Current Levels'
+                    - type: STRING
+                      name: reference
+                      value: YOHAF
+                - type: honeycomb
+                  name: 'Important Info'
+                  x: '35'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Device Contact'
+                    - type: STRING
+                      name: items.1
+                      value: 'Device Firmware'
+                    - type: STRING
+                      name: items.2
+                      value: 'Device Hostname'
+                    - type: STRING
+                      name: items.3
+                      value: 'Device Location'
+                    - type: STRING
+                      name: items.4
+                      value: 'Device Model'
+                    - type: STRING
+                      name: items.5
+                      value: 'Device Serial'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Device (.+)$", "\1")}'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: STRING
+                      name: reference
+                      value: NLHWZ
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+      valuemaps:
+        - uuid: 5f406ba532ad4e8e912fda53ff420502
+          name: netbotz.door.state.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Open
+            - type: DEFAULT
+              newvalue: Closed
+        - uuid: 345b31d97be24fef99073a66fd20e378
+          name: netbotz.dry.contact.state.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Triggered
+            - type: DEFAULT
+              newvalue: Normal
+        - uuid: aef73183082d4b30ad27d61d4e1ea821
+          name: netbotz.enclosure.state.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Open
+            - type: DEFAULT
+              newvalue: Closed
+        - uuid: f3f94e0d90d04b58ac9f0fec673ff730
+          name: powernet.alarm.state.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Normal
+            - value: '2'
+              newvalue: Alarm
+        - uuid: 1f9abb3a04d542bd9a6efe5fb1d1d621
+          name: powernet.sensor.status.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Normal
+            - value: '2'
+              newvalue: Warning
+            - value: '3'
+              newvalue: Critical
