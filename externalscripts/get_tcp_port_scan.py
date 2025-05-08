@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
+TCP Port Scanner for Zabbix Integration
 Author: Simon Jackson / @sjackson0109
-Created: 2025-05-08
-Version: 1.3
+Created: 2025/05/08
+Version: 1.4
 
 A multithreaded TCP scanner for discovering and checking open ports on networked hosts.
 Supports Zabbix low-level discovery (LLD) via JSON and per-port status checks.
@@ -11,13 +12,14 @@ Features:
 - Zabbix-compatible JSON output for open ports (--discover)
 - Single-port availability checks (--check)
 - Full port range (--all), custom ranges (--range), or common defaults
-- Multithreaded scanning with optional port limits and verbose output
-- Suitable for perimeter monitoring and service exposure audits
+- Multithreaded scanning with optional port limits and final result summary
 """
+
 import socket
 import json
 import argparse
 import time
+import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DEFAULT_PORTS = [22, 23, 53, 80, 161, 443, 445, 8080, 8443, 10050, 10051, 3306, 3389, 5000]
@@ -38,19 +40,20 @@ def parse_port_range(range_str):
     except Exception as e:
         raise argparse.ArgumentTypeError("Port range must be in format 'start-end' within 1-65535")
 
-def discover_ports(host, ports, timeout, verbose=False, max_threads=20):
+def discover_ports(host, ports, timeout, verbose=False, max_threads=20, show_progress=False):
     data = []
     total = len(ports)
     completed = 0
+    results = {}
 
     def worker(port):
         nonlocal completed
         is_open = scan_port(host, port, timeout)
         completed += 1
-        if verbose and completed % 100 == 0:
-            print(f"Scanned {completed}/{total} ports...")
-        if verbose and completed % 10 == 0:
-            print(f"{'✅' if is_open else '❌'} Port {port} is {'open' if is_open else 'closed'}.")
+        if show_progress and completed % 100 == 0:
+            percent = math.floor((completed / total) * 100)
+            print(f"Scan Progress: {percent}%")
+        results[port] = is_open
         return port if is_open else None
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -59,6 +62,11 @@ def discover_ports(host, ports, timeout, verbose=False, max_threads=20):
             port_result = future.result()
             if port_result is not None:
                 data.append({"{#TCPPORT}": port_result})
+
+    if verbose:
+        for port in sorted(results.keys()):
+            status = "✅" if results[port] else "❌"
+            print(f"{status} Port {port} is {'open' if results[port] else 'closed'}.")
 
     return json.dumps({"data": data}, indent=4)
 
@@ -95,7 +103,9 @@ def main():
     start_time = time.time()
 
     if args.discover:
-        print(discover_ports(args.host, ports, args.timeout, args.verbose, args.threads))
+        result = discover_ports(args.host, ports, args.timeout, args.verbose, args.threads, show_progress=args.all)
+        if not args.verbose:
+            print(result)
     elif args.check is not None:
         print(check_port(args.host, args.check, args.timeout))
     else:
