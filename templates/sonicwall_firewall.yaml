@@ -2209,19 +2209,64 @@ zabbix_export:
                       value: 'Device ROM Version'
                     - type: STRING
                       name: items.3
-                      value: 'Device Temperature'
+                      value: 'Device Location'
+                    - type: STRING
+                      name: items.4
+                      value: 'AntiSpyware Scan Requests'
+                    - type: STRING
+                      name: items.5
+                      value: 'AntiSpyware Scan Time'
+                    - type: STRING
+                      name: items.6
+                      value: 'AntiSpyware Threats Blocked'
+                    - type: STRING
+                      name: items.7
+                      value: 'AntiSpyware Threats Detected'
+                    - type: STRING
+                      name: items.8
+                      value: 'GAV Scan Count'
+                    - type: STRING
+                      name: items.9
+                      value: 'GAV Virus Count'
+                    - type: STRING
+                      name: items.10
+                      value: 'IDS Attacks Blocked'
+                    - type: STRING
+                      name: items.11
+                      value: 'IDS Attacks Detected'
+                    - type: STRING
+                      name: items.12
+                      value: 'IPS Attacks Blocked'
+                    - type: STRING
+                      name: items.13
+                      value: 'Mail Good Allowed'
+                    - type: STRING
+                      name: items.14
+                      value: 'Mail Spam Detected'
+                    - type: STRING
+                      name: items.15
+                      value: 'Mail Total Count'
+                    - type: STRING
+                      name: items.16
+                      value: 'Mail Virus Detected'
                     - type: STRING
                       name: primary_label
                       value: '{ITEM.NAME}'
                     - type: STRING
                       name: reference
                       value: BFIFR
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
                 - type: gauge
                   x: '36'
                   'y': '3'
                   width: '13'
                   height: '3'
                   fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
                     - type: ITEM
                       name: itemid.0
                       value:
@@ -2238,9 +2283,12 @@ zabbix_export:
                       value: '2'
                     - type: INTEGER
                       name: show.1
-                      value: '4'
+                      value: '3'
                     - type: INTEGER
                       name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
                       value: '5'
                 - type: gauge
                   x: '36'
@@ -2248,6 +2296,9 @@ zabbix_export:
                   width: '13'
                   height: '3'
                   fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '1'
                     - type: ITEM
                       name: itemid.0
                       value:
@@ -2262,6 +2313,9 @@ zabbix_export:
                     - type: INTEGER
                       name: show.0
                       value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '5'
                     - type: STRING
                       name: thresholds.0.color
                       value: 0080FF
@@ -2286,6 +2340,9 @@ zabbix_export:
                   width: '13'
                   height: '3'
                   fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
                     - type: ITEM
                       name: itemid.0
                       value:
@@ -2302,9 +2359,12 @@ zabbix_export:
                       value: '2'
                     - type: INTEGER
                       name: show.1
-                      value: '4'
+                      value: '3'
                     - type: INTEGER
                       name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
                       value: '5'
             - name: Interfaces
               widgets:
@@ -2517,7 +2577,7 @@ zabbix_export:
               widgets:
                 - type: honeycomb
                   name: 'VLAN Errors'
-                  width: '10'
+                  width: '16'
                   height: '13'
                   fields:
                     - type: INTEGER
@@ -2585,7 +2645,7 @@ zabbix_export:
                       value: '1000'
                 - type: graphprototype
                   name: 'VLAN: Traffic'
-                  x: '10'
+                  x: '16'
                   width: '39'
                   height: '13'
                   fields:

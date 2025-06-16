@@ -1,0 +1,164 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 4856619639134fd6a4e982c70f4f00e1
+      template: 'TCP Port Scanner'
+      name: 'TCP Port Scanner'
+      description: |
+        Overview:
+        This template is designed to detect and monitor the state of commonly used TCP ports.
+        It uses an external script (`get_tcp_port_scan.py`) to perform discovery of open ports and to verify their open/closed status.
+        
+        Features:
+        - Discovery of open TCP ports on target hosts
+        - Periodic port status check using the external script
+        - Triggers for ports that change to "closed" state
+        - Suitable for monitoring perimeter exposure or service health
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Templates
+      discovery_rules:
+        - uuid: f32a4a469f2e4647b77e6465ba578883
+          name: 'Discover Open TCP Ports'
+          type: EXTERNAL
+          key: 'get_tcp_port_scan.py[''{HOST.IP}'',''--discover'']'
+          delay: 1h
+          lifetime: 1d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          item_prototypes:
+            - uuid: 243cb38e257b442ca7dc32ec9db9f7ce
+              name: 'TCP Port {#TCPPORT} Status'
+              type: EXTERNAL
+              key: 'get_tcp_port_scan.py[''{HOST.IP}'',''--check'',{#TCPPORT}]'
+              delay: 5m
+              value_type: FLOAT
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: Portscan
+                  value: Check
+                - tag: TCP
+                  value: '{#TCPPORT}'
+              trigger_prototypes:
+                - uuid: d7f60d8652df4e298f4f8d8c93a8f62e
+                  expression: |
+                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}])=0
+                    and
+                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}],#1),{$PORTSCAN_AUTHORISED_PORTS})=0
+                  name: 'Portscan: TCP/{#TCPPORT} found CLOSED (SanityCheck)'
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Portscan
+                      value: Check
+                    - tag: Status
+                      value: Closed
+                    - tag: Symptom
+                      value: 'IsThisNormal?'
+                - uuid: 3614a177bef744ebaa51b69450e12262
+                  expression: |
+                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}])=1
+                    and
+                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}],#1),{#PORTSCAN_BAD_PRACTICE_PORTS})=1
+                  name: 'Portscan: TCP/{#TCPPORT} found OPEN (bad practice)'
+                  priority: HIGH
+                  tags:
+                    - tag: Portscan
+                      value: Check
+                    - tag: Status
+                      value: Open
+                    - tag: Symptom
+                      value: BadPractice
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$PORTSCAN_AUTHORISED_PORTS}'
+          value: '22,80,443,10050,10051'
+          description: 'Comma-separated list of approved or expected open TCP ports for this host. Used to suppress alerts when known ports are found closed.'
+        - macro: '{$PORTSCAN_BAD_PRACTICE_PORTS}'
+          value: '20,21,22,23,25,53,111,135,139,143,161,389,445,512,513,514, 873,1433,1521,3306,3389,5432,5900,5985,5986,6379,6660,6667, 9200,9300,11211,27017,5000,7001,8181,9200,27017'
+          description: 'Insecure, legacy, or administrative ports that should not be open on internet-facing systems. Includes: Telnet, SSH, RDP, SQL (MSSQL, MySQL, Oracle, PostgreSQL), NetBIOS, Syslog, WMI, Redis, Elasticsearch, and VNC.'
+      dashboards:
+        - uuid: 25640cc1e1234e63920de9740dbdea71
+          name: 'Port Scanner'
+          pages:
+            - name: 'Port Scanner'
+              widgets:
+                - type: honeycomb
+                  name: 'Port Status'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'TCP Port * Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: Portscan
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: Check
+                    - type: INTEGER
+                      name: maintenance
+                      value: '1'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub(".*Port ([0-9]+).*", "\1")}'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: STRING
+                      name: reference
+                      value: ICVID
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: problemsbysv
+                  name: 'Port Scanner Problems Identified'
+                  x: '24'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: reference
+                      value: PGZFD
+                    - type: INTEGER
+                      name: tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: tags.0.tag
+                      value: Portscan
+                    - type: STRING
+                      name: tags.0.value
+                      value: Check

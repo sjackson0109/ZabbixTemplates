@@ -4,6 +4,8 @@ Author: Simon Jackson (sjackson0109)
 Created: 2025/03/03
 Updated: 2025/05/08
 Version: 2.3
+
+
 Description:
     Script that is designed to test TLS handshake capabilities with a specified host or IP endpoint. It dynamically detects available SSL/TLS protocols and ciphers on the client-system, tests their compatibility, and provides a detailed report of successful and failed connections.  
 Features:

@@ -1,0 +1,530 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 8edae225eb6a44648f24368f1e0c0301
+      name: Applications
+  templates:
+    - uuid: d521a999078a4fd8ad95399c0119cfb8
+      template: 'TLS Compliance Checker'
+      name: 'TLS Compliance Checker'
+      description: |
+        Overview:
+        Comprehensive Zabbix template for auditing and tracking TLS protocol and cipher compliance across web services.
+        
+        This template performs periodic TLS handshake testing using an external Python script and parses the supported protocol/cipher pairs via discovery.
+        Each combination is assessed for security posture and grouped into SEV1–SEV5 tiers based on known cryptographic weaknesses and real-world exploitability (e.g., POODLE, FREAK, BEAST, DROWN).
+        
+        Features:
+        - Auto-discovery of supported TLS protocol and cipher pairs
+        - Normalised result set via `{#PROTOCOL}` and `{#CIPHER}` LLD macros
+        - Severity-based triggers for SEV5 (critical), SEV4 (high), SEV3 (moderate), SEV2 (low), and SEV1 (informational)
+        - Risk score calculation (weighted)
+        - Compliance scoring aligned to:
+          - PCI DSS v4.0
+          - NIST SP 800-52r2
+          - CIS Controls v8
+          - BSI TR-02102-2 (Germany)
+        - All scoring models include value maps for dashboard visualisation
+        - Designed to detect insecure or non-compliant TLS usage over time
+        
+        Usage Notes:
+        - Requires the external script `get_tls_handshake.py` in the `externalscripts/` directory
+        - Macro `{$TLS.PORT}` defaults to `443`, but can be overridden per-host
+        - SEV1–SEV2 tiers are disabled by default using `^$` regex macros
+        - Score triggers and dashboard widgets can be added per compliance model
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Applications
+      items:
+        - uuid: 243cb38e257b442ca7dc32ec9db9f7ce
+          name: 'TLS Compliance Check (Discovery Script)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["/usr/lib/zabbix/externalscripts/get_tls_handshake.py {HOST.HOST} -p {$TLS.PORT} --discover"]'
+          delay: 6h
+          history: 1d
+          value_type: TEXT
+          trends: '0'
+          description: 'Executes the TLS handshake enumeration script for a given host/port. Used as the master item for the discovery rule that identifies supported protocol/cipher combinations.'
+          timeout: 10s
+          tags:
+            - tag: TLS
+              value: Discovery
+        - uuid: e7650c76d5734c1fbc4aa8deafb26466
+          name: 'TLS Risk Score'
+          type: CALCULATED
+          key: tls.compliance.risk.score
+          delay: 5m
+          value_type: FLOAT
+          units: score
+          params: |
+            last(/TLS Compliance Checker/tls.risk.sev1.count)*1 +
+            last(/TLS Compliance Checker/tls.risk.sev2.count)*2 +
+            last(/TLS Compliance Checker/tls.risk.sev3.count)*3 +
+            last(/TLS Compliance Checker/tls.risk.sev4.count)*4 +
+            last(/TLS Compliance Checker/tls.risk.sev5.count)*5
+          description: 'Weighted TLS compliance risk score based on protocol/cipher support across severity tiers. Higher values indicate broader support for weak, deprecated, or insecure configurations.'
+          tags:
+            - tag: Score
+              value: Weighted
+            - tag: Security
+              value: TLS
+        - uuid: 1666f7db07514d60adef013610121ca3
+          name: 'TLS Compliance Score (BSI TR-02102-2)'
+          type: CALCULATED
+          key: tls.compliance.score.bsi
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*10 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*10
+            )
+          description: 'Germany’s BSI guideline TR-02102-2 (2023 revision) specifies minimum cryptographic  standards for TLS communication. This score penalises the use of banned or  discouraged configurations such as TLSv1.0, TLSv1.1, RC4, 3DES, CAMELLIA, SEED,  MD5, and anonymous key exchange. A perfect score of 100% reflects complete  compliance with BSI’s mandatory crypto profile.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: BSI-TR-02102-2
+            - tag: Security
+              value: TLS
+        - uuid: 7a67fe3ad7e942769aa0ca1dfd6c5ee9
+          name: 'TLS Compliance Score (C5:2020)'
+          type: CALCULATED
+          key: tls.compliance.score.c5
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*10 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*10
+            )
+          description: 'TLS compliance score aligned with Germany’s C5:2020 (Cloud Computing Compliance Criteria Catalogue), which mandates secure transmission of data and refers directly to BSI TR-02102-2 for cryptographic standards. This score deducts points for the presence of insecure protocols or cipher suites such as TLSv1.0/1.1, RC4, NULL, EXPORT, MD5, and anonymous key exchange. A perfect score (100%) indicates full conformance to C5 encryption expectations.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: C5-2020
+            - tag: Security
+              value: TLS
+        - uuid: 1405a8155ae442738dcf6986acc488da
+          name: 'TLS Compliance Score (CIS Controls v8)'
+          type: CALCULATED
+          key: tls.compliance.score.cis
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*15 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*15
+            )
+          description: 'Based on CIS Controls v8 (notably Controls 3.4 and 13.3) which mandate the use  of strong encryption for data in transit and the elimination of weak cipher  suites and outdated TLS protocols. This score penalises the presence of insecure  configurations including SSLv3, TLSv1.0/1.1, RC4, NULL encryption, 3DES, and  anonymous key exchange. A score of 100% indicates full compliance.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: CIS
+            - tag: Security
+              value: TLS
+        - uuid: b156112a043347eab3b49534d4680ace
+          name: 'TLS Compliance Score (NIST SP 800-52r2)'
+          type: CALCULATED
+          key: tls.compliance.score.nist
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*10 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*10
+            )
+          description: 'NIST SP 800-52r2 mandates exclusive use of TLS 1.2 or higher, AEAD cipher suites,  and secure key exchange mechanisms. This score penalises legacy protocols such  as TLSv1.0/1.1 and insecure cipher configurations including NULL, EXPORT, RSA key  exchange, and MD5-based suites. A score of 100% indicates full cryptographic  alignment with NIST.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: NIST-800-52r2
+            - tag: Security
+              value: TLS
+        - uuid: cb559ec9b46d4edb9c3d08132c058804
+          name: 'TLS Compliance Score (PCI DSS)'
+          type: CALCULATED
+          key: tls.compliance.score.pcidss
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*10 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*5
+            )
+          description: 'Compliance score for PCI DSS 4.0 (Requirement 4.2.1). Score starts at 100%. Deductions applied  for presence of known insecure protocols or cipher suites such as SSLv3, TLSv1.0, RC4, NULL,  and export-grade crypto. A perfect score (100%) reflects full PCI-DSS crypto compliance.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: PCI-DSS
+            - tag: Security
+              value: TLS
+        - uuid: 922a368e444345be9805de1da4b5090e
+          name: 'TLS Compliance Score (PCI DSS v4.0)'
+          type: CALCULATED
+          key: tls.compliance.score.pcidssv4
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Compliance Checker/tls.risk.sev5.count)*10 +
+              last(/TLS Compliance Checker/tls.risk.sev4.count)*5
+            )
+          description: 'PCI DSS v4.0 Requirement 4.2.1 mandates the use of strong cryptography to secure transmission  of cardholder data. This score penalises weak and deprecated protocols or ciphers such as SSLv3,  TLSv1.0, RC4, NULL encryption, and anonymous key exchange. A perfect score (100%) indicates  full compliance with the encryption standards required by PCI DSS.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: PCI-DSS
+            - tag: Security
+              value: TLS
+        - uuid: b0204b56f0a64b5d9c95ac5c1c224cd5
+          name: 'TLS Overall Status'
+          key: tls.compliance.status
+          value_type: FLOAT
+          description: 'Overall TLS compliance status'
+          tags:
+            - tag: Security
+              value: TLS
+        - uuid: 3764dd5c03374fcda93093971e09530e
+          name: 'TLS SEV1 Count'
+          type: ZABBIX_ACTIVE
+          key: tls.risk.sev1.count
+          value_type: FLOAT
+        - uuid: 4d8929f4cc904e5c9ba92da1f672ee17
+          name: 'TLS SEV2 Count'
+          type: ZABBIX_ACTIVE
+          key: tls.risk.sev2.count
+          value_type: FLOAT
+        - uuid: 7d89ee8eb3464ecab09357db25967af9
+          name: 'TLS SEV3 Count'
+          type: ZABBIX_ACTIVE
+          key: tls.risk.sev3.count
+          value_type: FLOAT
+        - uuid: f3e3da936c3742138102d11bc12de7e0
+          name: 'TLS SEV4 Count'
+          type: ZABBIX_ACTIVE
+          key: tls.risk.sev4.count
+          value_type: FLOAT
+        - uuid: 64523cbe3c774549abc54e692369d6af
+          name: 'TLS SEV5 Count'
+          type: ZABBIX_ACTIVE
+          key: tls.risk.sev5.count
+          value_type: FLOAT
+          description: 'Number of SEV5 protocol/cipher matches detected'
+      discovery_rules:
+        - uuid: f12e81a1b6cc4f978361999fd2c42bdd
+          name: 'Discover TLS Protocols/Ciphers'
+          key: tls.discovery
+          filter:
+            conditions:
+              - macro: '{#CIPHER}'
+                value: '{$TLS.AUTHORISED.CIPHERS}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: A
+              - macro: '{#PROTOCOL}'
+                value: '{$TLS.AUTHORISED.PROTOCOLS}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: B
+          lifetime: 6h
+          description: 'Auto-discovery of all available TLS protocol/cipher combinations'
+          item_prototypes:
+            - uuid: 118d16135f054fbb81e66b1676155cd1
+              name: 'TLS Check: {#PROTOCOL} - {#CIPHER}'
+              key: 'tls.check[{#PROTOCOL}.{#CIPHER}]'
+              history: 7d
+              value_type: FLOAT
+              trends: '0'
+              description: 'Check support for {#PROTOCOL} with {#CIPHER}'
+              valuemap:
+                name: tls.compliance.status.valuemap
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - '^([01])$'
+                    - \1
+              timeout: 10s
+              tags:
+                - tag: Security
+                  value: TLS
+              trigger_prototypes:
+                - uuid: 688d5f1fcfd14b238cda6c14731057da
+                  expression: 'last(/TLS Compliance Checker/tls.check[{#PROTOCOL}.{#CIPHER}])=0'
+                  name: 'Unsupported TLS config'
+                  priority: HIGH
+                  description: 'Unsupported TLS configuration detected'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$TLS.AUTHORISED.CIPHERS}'
+          value: ECDHE-RSA|AES128|AES256
+          description: 'Cipher name patterns approved by client policy.'
+        - macro: '{$TLS.AUTHORISED.PROTOCOLS}'
+          value: ^TLSv1.2|^TLSv1.3
+          description: 'TLS versions that are allowed by client policy.'
+        - macro: '{$TLS.PORT}'
+          value: '443'
+          description: 'TCP port number bound for the given hosts web-service. Default = 443'
+        - macro: '{$TLS.RISK.SEV1.CIPHERS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV1.PROTOCOLS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV2.CIPHERS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV2.PROTOCOLS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV3.CIPHERS}'
+          value: SHA$|RSA$|ECDSA$
+          description: 'Ciphers relying solely on RSA key exchange or SHA-1/SHA-256 in non-AEAD modes. These are not directly exploitable, but may indicate weak configuration. Included for moderate-risk trending.'
+        - macro: '{$TLS.RISK.SEV3.PROTOCOLS}'
+          value: ^TLSv1\.2$
+          description: 'While still common, TLSv1.2 lacks forward secrecy and modern AEAD requirements in some deployments. Not currently targeted by Metasploit, but becoming non-compliant in high-assurance environments (e.g., FedRAMP, DoD IL5).'
+        - macro: '{$TLS.RISK.SEV4.CIPHERS}'
+          value: 3DES|DES|SEED|IDEA|PSK|CAMELLIA
+          description: 'Weak or legacy ciphers with known cryptographic weaknesses: - 3DES: vulnerable to SWEET32 (CVE-2016-2183), detected via `auxiliary/scanner/ssl/ssl_version` - DES: obsolete 56-bit cipher, trivially brute-forceable - SEED/IDEA: not widely supported, considered weak by NIST - PSK: pre-shared keys reduce identity verification - CAMELLIA: less peer-reviewed; NIST excluded from Suite B'
+        - macro: '{$TLS.RISK.SEV4.PROTOCOLS}'
+          value: ^TLSv1\.1$
+          description: 'TLSv1.1 is deprecated by most major browsers, and subject to downgrade attacks (e.g., CVE-2019-1559). Detected by Metasploit `auxiliary/scanner/http/tls_version`, discouraged in all environments.'
+        - macro: '{$TLS.RISK.SEV5.CIPHERS}'
+          value: RC4|NULL|EXP|ANON|CBC|MD5
+          description: 'Cipher patterns with known practical attacks and Metasploit weaponisation: - RC4: predictable stream cipher, used in BEAST-style attacks - NULL: no encryption - EXP: export-grade 40-/56-bit keys, vulnerable to FREAK (CVE-2015-0204), LOGJAM (CVE-2015-4000) - ANON: no authentication - CBC: vulnerable in TLSv1.0/1.1 to POODLE-like padding oracle attacks (used in metasploit demos) - MD5: broken hashing used in various downgrade and collision attacks'
+        - macro: '{$TLS.RISK.SEV5.PROTOCOLS}'
+          value: ^SSLv2.0$|^SSLv3.0$|^TLSv1\.0$
+          description: 'Protocols with known, actively exploited vulnerabilities. Includes: - SSLv3.0: vulnerable to POODLE (CVE-2014-3566), targeted by Metasploit module `auxiliary/scanner/ssl/poodle_ssl` - TLSv1.0: exploitable via BEAST (CVE-2011-3389), has Metasploit scanner `auxiliary/scanner/http/tls_version` - SSLv2.0: vulnerable to DROWN (CVE-2016-0800), detected by Metasploit `auxiliary/scanner/ssl/openssl_drown` Recommended for immediate deactivation in all environments.'
+        - macro: '{$TLS.TIMEOUT}'
+          value: '4'
+          description: 'Timeout to wait whilst establishing a TLS handshake'
+      dashboards:
+        - uuid: 63aab660bb1e4535993753e57549e68d
+          name: 'TLS Compliance Check'
+          pages:
+            - name: 'TLS Compliance'
+              widgets:
+                - type: problemsbysv
+                  name: 'Active TLS Issues'
+                  width: '37'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: reference
+                      value: NZBJL
+                - type: svggraph
+                  name: 'TLS Risk Trend'
+                  'y': '5'
+                  width: '37'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.aggregate_function
+                      value: '3'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'TLS SEV5 Count'
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.0.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'TLS SEV4 Count'
+                    - type: INTEGER
+                      name: ds.1.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'TLS SEV3 Count'
+                    - type: INTEGER
+                      name: ds.2.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.2.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.2.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'TLS SEV2 Count'
+                    - type: INTEGER
+                      name: ds.3.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.3.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.3.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.4.color
+                      value: ED1248
+                    - type: STRING
+                      name: ds.4.items.0
+                      value: 'TLS SEV1 Count'
+                    - type: INTEGER
+                      name: ds.4.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.4.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.4.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_columns
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: STRING
+                      name: reference
+                      value: MSFLV
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'TLS Risk Score'
+                  x: '37'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'TLS Compliance Checker'
+                        key: tls.compliance.risk.score
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                - type: honeycomb
+                  name: 'TLS Heatmap'
+                  x: '37'
+                  'y': '5'
+                  width: '35'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'tls.check[*.*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{ITEM.NAME}.regsub("^TLS Check: ([^ ]+) - .*", "\1")'
+                    - type: STRING
+                      name: reference
+                      value: PZNHR
+                    - type: STRING
+                      name: secondary_label
+                      value: '{ITEM.NAME}.regsub("^TLS Check: [^ ]+ - (.*)$", "\1")'
+                    - type: INTEGER
+                      name: secondary_label_type
+                      value: '0'
+                - type: piechart
+                  name: 'TLS Severity Breakdown'
+                  x: '55'
+                  width: '17'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: tls.risk.sev5.count
+                    - type: STRING
+                      name: ds.1.color
+                      value: 4000FF
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: tls.risk.sev4.count
+                    - type: STRING
+                      name: ds.2.color
+                      value: 00FFFF
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: tls.risk.sev3.count
+                    - type: STRING
+                      name: ds.3.color
+                      value: BFFF00
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: tls.risk.sev2.count
+                    - type: STRING
+                      name: ds.4.color
+                      value: FFBF00
+                    - type: STRING
+                      name: ds.4.items.0
+                      value: tls.risk.sev1.count
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+      valuemaps:
+        - uuid: 98b5a61cb19541f5a1b8932158d10ad1
+          name: tls.compliance.score.valuemap
+          mappings:
+            - value: 90-100
+              newvalue: '✅ Fully Compliant'
+            - value: 70-89
+              newvalue: '🟠 Partially Compliant'
+            - value: 0-69
+              newvalue: '🔴 Non-Compliant'
+        - uuid: b5fba154c5ad4c5f81e7bb4c1cbcbfb9
+          name: tls.compliance.status.valuemap
+          mappings:
+            - value: '0'
+              newvalue: '❌ Unsupported'
+            - value: '1'
+              newvalue: '✅ Supported'

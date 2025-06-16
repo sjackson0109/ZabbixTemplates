@@ -1,0 +1,285 @@
+zabbix_export:
+  version: '7.0'
+  templates:
+    - uuid: c1b937bd6e904eb4bc3ea91e6abbd830
+      template: 'Web Scenario Triggers'
+      name: 'Web Scenario Triggers'
+      groups:
+        - name: Environment
+      discovery_rules:
+        # P1
+        - uuid: 2c6ad73801f848af87f36a4c3f5412b7
+          name: 'Discover Web Scenarios (P1)'
+          key: get_web_scenarios.py["{HOST.HOST}"]
+          type: EXTERNAL
+          delay: 1h
+          lifetime: 6h
+          filter:
+            conditions:
+              - macro: '{#PRIORITY}'
+                value: 'P1'
+                formulaid: A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          lld_macro_paths:
+            - lld_macro: '{#SCENARIO}'
+              path: '$.data[*].{#SCENARIO}'
+            - lld_macro: '{#STEP}'
+              path: '$.data[*].{#STEP}'
+            - lld_macro: '{#CUSTOMER}'
+              path: '$.data[*].{#CUSTOMER}'
+            - lld_macro: '{#PRIORITY}'
+              path: '$.data[*].{#PRIORITY}'
+          item_prototypes:
+            - uuid: 8f08c32629c145658a2b54dca8c50a52
+              name: 'Web Scenario: {#SCENARIO} Error Message'
+              key: p1.web.test.error[{#SCENARIO}]
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+            - uuid: f1c32f50d4e548a4b24d20dff43e5a43
+              name: 'Web Scenario: {#SCENARIO} Fail Flag'
+              key: 'p1.web.test.fail[{#SCENARIO}]'
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+          trigger_prototypes:
+            - uuid: c9bf329fd6bf42c8974d9038ba487b33
+              name: 'Web Scenario "{#SCENARIO}" failed'
+              expression: |
+                length(last(/Web Scenario Triggers/p1.web.test.error[{#SCENARIO}]))>0 and
+                last(/Web Scenario Triggers/p1.web.test.fail[{#SCENARIO}])>0
+              priority: DISASTER
+              tags:
+                - tag: Scenario
+                  value: '{#SCENARIO}'
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+
+        # P2
+        - uuid: 52ce15d445fa4d85a11d337f1a1771f1
+          name: 'Discover Web Scenarios (P2)'
+          key: get_web_scenarios.py["{HOST.HOST}"]
+          type: EXTERNAL
+          delay: 1h
+          lifetime: 6h
+          filter:
+            conditions:
+              - macro: '{#PRIORITY}'
+                value: 'P2'
+                formulaid: A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          lld_macro_paths:
+            - lld_macro: '{#SCENARIO}'
+              path: '$.data[*].{#SCENARIO}'
+            - lld_macro: '{#STEP}'
+              path: '$.data[*].{#STEP}'
+            - lld_macro: '{#CUSTOMER}'
+              path: '$.data[*].{#CUSTOMER}'
+            - lld_macro: '{#PRIORITY}'
+              path: '$.data[*].{#PRIORITY}'
+          item_prototypes:
+            - uuid: 3ff56bfa273e4093bca3cbd7aba5e10e
+              name: 'Web Scenario: {#SCENARIO} Error Message'
+              key: p2.web.test.error[{#SCENARIO}]
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+            - uuid: f1c32f50d4e548a4b24d20dff43e5a43
+              name: 'Web Scenario: {#SCENARIO} Fail Flag'
+              key: 'p2.web.test.fail[{#SCENARIO}]'
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+          trigger_prototypes:
+            - uuid: 0b478546a8ca4542938fc9046e36ccbf
+              name: 'Web Scenario "{#SCENARIO}" failed'
+              expression: |
+                length(last(/Web Scenario Triggers/p2.web.test.error[{#SCENARIO}]))>0 and
+                last(/Web Scenario Triggers/p2.web.test.fail[{#SCENARIO}])>0
+              priority: HIGH
+              tags:
+                - tag: Scenario
+                  value: '{#SCENARIO}'
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+
+        # P3
+        - uuid: 7b9d8cf1b1e0458fa4de3789795d58f7
+          name: 'Discover Web Scenarios (P3)'
+          key: get_web_scenarios.py["{HOST.HOST}"]
+          type: EXTERNAL
+          delay: 1h
+          lifetime: 6h
+          filter:
+            conditions:
+              - macro: '{#PRIORITY}'
+                value: 'P3'
+                formulaid: A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          lld_macro_paths:
+            - lld_macro: '{#SCENARIO}'
+              path: '$.data[*].{#SCENARIO}'
+            - lld_macro: '{#STEP}'
+              path: '$.data[*].{#STEP}'
+            - lld_macro: '{#CUSTOMER}'
+              path: '$.data[*].{#CUSTOMER}'
+            - lld_macro: '{#PRIORITY}'
+              path: '$.data[*].{#PRIORITY}'
+          item_prototypes:
+            - uuid: 2103ec2d00194cfca3644460dd9d4215
+              name: 'Web Scenario: {#SCENARIO} Error Message'
+              key: p3.web.test.error[{#SCENARIO}]
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+            - uuid: 518bdfe6aa6c4dd9b2a5a27eb98ef7a6
+              name: 'Web Scenario: {#SCENARIO} Fail Flag'
+              key: 'p3.web.test.fail[{#SCENARIO}]'
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+          trigger_prototypes:
+            - uuid: 705bcdfebca942bfa11070a70c3c00eb
+              name: 'Web Scenario "{#SCENARIO}" failed'
+              expression: |
+                length(last(/Web Scenario Triggers/p3.web.test.error[{#SCENARIO}]))>0 and
+                last(/Web Scenario Triggers/p3.web.test.fail[{#SCENARIO}])>0
+              priority: AVERAGE
+              tags:
+                - tag: Scenario
+                  value: '{#SCENARIO}'
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+
+        # P4
+        - uuid: 8205d25d54764d7e9e6b788a7d9943d6
+          name: 'Discover Web Scenarios (P4)'
+          key: get_web_scenarios.py["{HOST.HOST}"]
+          type: EXTERNAL
+          delay: 1h
+          lifetime: 6h
+          filter:
+            conditions:
+              - macro: '{#PRIORITY}'
+                value: 'P4'
+                formulaid: A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          lld_macro_paths:
+            - lld_macro: '{#SCENARIO}'
+              path: '$.data[*].{#SCENARIO}'
+            - lld_macro: '{#STEP}'
+              path: '$.data[*].{#STEP}'
+            - lld_macro: '{#CUSTOMER}'
+              path: '$.data[*].{#CUSTOMER}'
+            - lld_macro: '{#PRIORITY}'
+              path: '$.data[*].{#PRIORITY}'
+          item_prototypes:
+            - uuid: d008bf38baf94b209d2283dcba540403
+              name: 'Web Scenario: {#SCENARIO} Error Message'
+              key: p4.web.test.error[{#SCENARIO}]
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+            - uuid: 52dc0af0ca8546e9a2ec380298dd628e
+              name: 'Web Scenario: {#SCENARIO} Fail Flag'
+              key: 'p4.web.test.fail[{#SCENARIO}]'
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+          trigger_prototypes:
+            - uuid: 2dda1c6dbcd14d1489c85a9537bbb7aa
+              name: 'Web Scenario "{#SCENARIO}" failed'
+              expression: |
+                length(last(/Web Scenario Triggers/p4.web.test.error[{#SCENARIO}]))>0 and
+                last(/Web Scenario Triggers/p4.web.test.fail[{#SCENARIO}])>0
+              priority: WARNING
+              tags:
+                - tag: Scenario
+                  value: '{#SCENARIO}'
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+
+        # P5
+        - uuid: 2ff176bde6444301b61a4c116a08c036
+          name: 'Discover Web Scenarios (P5)'
+          key: get_web_scenarios.py["{HOST.HOST}"]
+          type: EXTERNAL
+          delay: 1h
+          lifetime: 6h
+          filter:
+            conditions:
+              - macro: '{#PRIORITY}'
+                value: 'P5'
+                formulaid: A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+          lld_macro_paths:
+            - lld_macro: '{#SCENARIO}'
+              path: '$.data[*].{#SCENARIO}'
+            - lld_macro: '{#STEP}'
+              path: '$.data[*].{#STEP}'
+            - lld_macro: '{#CUSTOMER}'
+              path: '$.data[*].{#CUSTOMER}'
+            - lld_macro: '{#PRIORITY}'
+              path: '$.data[*].{#PRIORITY}'
+          item_prototypes:
+            - uuid: 8f5fd754eefa494db5308777e509aeb6
+              name: 'Web Scenario: {#SCENARIO} Error Message'
+              key: p5.web.test.error[{#SCENARIO}]
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+            - uuid: eecd64f8a7744005918aefa2796ccaf1
+              name: 'Web Scenario: {#SCENARIO} Fail Flag'
+              key: 'p5.web.test.fail[{#SCENARIO}]'
+              value_type: TEXT
+              trends: '0'
+              delay: 1m
+          trigger_prototypes:
+            - uuid: 16483802ed43413f9cd1a795a9e497d9
+              name: 'Web Scenario "{#SCENARIO}" failed'
+              expression: |
+                length(last(/Web Scenario Triggers/p5.web.test.error[{#SCENARIO}]))>0 and
+                last(/Web Scenario Triggers/p5.web.test.fail[{#SCENARIO}])>0
+              priority: INFO
+              tags:
+                - tag: Scenario
+                  value: '{#SCENARIO}'
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+      macros:
+        - macro: '{$WEB_SCENARIO_MIN_IN}'
+          value: '10000'
+          description: 'Fallback duration for slow performing websites'
+
+        - macro: '{$WEB_SCENARIO_SLOW_THRESHOLD}'
+          value: '2000'
+          description: 'Response time (in milliseconds) above which scenario is considered slow'
+
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'

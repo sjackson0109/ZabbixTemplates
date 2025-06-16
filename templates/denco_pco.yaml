@@ -16,7 +16,6 @@ zabbix_export:
 
         Author: Simon Jackson / @sjackson0109
       groups:
-        - name: Classes
         - name: Environment
       items:
         - uuid: 245ded6263b04f348c2529360ed1cf36
