@@ -71,6 +71,9 @@ zabbix_export:
           units: scans
           description: 'Total number of AntiSpyware scan requests'
           preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
             - type: CHANGE_PER_SECOND
               parameters:
                 - ''
@@ -105,6 +108,9 @@ zabbix_export:
           units: threats
           description: 'Total number of spyware threats blocked'
           preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
             - type: CHANGE_PER_SECOND
               parameters:
                 - ''
@@ -123,6 +129,9 @@ zabbix_export:
           status: DISABLED
           units: threats
           preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
             - type: CHANGE_PER_SECOND
               parameters:
                 - ''
@@ -175,6 +184,10 @@ zabbix_export:
           status: DISABLED
           units: attacks
           description: 'Total number of attacks blocked by IDS'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
           tags:
             - tag: Component
               value: Feature
@@ -186,7 +199,7 @@ zabbix_export:
           name: 'IDS Attacks Detected'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
-          key: ids.detected
+          key: ids.attacks.detected
           status: DISABLED
           preprocessing:
             - type: DISCARD_UNCHANGED_HEARTBEAT
@@ -203,7 +216,7 @@ zabbix_export:
           name: 'IPS Attacks Blocked'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.8741.1.6.1.1.0
-          key: ips.blocked.count
+          key: ips.attacks.blocked
           status: DISABLED
           preprocessing:
             - type: DISCARD_UNCHANGED_HEARTBEAT
@@ -216,11 +229,34 @@ zabbix_export:
               value: Security
             - tag: Service
               value: IPS
+        - uuid: 232999d1075740c99141c0b7aebce42c
+          name: 'IPS Attacks Detected'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.6.2.1.0
+          key: ips.attacks.detected
+          status: DISABLED
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '3600'
+          tags:
+            - tag: Component
+              value: Feature
+            - tag: Feature
+              value: Security
+            - tag: Service
+              value: IPS
+          triggers:
+            - uuid: 1a94a02f641d4b0bb1677153a43097d3
+              expression: 'min(/Sonicwall Firewall/ips.attacks.detected,5m) > {$SONICWALL_IPS_ATTACK_THRESHOLD}'
+              name: 'High IPS Attack Detection Rate'
+              priority: WARNING
+              description: 'IPS detected {ITEM.LASTVALUE} attacks (threshold: {$SONICWALL_IPS_ATTACK_THRESHOLD})'
         - uuid: 583a9eb670824e8fbc2748bcc1902a0f
           name: 'Mail Good Allowed'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.8741.4.2.0
-          key: mail.good.allowed
+          key: mail.allowed
           status: DISABLED
           preprocessing:
             - type: DISCARD_UNCHANGED_HEARTBEAT
@@ -237,7 +273,7 @@ zabbix_export:
           name: 'Mail Spam Detected'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.8741.4.3.0
-          key: mail.spam.count
+          key: mail.spam.detected
           status: DISABLED
           preprocessing:
             - type: DISCARD_UNCHANGED_HEARTBEAT
@@ -285,7 +321,7 @@ zabbix_export:
             - tag: Service
               value: Mail
         - uuid: ab8294f669e54a40acd47663fafb1a27
-          name: 'Active Connections'
+          name: 'Connections - Active'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.8741.1.3.1.2.0
           key: sonicwall.connections.active
@@ -304,6 +340,38 @@ zabbix_export:
               tags:
                 - tag: Condition
                   value: 'DDOS-Attack?'
+        - uuid: 7f81c6d3652b4dd4a1bb116a75cf95f1
+          name: 'Connections - Max'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.1.0
+          key: sonicwall.connections.max
+          value_type: FLOAT
+          units: connections
+          description: 'Maximum no of active firewall connections supported'
+          tags:
+            - tag: Metrics
+              value: Performance
+        - uuid: 57a7c37acfc04dfca6944528cebca3c6
+          name: 'Connections - Usage (%)'
+          type: CALCULATED
+          key: sonicwall.connections.usage
+          units: '%'
+          params: '100 * last(//sonicwall.connections.active) / last(//sonicwall.connections.max)'
+          tags:
+            - tag: Metrics
+              value: Performance
+          triggers:
+            - uuid: 9095dbb337734a4aac65e786e7b728fe
+              expression: 'min(/Sonicwall Firewall/sonicwall.connections.usage,5m)>{$SONICWALL_CONN_USAGE_WARN}'
+              name: 'High Connection Usage (>{$SONICWALL_CONN_USAGE_WARN})'
+              description: 'Connection table usage exceeded threshold macro {$SONICWALL_CONN_USAGE_WARN} in the last 5 minutes.'
+              tags:
+                - tag: Component
+                  value: Connections
+                - tag: Condition
+                  value: Threshold
+                - tag: Symptoms
+                  value: 'High Connection Count'
         - uuid: 10e12f7f3d434f9fa8f182223973cc09
           name: 'Device Administrator'
           type: SNMP_AGENT
@@ -346,6 +414,51 @@ zabbix_export:
               tags:
                 - tag: Condition
                   value: Threshold
+        - uuid: 5eff14943f004a9b86f02d02684a341e
+          name: 'DPI SSL Connections - Current'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.3.5.1.0
+          key: sonicwall.dpissl.conn.current
+          delay: 2m
+          value_type: FLOAT
+          units: conn
+          description: 'Current active firewall connections'
+          tags:
+            - tag: Metrics
+              value: Performance
+        - uuid: 21124dc1a98a472d8ac851dedb3ac6b8
+          name: 'DPI SSL Connections - Max'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.3.5.3.0
+          key: sonicwall.dpissl.conn.max
+          delay: 2m
+          value_type: FLOAT
+          units: conn
+          description: 'Current active firewall connections'
+          tags:
+            - tag: Metrics
+              value: Performance
+        - uuid: 409694e436c44019b2292375ca8ecf38
+          name: 'DPI SSL Connections - Usage (%)'
+          type: CALCULATED
+          key: sonicwall.dpissl.conn.usage
+          units: '%'
+          params: '100 * last(//sonicwall.dpissl.conn.current) / last(//sonicwall.dpissl.conn.max)'
+          tags:
+            - tag: Metrics
+              value: Performance
+          triggers:
+            - uuid: b450096f58104d85a952dc5fb5a1939c
+              expression: 'min(/Sonicwall Firewall/sonicwall.dpissl.conn.usage,5m)>{$SONICWALL_DPISSL_USAGE_WARN}'
+              name: 'High DPI-SSL Usage (>{$SONICWALL_DPISSL_USAGE_WARN})'
+              description: 'DPI SSL usage exceeded threshold macro {$SONICWALL_DPISSL_USAGE_WARN} in the last 5 minutes.'
+              tags:
+                - tag: Component
+                  value: Connections
+                - tag: Condition
+                  value: Threshold
+                - tag: Symptoms
+                  value: 'High Connection Count'
         - uuid: 000e78a73db74e568cf407866d5a3113
           name: 'Device Firmware Version'
           type: SNMP_AGENT
@@ -373,6 +486,32 @@ zabbix_export:
           tags:
             - tag: Component
               value: System
+        - uuid: 39f6c0007a104949b105645debe13922
+          name: 'HA Primary Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.1.0
+          key: sonicwall.ha.primary.status
+          value_type: FLOAT
+          valuemap:
+            name: sonicwall.ha.status.valuemap
+          tags:
+            - tag: Component
+              value: HA
+            - tag: Role
+              value: Primary
+        - uuid: 95cb2764ee524b4694d0612c9e869292
+          name: 'HA Secondary Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.2.0
+          key: sonicwall.ha.secondary.status
+          value_type: FLOAT
+          valuemap:
+            name: sonicwall.ha.status.valuemap
+          tags:
+            - tag: Component
+              value: HA
+            - tag: Role
+              value: Secondary
         - uuid: 2eba2a5d85e5428d93b7b7d307525c0d
           name: 'Device Location'
           type: SNMP_AGENT
@@ -434,17 +573,6 @@ zabbix_export:
           tags:
             - tag: Component
               value: System
-        - uuid: 39f6c0007a104949b105645debe13922
-          name: 'HA Primary Status'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.1.0
-          key: sonicwall.primary.status
-          value_type: FLOAT
-          valuemap:
-            name: sonicwall.ha.status.valuemap
-          tags:
-            - tag: Component
-              value: HA
         - uuid: 617a5722949f44a9bd47d2eb3aceaba9
           name: 'RAM Utilisation'
           type: SNMP_AGENT
@@ -501,17 +629,6 @@ zabbix_export:
           tags:
             - tag: Component
               value: System
-        - uuid: 95cb2764ee524b4694d0612c9e869292
-          name: 'HA Secondary Status'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.2.0
-          key: sonicwall.secondary.status
-          value_type: FLOAT
-          valuemap:
-            name: sonicwall.ha.status.valuemap
-          tags:
-            - tag: Component
-              value: HA
         - uuid: cd5a053b404448d5809621c103573a39
           name: 'WAN Interfaces'
           type: SNMP_AGENT
@@ -534,7 +651,7 @@ zabbix_export:
         - uuid: 27ae43ee1d874829af0ced3313609d6b
           name: 'Device Temperature'
           type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.8741.1.3.1.4.0
+          snmp_oid: 1.3.6.1.2.1.99.1.1.1.4.4.0
           key: temperature
           delay: 5m
           units: °C
@@ -763,6 +880,10 @@ zabbix_export:
               description: 'Operational status of interface {#IFDESCR}'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
               tags:
                 - tag: Component
                   value: Interface
@@ -772,27 +893,27 @@ zabbix_export:
                   value: State
           graph_prototypes:
             - uuid: 45a4bba63890410ba1e796a7319d08c7
-              name: 'Ethernet Interface: {#IFDESCR} Traffic'
+              name: 'Interface: {#IFDESCR} Traffic'
               graph_items:
                 - color: 1A7C11
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'ethernet.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'ethernet.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 4CAF50
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'ethernet.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: EF5350
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -948,6 +1069,10 @@ zabbix_export:
               description: 'Operational status of interface {#IFDESCR}'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
               tags:
                 - tag: Component
                   value: Interface
@@ -964,20 +1089,20 @@ zabbix_export:
                     host: 'Sonicwall Firewall'
                     key: 'fibre.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'fibre.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 4CAF50
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'fibre.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: EF5350
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -1232,6 +1357,10 @@ zabbix_export:
               key: 'lag.status[{#IFDESCR}]'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
               tags:
                 - tag: Component
                   value: Interface
@@ -1258,21 +1387,21 @@ zabbix_export:
                     host: 'Sonicwall Firewall'
                     key: 'lag.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: 00BFFF
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'lag.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: FF8000
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'lag.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: FF0000
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -1420,6 +1549,10 @@ zabbix_export:
               key: 'vlan.status[{#IFDESCR}]'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
               tags:
                 - tag: Component
                   value: Interface
@@ -1437,21 +1570,21 @@ zabbix_export:
                     host: 'Sonicwall Firewall'
                     key: 'vlan.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vlan.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 66BB6A
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vlan.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: E57373
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -1459,16 +1592,23 @@ zabbix_export:
         - uuid: 138687730455496a870eace2a5994848
           name: 'VPN Tunnels (Policy Based)'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.8741.1.3.2.1.1.1.1,{#VPNNAME},1.3.6.1.4.1.8741.1.3.2.1.1.1.14]'
+          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.8741.1.3.2.1.1.1.1,{#VPNNAME},1.3.6.1.4.1.8741.1.3.2.1.1.1.14,{#LOCALONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.3,{#LOCALTWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.4,{#REMOTEONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.5,{#REMOTETWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.6]'
           key: vpn.policy.discovery
           delay: 15m
+          status: DISABLED
           filter:
             evaltype: AND
             conditions:
+              - macro: '{#LOCALONE}'
+                value: '^((?!0\.0\.0\.0).)*$'
+                formulaid: A
+              - macro: '{#REMOTEONE}'
+                value: '^((?!0\.0\.0\.0).)*$'
+                formulaid: B
               - macro: '{#VPNNAME}'
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
-                formulaid: A
+                formulaid: C
           description: |
             Discover active IPsec Phase-2 Security Associations (SAs) for policy-based VPNs.
               
@@ -1485,13 +1625,13 @@ zabbix_export:
              - Use strict regex filters and reduced retention to control template scale and history growth
           item_prototypes:
             - uuid: ddd196ba48194cf0a8c5e66222ef3e5d
-              name: 'VPN Policy: {#VPNNAME} Bytes In'
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Bytes In'
               type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#VPNINDEX}'
-              key: 'vpn.policy.bytesIn[{#VPNNAME},{#VPNINDEX}]'
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#SNMPINDEX}'
+              key: 'vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
               history: 1d
               trends: 1d
-              units: Bps
+              units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
                   parameters:
@@ -1507,13 +1647,13 @@ zabbix_export:
                 - tag: VPN
                   value: Policy
             - uuid: 9882b0fbcf2c42daa1a030cf75c97b28
-              name: 'VPN Policy: {#VPNNAME} Bytes Out'
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Bytes Out'
               type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#VPNINDEX}'
-              key: 'vpn.policy.bytesOut[{#VPNNAME},{#VPNINDEX}]'
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#SNMPINDEX}'
+              key: 'vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
               history: 1d
               trends: 1d
-              units: Bps
+              units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
                   parameters:
@@ -1528,14 +1668,17 @@ zabbix_export:
                   value: Traffic
                 - tag: VPN
                   value: Policy
-            - uuid: 806f0adc13cd469f9117c3deff1a6bc1
-              name: 'VPN Policy: {#VPNNAME} SA {#VPNINDEX}'
+            - uuid: c1669e15dc4a4f379b3d7e854c699a9d
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Status'
               type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.7.{#VPNINDEX}'
-              key: 'vpn.policy.sa.create_time[{#VPNNAME},{#VPNINDEX}]'
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.8.{#SNMPINDEX}'
+              key: 'vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
               history: 1d
-              value_type: CHAR
-              trends: '0'
+              trends: 1d
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: VPN
@@ -1544,9 +1687,10 @@ zabbix_export:
           trigger_prototypes:
             - uuid: a0ea00382b334bedb5483277d7aab49f
               expression: |
-                avg(/Sonicwall Firewall/vpn.policy.bytesIn[{#VPNNAME},{#VPNINDEX}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                avg(/Sonicwall Firewall/vpn.policy.bytesOut[{#VPNNAME},{#VPNINDEX}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} SA {#VPNINDEX} - Low Traffic (Idle)'
+                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 1 and
+                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Low Traffic (Idle)'
               priority: INFO
               description: |
                 This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
@@ -1558,6 +1702,45 @@ zabbix_export:
               tags:
                 - tag: Condition
                   value: Idle
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  function ipToInt(ip) {
+                      var parts = ip.split('.');
+                      return ((+parts[0] << 24) >>> 0) + ((+parts[1] << 16) >>> 0) + ((+parts[2] << 8) >>> 0) + (+parts[3]);
+                  }
+                  
+                  function getPrefixLength(network, broadcast) {
+                      var n = ipToInt(network);
+                      var b = ipToInt(broadcast);
+                      var mask = ~(n ^ b);
+                      var count = 0;
+                      for (var i = 31; i >= 0; i--) {
+                          if ((mask >>> i) & 1) count++;
+                      }
+                      return count.toString();
+                  }
+                  
+                  var obj = JSON.parse(value);
+                  
+                  for (var i = 0; i < obj.length; i++) {
+                      var lnet = obj[i]["{#LOCALONE}"];
+                      var lbcast = obj[i]["{#LOCALTWO}"];
+                      var rnet = obj[i]["{#REMOTEONE}"];
+                      var rbcast = obj[i]["{#REMOTETWO}"];
+                  
+                      if (lnet && lbcast) {
+                          obj[i]["{#LOCALTWO}"] = getPrefixLength(lnet, lbcast);
+                      }
+                  
+                      if (rnet && rbcast) {
+                          obj[i]["{#REMOTETWO}"] = getPrefixLength(rnet, rbcast);
+                      }
+                  }
+                  
+                  return JSON.stringify(obj);
+                  
         - uuid: 5b8828f520044cb4aee1248934790d9b
           name: 'VPN Tunnels (Route Based)'
           type: SNMP_AGENT
@@ -1596,6 +1779,7 @@ zabbix_export:
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifInErrors.{#SNMPINDEX}'
               key: 'vpn.route.ifInErrors[{#VPNNAME}]'
+              units: bps
               description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
                 - type: CHANGE_PER_SECOND
@@ -1640,6 +1824,9 @@ zabbix_export:
                 - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
               tags:
                 - tag: Component
                   value: VPN
@@ -1652,6 +1839,7 @@ zabbix_export:
               type: SNMP_AGENT
               snmp_oid: 'IF-MIB::ifOutErrors.{#SNMPINDEX}'
               key: 'vpn.route.ifOutErrors[{#VPNNAME}]'
+              units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
                   parameters:
@@ -1694,6 +1882,9 @@ zabbix_export:
                 - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
               tags:
                 - tag: Component
                   value: VPN
@@ -1742,7 +1933,7 @@ zabbix_export:
                       value: Route
           graph_prototypes:
             - uuid: dc809c23462c460ebb13a0ade5159b38
-              name: 'VPN Route: {#VPNNAME} Traffic (Bytes/Errors In/Out)'
+              name: 'VPN Route: {#VPNNAME} Traffic'
               graph_items:
                 - color: 199C0D
                   calc_fnc: ALL
@@ -1750,21 +1941,21 @@ zabbix_export:
                     host: 'Sonicwall Firewall'
                     key: 'vpn.route.ifInOctets[{#VPNNAME}]'
                 - sortorder: '1'
-                  color: FF0000
+                  color: 00BFFF
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vpn.route.ifOutOctets[{#VPNNAME}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 66BB6A
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vpn.route.ifInErrors[{#VPNNAME}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F44336
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -1899,6 +2090,10 @@ zabbix_export:
               key: 'vti.ifOperStatus[{#VTINAME}]'
               valuemap:
                 name: sonicwall.interface.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
               tags:
                 - tag: Component
                   value: Interface
@@ -1925,21 +2120,21 @@ zabbix_export:
                     host: 'Sonicwall Firewall'
                     key: 'vti.bytesIn[{#VTINAME}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vti.bytesOut[{#VTINAME}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 66BB6A
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vti.errorsIn[{#VTINAME}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: E57373
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Sonicwall Firewall'
@@ -1947,6 +2142,8 @@ zabbix_export:
       tags:
         - tag: Author
           value: 'Simon Jackson'
+        - tag: Vendor
+          value: Sonicwall
       macros:
         - macro: '{$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
           value: '30'
@@ -1954,6 +2151,9 @@ zabbix_export:
         - macro: '{$SONICWALL_ASW_THREAT_THRESHOLD}'
           value: '10'
           description: 'Threshold for detected Gateway Anti-Spyware threat count.'
+        - macro: '{$SONICWALL_CONN_USAGE_WARN}'
+          value: '90'
+          description: 'Warning threshold for connection table usage percentage. Trigger activates if usage exceeds this value.'
         - macro: '{$SONICWALL_CPU_ERROR}'
           value: '90'
           description: 'CPU usage (%) that triggers an error-level alert.'
@@ -1969,6 +2169,9 @@ zabbix_export:
         - macro: '{$SONICWALL_DISK_WARNING}'
           value: '80'
           description: 'Disk usage (%) that triggers a warning-level alert.'
+        - macro: '{$SONICWALL_DPISSL_USAGE_WARN}'
+          value: '95'
+          description: 'Warning threshold for DPI SSL usage percentage. Trigger activates if usage exceeds this value.'
         - macro: '{$SONICWALL_GAV_VIRUS_THRESHOLD}'
           value: '5'
           description: 'Threshold for detected viruses by Gateway Anti-Virus before triggering an alert.'
@@ -1978,12 +2181,15 @@ zabbix_export:
         - macro: '{$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD}'
           value: '500'
           description: 'Threshold below which HA secondary state is considered anomalous.'
+        - macro: '{$SONICWALL_IDS_DETECTION_THRESHOLD}'
+          value: '10'
+          description: 'Threshold for IDS attack detections per minute to trigger alerts. Represents average attacks/minute over 5 minutes'
         - macro: '{$SONICWALL_INTERFACE_ERROR}'
           value: '10'
           description: 'Threshold for interface input/output errors before triggering an alert.'
         - macro: '{$SONICWALL_IPS_ATTACK_THRESHOLD}'
           value: '10'
-          description: 'Threshold for Intrusion Prevention System (IPS) detected attacks.'
+          description: 'Threshold for IPS attack detections per minute to trigger alerts. Represents average attacks/minute over 5 minutes.'
         - macro: '{$SONICWALL_MEMORY_ERROR}'
           value: '90'
           description: 'Memory usage (%) that triggers an error-level alert.'
@@ -2012,7 +2218,7 @@ zabbix_export:
           value: '^(?i:BACKEND|TEST|MONITORING).*'
           description: 'Regex to exclude VPN tunnels (by name) from discovery. Adjust for tunnel naming conventions.'
         - macro: '{$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}'
-          value: '100'
+          value: '1'
           description: 'Minimum expected average VPN traffic (bps) over 3 hours before considering a tunnel idle.'
         - macro: '{$SONICWALL_VPN_WARNING_THRESHOLD}'
           value: '2'
@@ -2025,6 +2231,7 @@ zabbix_export:
               widgets:
                 - type: problemsbysv
                   width: '36'
+                  height: '1'
                   hide_header: 'YES'
                   fields:
                     - type: STRING
@@ -2032,7 +2239,7 @@ zabbix_export:
                       value: YKUZB
                 - type: svggraph
                   name: Activity
-                  'y': '2'
+                  'y': '1'
                   width: '36'
                   height: '3'
                   fields:
@@ -2107,7 +2314,7 @@ zabbix_export:
                       value: '1'
                 - type: item
                   name: Primary
-                  'y': '5'
+                  'y': '4'
                   width: '10'
                   fields:
                     - type: INTEGER
@@ -2117,7 +2324,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: 'Sonicwall Firewall'
-                        key: sonicwall.primary.status
+                        key: sonicwall.ha.primary.status
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -2129,7 +2336,7 @@ zabbix_export:
                       value: '0'
                 - type: item
                   name: Secondary
-                  'y': '7'
+                  'y': '6'
                   width: '10'
                   fields:
                     - type: INTEGER
@@ -2139,7 +2346,7 @@ zabbix_export:
                       name: itemid.0
                       value:
                         host: 'Sonicwall Firewall'
-                        key: sonicwall.secondary.status
+                        key: sonicwall.ha.secondary.status
                     - type: INTEGER
                       name: show.0
                       value: '2'
@@ -2152,7 +2359,7 @@ zabbix_export:
                 - type: svggraph
                   name: 'HA Member Sync'
                   x: '10'
-                  'y': '5'
+                  'y': '4'
                   width: '26'
                   height: '4'
                   fields:
@@ -2195,8 +2402,7 @@ zabbix_export:
                 - type: honeycomb
                   name: 'Important Info'
                   x: '36'
-                  width: '26'
-                  height: '3'
+                  width: '30'
                   fields:
                     - type: STRING
                       name: items.0
@@ -2209,64 +2415,18 @@ zabbix_export:
                       value: 'Device ROM Version'
                     - type: STRING
                       name: items.3
-                      value: 'Device Location'
-                    - type: STRING
-                      name: items.4
-                      value: 'AntiSpyware Scan Requests'
-                    - type: STRING
-                      name: items.5
-                      value: 'AntiSpyware Scan Time'
-                    - type: STRING
-                      name: items.6
-                      value: 'AntiSpyware Threats Blocked'
-                    - type: STRING
-                      name: items.7
-                      value: 'AntiSpyware Threats Detected'
-                    - type: STRING
-                      name: items.8
-                      value: 'GAV Scan Count'
-                    - type: STRING
-                      name: items.9
-                      value: 'GAV Virus Count'
-                    - type: STRING
-                      name: items.10
-                      value: 'IDS Attacks Blocked'
-                    - type: STRING
-                      name: items.11
-                      value: 'IDS Attacks Detected'
-                    - type: STRING
-                      name: items.12
-                      value: 'IPS Attacks Blocked'
-                    - type: STRING
-                      name: items.13
-                      value: 'Mail Good Allowed'
-                    - type: STRING
-                      name: items.14
-                      value: 'Mail Spam Detected'
-                    - type: STRING
-                      name: items.15
-                      value: 'Mail Total Count'
-                    - type: STRING
-                      name: items.16
-                      value: 'Mail Virus Detected'
+                      value: 'Device Temperature'
                     - type: STRING
                       name: primary_label
                       value: '{ITEM.NAME}'
                     - type: STRING
                       name: reference
                       value: BFIFR
-                    - type: INTEGER
-                      name: secondary_label_decimal_places
-                      value: '0'
                 - type: gauge
                   x: '36'
-                  'y': '3'
-                  width: '13'
-                  height: '3'
+                  'y': '2'
+                  width: '10'
                   fields:
-                    - type: INTEGER
-                      name: decimal_places
-                      value: '0'
                     - type: ITEM
                       name: itemid.0
                       value:
@@ -2292,57 +2452,34 @@ zabbix_export:
                       value: '5'
                 - type: gauge
                   x: '36'
-                  'y': '6'
-                  width: '13'
-                  height: '3'
+                  'y': '4'
+                  width: '10'
                   fields:
-                    - type: INTEGER
-                      name: decimal_places
-                      value: '1'
                     - type: ITEM
                       name: itemid.0
                       value:
                         host: 'Sonicwall Firewall'
-                        key: temperature
+                        key: sonicwall.connections.usage
                     - type: STRING
                       name: max
-                      value: '80'
+                      value: '100'
                     - type: STRING
                       name: min
-                      value: '20'
+                      value: '0'
                     - type: INTEGER
                       name: show.0
                       value: '2'
                     - type: INTEGER
                       name: show.1
-                      value: '5'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: 0080FF
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '25'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: 00FF00
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '45'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '70'
-                - type: gauge
-                  x: '49'
-                  'y': '3'
-                  width: '13'
-                  height: '3'
-                  fields:
+                      value: '4'
                     - type: INTEGER
-                      name: decimal_places
-                      value: '0'
+                      name: show.2
+                      value: '5'
+                - type: gauge
+                  x: '46'
+                  'y': '2'
+                  width: '10'
+                  fields:
                     - type: ITEM
                       name: itemid.0
                       value:
@@ -2366,6 +2503,69 @@ zabbix_export:
                     - type: INTEGER
                       name: show.3
                       value: '5'
+                - type: gauge
+                  x: '46'
+                  'y': '4'
+                  width: '10'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: sonicwall.dpissl.conn.usage
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                - type: gauge
+                  name: 'Temperature (unsupported)'
+                  x: '56'
+                  'y': '2'
+                  width: '10'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: temperature
+                    - type: STRING
+                      name: max
+                      value: '80'
+                    - type: STRING
+                      name: min
+                      value: '20'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0080FF
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '25'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '45'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '70'
             - name: Interfaces
               widgets:
                 - type: honeycomb
@@ -2426,153 +2626,23 @@ zabbix_export:
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
-                - type: svggraph
-                  name: 'Interface: Bytes In/Out'
+                - type: graphprototype
+                  name: 'Interface: Traffic'
                   'y': '2'
                   width: '47'
                   height: '7'
                   fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
                     - type: INTEGER
-                      name: ds.0.fill
+                      name: columns
                       value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'Interface: X* Bytes In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'Interface: X* Bytes Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.2.color
-                      value: 0EC9AC
-                    - type: INTEGER
-                      name: ds.2.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.2.items.0
-                      value: 'LAG: * Bytes In'
-                    - type: INTEGER
-                      name: ds.2.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.3.color
-                      value: 524BBC
-                    - type: INTEGER
-                      name: ds.3.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.3.items.0
-                      value: 'LAG: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.3.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '8'
-                    - type: INTEGER
-                      name: legend_lines_mode
-                      value: '1'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        name: 'Interface: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
-                      value: XEPAL
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
-                - type: svggraph
-                  name: 'Interface: Errors In/Out'
-                  'y': '9'
-                  width: '47'
-                  height: '4'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'Interface: X* Errors In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'Interface: X* Errors Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.2.color
-                      value: 0EC9AC
-                    - type: INTEGER
-                      name: ds.2.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.2.items.0
-                      value: 'LAG: * Errors In'
-                    - type: INTEGER
-                      name: ds.2.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.3.color
-                      value: 524BBC
-                    - type: INTEGER
-                      name: ds.3.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.3.items.0
-                      value: 'LAG: * Errors Out'
-                    - type: INTEGER
-                      name: ds.3.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines_mode
-                      value: '1'
-                    - type: STRING
-                      name: reference
-                      value: SEDGX
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
+                      value: YMGPF
             - name: VLANs
               widgets:
                 - type: honeycomb
@@ -2647,7 +2717,7 @@ zabbix_export:
                   name: 'VLAN: Traffic'
                   x: '16'
                   width: '39'
-                  height: '13'
+                  height: '10'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2662,7 +2732,7 @@ zabbix_export:
                       value: AGVQQ
                     - type: INTEGER
                       name: rows
-                      value: '4'
+                      value: '3'
             - name: 'VPNs (VTI)'
               widgets:
                 - type: honeycomb
@@ -2716,7 +2786,7 @@ zabbix_export:
                       name: thresholds.2.threshold
                       value: '2'
                 - type: honeycomb
-                  name: 'Tunnel Interfaces'
+                  name: 'VPN Interfaces (VTI)'
                   'y': '5'
                   width: '21'
                   height: '6'
@@ -2766,150 +2836,45 @@ zabbix_export:
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
-                - type: svggraph
-                  name: 'VPN Route: Bytes In/Out'
+                - type: graphprototype
+                  name: 'VPN Tunnel: Traffic'
                   x: '21'
                   width: '51'
-                  height: '4'
+                  height: '5'
                   fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
                     - type: INTEGER
-                      name: ds.0.fill
+                      name: columns
                       value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VPN Route: * Bytes In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'VPN Route: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        name: 'VPN Route: {#VPNNAME} Traffic'
                     - type: STRING
                       name: reference
-                      value: YCUWV
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
-                - type: svggraph
-                  name: 'VTI: Bytes In/Out'
+                      value: MVZTX
+                - type: graphprototype
+                  name: 'VTI: Traffic'
                   x: '21'
-                  'y': '4'
+                  'y': '5'
                   width: '51'
-                  height: '4'
+                  height: '6'
                   fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
                     - type: INTEGER
-                      name: ds.0.fill
+                      name: columns
                       value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VTI: * Bytes In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'VTI: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        name: 'VTI: {#VTINAME} Traffic'
                     - type: STRING
                       name: reference
-                      value: UDDVX
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
-                - type: svggraph
-                  name: 'VTI: Errors In/Out'
-                  x: '21'
-                  'y': '8'
-                  width: '51'
-                  height: '3'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VTI: Errors In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'VTI: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: STRING
-                      name: reference
-                      value: TLIOJ
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
+                      value: BEYEM
             - name: 'VPNs (Policy)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Statuses (unsupported)'
+                  name: 'VPN Statuses'
                   width: '21'
                   height: '8'
                   fields:
@@ -2918,7 +2883,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: items.0
-                      value: '* Status'
+                      value: 'VPN Policy: * Status'
                     - type: INTEGER
                       name: item_tags.0.operator
                       value: '1'
@@ -2942,13 +2907,66 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: thresholds.0.color
-                      value: '666699'
+                      value: 80FF00
                     - type: STRING
                       name: thresholds.0.threshold
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
+                      value: 00FFFF
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                - type: honeycomb
+                  name: 'VPN Statuses'
+                  'y': '8'
+                  width: '21'
+                  height: '8'
+                  fields:
+                    - type: INTEGER
+                      name: interpolation
+                      value: '1'
+                    - type: STRING
+                      name: items.0
+                      value: 'VPN Policy: * Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: VPN
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: Policy
+                    - type: STRING
+                      name: primary_label
+                      value: |
+                        {ITEM.NAME.regsub("^VPN Policy: (.+?) \\[(.+?)\\] Status$", "\\1
+                        \\2")}
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: STRING
+                      name: reference
+                      value: JIXUM
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.0.color
                       value: 80FF00
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 00FFFF
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
@@ -2959,11 +2977,14 @@ zabbix_export:
                       name: thresholds.2.threshold
                       value: '2'
                 - type: svggraph
-                  name: 'VPN Policy: Decrypt/Encrypt Bytes In/Out'
+                  name: 'VPN Policy: Bytes In/Out'
                   x: '21'
                   width: '51'
-                  height: '4'
+                  height: '8'
                   fields:
+                    - type: INTEGER
+                      name: ds.0.aggregate_function
+                      value: '3'
                     - type: STRING
                       name: ds.0.color
                       value: 00FF00
@@ -2972,7 +2993,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'VPN Policy: * Encrypt Bytes In'
+                      value: 'VPN Policy: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
@@ -2984,68 +3005,19 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'VPN Policy: * Encrypt Bytes Out'
+                      value: 'VPN Policy: * Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
                     - type: INTEGER
                       name: legend_lines
-                      value: '3'
+                      value: '10'
                     - type: INTEGER
                       name: legend_statistic
                       value: '1'
                     - type: STRING
                       name: reference
                       value: TGCPP
-                    - type: INTEGER
-                      name: righty
-                      value: '0'
-                    - type: INTEGER
-                      name: simple_triggers
-                      value: '1'
-                    - type: INTEGER
-                      name: working_time
-                      value: '1'
-                - type: svggraph
-                  name: 'VPN: Bytes In/Out'
-                  x: '21'
-                  'y': '4'
-                  width: '51'
-                  height: '4'
-                  fields:
-                    - type: STRING
-                      name: ds.0.color
-                      value: FF465C
-                    - type: INTEGER
-                      name: ds.0.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.0.items.0
-                      value: 'VPN: * Bytes In'
-                    - type: INTEGER
-                      name: ds.0.transparency
-                      value: '3'
-                    - type: STRING
-                      name: ds.1.color
-                      value: FFD54F
-                    - type: INTEGER
-                      name: ds.1.fill
-                      value: '1'
-                    - type: STRING
-                      name: ds.1.items.0
-                      value: 'VPN: * Bytes Out'
-                    - type: INTEGER
-                      name: ds.1.transparency
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_lines
-                      value: '3'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
-                    - type: STRING
-                      name: reference
-                      value: WVSXV
                     - type: INTEGER
                       name: righty
                       value: '0'
@@ -3066,6 +3038,8 @@ zabbix_export:
             - value: '125000'
               newvalue: Active
             - value: '375000'
+              newvalue: Active
+            - value: '625000'
               newvalue: Active
             - value: '1000000'
               newvalue: Active
@@ -3102,26 +3076,36 @@ zabbix_export:
             - value: '2'
               newvalue: Down
   triggers:
-    - uuid: 0187ded2173647a7a1910004f02ea9e1
+    - uuid: cce7dc83fa7e425ca800d918fe76563b
       expression: |
-        (
-         avg(/Sonicwall Firewall/sonicwall.primary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
-        )
-        or
-        (
-         avg(/Sonicwall Firewall/sonicwall.secondary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
-        )
-      name: 'HA Anomaly Detected'
-      priority: HIGH
+        avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) < {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} or
+              avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD} or
+              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) < {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} or
+              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
+      name: 'HA Status Anomaly Detected'
+      priority: WARNING
       description: |
-        High Availability issue detected:
-        - Primary status sustained above {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD} (possible reboot or promotion)
-        - OR Secondary status dropped below {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} (sync issues, heartbeat loss)
-        
-        10-minute average — 
-        Primary: {avg(/Sonicwall Firewall/sonicwall.primary.status,10m)}
-        Secondary: {avg(/Sonicwall Firewall/sonicwall.secondary.status,10m)}
+        HA sync status metrics are outside the expected passive/active bounds.
+         - Low threshold: {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD}
+         - High threshold: {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
       manual_close: 'YES'
       tags:
         - tag: Condition
           value: Threshold
+        - tag: Symptoms
+          value: 'HA Anomoly'
+    - uuid: 0187ded2173647a7a1910004f02ea9e1
+      expression: |
+        avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) > 1000000 or
+              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > 1000000
+      name: 'HA Status Unknown/Unexpected'
+      priority: HIGH
+      description: |
+        HA status metric exceeded expected thresholds.
+        Indicates possible data corruption, firmware anomaly, or undefined HA state.
+      manual_close: 'YES'
+      tags:
+        - tag: Condition
+          value: Threshold
+        - tag: Symptoms
+          value: 'HA Status Unknown'

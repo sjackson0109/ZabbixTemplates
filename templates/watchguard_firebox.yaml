@@ -706,34 +706,28 @@ zabbix_export:
                 - tag: Component
                   value: BoVPN
           graph_prototypes:
-            - uuid: a0438209de22405c9dd99914b7df55af
-              name: 'BoVPN: {#IFDESCR} Status'
-              graph_items:
-                - color: 199C0D
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'bovpn.ifOperStatus[{#IFDESCR}]'
             - uuid: 5a0eb594d92f4ea89047fe130d8bec86
               name: 'BoVPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   item:
                     host: 'Watchguard Firewall'
                     key: 'bovpn.ifInOctets[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   item:
                     host: 'Watchguard Firewall'
                     key: 'bovpn.ifOutOctets[{#IFDESCR}]'
                 - sortorder: '2'
-                  color: 81C784
+                  drawtype: FILLED_REGION
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Watchguard Firewall'
                     key: 'bovpn.ifInErrors[{#IFDESCR}]'
                 - sortorder: '3'
-                  color: E57373
+                  drawtype: FILLED_REGION
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Watchguard Firewall'
@@ -942,6 +936,7 @@ zabbix_export:
           snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.3097.6.5.1.2.1.1,{#LOCALONE},1.3.6.1.4.1.3097.6.5.1.2.1.24,{#LOCALTWO},1.3.6.1.4.1.3097.6.5.1.2.1.25,{#REMOTEONE},1.3.6.1.4.1.3097.6.5.1.2.1.20,{#REMOTETWO},1.3.6.1.4.1.3097.6.5.1.2.1.21]'
           key: gwvpn.discovery
           delay: 1h
+          status: DISABLED
           filter:
             evaltype: AND
             conditions:
@@ -1101,6 +1096,35 @@ zabbix_export:
                       value: Status
                     - tag: Symptom
                       value: Flap/Up/Down
+          graph_prototypes:
+            - uuid: 91992423ce42414d82dd4aa4df2dc73c
+              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Traffic'
+              graph_items:
+                - color: 00FF00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firewall'
+                    key: 'vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                - sortorder: '1'
+                  color: 0080FF
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firewall'
+                    key: 'vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                - sortorder: '2'
+                  drawtype: FILLED_REGION
+                  color: FF0000
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firewall'
+                    key: 'vpn.policy.ifInErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                - sortorder: '3'
+                  drawtype: FILLED_REGION
+                  color: CC6600
+                  calc_fnc: ALL
+                  item:
+                    host: 'Watchguard Firewall'
+                    key: 'vpn.policy.ifOutErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
         - uuid: 30253dfbef0b4849b4f51e0bc815934a
           name: Interfaces
           type: SNMP_AGENT
@@ -1377,6 +1401,8 @@ zabbix_export:
       tags:
         - tag: Author
           value: 'Simon Jackson'
+        - tag: Vendor
+          value: Watchguard
       macros:
         - macro: '{$BOVPN_ERROR_THRESHOLD}'
           value: '10'
@@ -1488,7 +1514,7 @@ zabbix_export:
                 - type: svggraph
                   name: Traffic
                   'y': '4'
-                  width: '46'
+                  width: '45'
                   height: '3'
                   fields:
                     - type: STRING
@@ -1675,7 +1701,7 @@ zabbix_export:
                       name: working_time
                       value: '1'
                 - type: gauge
-                  x: '46'
+                  x: '45'
                   'y': '4'
                   width: '14'
                   height: '3'
@@ -1988,7 +2014,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'GwVPN * Bytes In'
+                      value: 'GwVPN: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
@@ -2000,7 +2026,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'GwVPN * Bytes Out'
+                      value: 'GwVPN: * Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
@@ -2009,7 +2035,7 @@ zabbix_export:
                       value: '8'
                     - type: STRING
                       name: reference
-                      value: TBGMU
+                      value: NSARR
                     - type: INTEGER
                       name: righty
                       value: '0'
@@ -2022,13 +2048,13 @@ zabbix_export:
                   fields:
                     - type: STRING
                       name: ds.0.color
-                      value: FF4000
+                      value: FF0000
                     - type: INTEGER
                       name: ds.0.fill
                       value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'GwVPN * Errors In'
+                      value: 'GwVPN: * Errors In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
@@ -2040,13 +2066,13 @@ zabbix_export:
                       value: '2'
                     - type: STRING
                       name: ds.1.color
-                      value: FF0000
+                      value: CC6600
                     - type: INTEGER
                       name: ds.1.fill
                       value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'GwVPN * Errors Out'
+                      value: 'GwVPN: * Errors Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
@@ -2061,7 +2087,7 @@ zabbix_export:
                       value: '0'
                     - type: STRING
                       name: reference
-                      value: JVRGX
+                      value: LCHQX
                     - type: INTEGER
                       name: righty
                       value: '0'

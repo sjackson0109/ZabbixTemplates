@@ -339,6 +339,21 @@ zabbix_export:
                   value: Disk
                 - tag: Metrics
                   value: Performance
+          graph_prototypes:
+            - uuid: 2b573920627c427da3240479abfce3fd
+              name: 'Disk: {#DISKPATH} Consumption'
+              graph_items:
+                - color: 00FF00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'storage.avail.bytes[{#DISKINDEX}]'
+                - sortorder: '1'
+                  color: FF0000
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'storage.used.bytes[{#DISKINDEX}]'
         - uuid: 61254f6b14f4466791cb49f77d5fef87
           name: 'File System'
           type: SNMP_AGENT
@@ -566,14 +581,14 @@ zabbix_export:
                     key: 'interface.ifOutOctets[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: CC6600
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'interface.ifInErrors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: FF0000
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1051,21 +1066,21 @@ zabbix_export:
                     host: 'Ubiquiti Firewall'
                     key: 'vlan.bytes.in[{#IFDESCR}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'vlan.bytes.out[{#IFDESCR}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'vlan.errors.in[{#IFDESCR}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1226,29 +1241,29 @@ zabbix_export:
                       value: L2TP
           graph_prototypes:
             - uuid: ea54c6f4ffff4f05a2c43d2371dc9638
-              name: 'VPN Traffic (L2TP - {#IFDESCR})'
+              name: 'L2TP VPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.l2tp.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.l2tp.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.l2tp.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1409,29 +1424,29 @@ zabbix_export:
                       value: OpenVPN
           graph_prototypes:
             - uuid: ab98bdbcb7b74a588ea28f8587bc8af4
-              name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
+              name: 'OpenVPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.openvpn.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.openvpn.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.openvpn.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1591,29 +1606,29 @@ zabbix_export:
                       value: Policy
           graph_prototypes:
             - uuid: 3a5478bac279473887908f328cf3961f
-              name: 'VPN Traffic (Policy - {#IFDESCR})'
+              name: 'Policy VPN: {#IFDESCR}) Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.policy.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.policy.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.policy.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1774,29 +1789,29 @@ zabbix_export:
                       value: PPTP
           graph_prototypes:
             - uuid: 8fddb867a90544d3a6cfb1482d3a44f6
-              name: 'VPN Traffic (PPTP - {#IFDESCR})'
+              name: 'PPTP VPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.pptp.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.pptp.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.pptp.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -1965,29 +1980,29 @@ zabbix_export:
                       value: Route
           graph_prototypes:
             - uuid: 6254f464c55e48829f9f984d6a1a0d48
-              name: 'VPN Traffic (Route - {#IFDESCR})'
+              name: 'Route VPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.route.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.route.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.route.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -2156,29 +2171,29 @@ zabbix_export:
                       value: Teleport
           graph_prototypes:
             - uuid: 9e351ef7d74b4af6b00b7ad2426d12f4
-              name: 'VPN Traffic (Teleport - {#IFDESCR})'
+              name: 'Teleport VPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.teleport.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.teleport.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.teleport.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -2349,29 +2364,29 @@ zabbix_export:
                       value: WireGuard
           graph_prototypes:
             - uuid: 9985f6b1c3d3408aa9459f172305873b
-              name: 'VPN Traffic (WireGuard - {#IFDESCR})'
+              name: 'WireGuard VPN: {#IFDESCR} Traffic'
               graph_items:
-                - color: 199C0D
+                - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.wireguard.in.bytes[{#SNMPINDEX}]'
                 - sortorder: '1'
-                  color: F63100
+                  color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.wireguard.out.bytes[{#SNMPINDEX}]'
                 - sortorder: '2'
                   drawtype: FILLED_REGION
-                  color: 2774A4
+                  color: FF0000
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
                     key: 'ubiquiti.vpn.wireguard.in.errors[{#SNMPINDEX}]'
                 - sortorder: '3'
                   drawtype: FILLED_REGION
-                  color: F7941D
+                  color: CC6600
                   calc_fnc: ALL
                   item:
                     host: 'Ubiquiti Firewall'
@@ -2488,9 +2503,40 @@ zabbix_export:
                   value: Traffic
                 - tag: Name
                   value: '{#IFDESCR}'
+          graph_prototypes:
+            - uuid: 11ef4055cab04bb6b258e4858ed7bfa0
+              name: 'XINT: {#IFDESCR} Traffic'
+              graph_items:
+                - color: 00FF00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'ubiquiti.xint.hcin.bytes[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: 0080FF
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'ubiquiti.xint.hcout.bytes[{#SNMPINDEX}]'
+                - sortorder: '2'
+                  drawtype: FILLED_REGION
+                  color: FF0000
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'ubiquiti.xint.extended.errors.in[{#SNMPINDEX}]'
+                - sortorder: '3'
+                  drawtype: FILLED_REGION
+                  color: CC6600
+                  calc_fnc: ALL
+                  item:
+                    host: 'Ubiquiti Firewall'
+                    key: 'ubiquiti.xint.extended.errors.out[{#SNMPINDEX}]'
       tags:
         - tag: Author
           value: 'Simon Jackson'
+        - tag: Vendor
+          value: Ubiquiti
       macros:
         - macro: '{$UBIQUITI_CPU_UTIL_MAX}'
           value: '90'
@@ -3011,7 +3057,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Route - {#IFDESCR})'
+                        name: 'Route VPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: DNUDU
@@ -3025,7 +3071,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Policy - {#IFDESCR})'
+                        name: 'Policy VPN: {#IFDESCR}) Traffic'
                     - type: STRING
                       name: reference
                       value: BMTPQ
@@ -3042,7 +3088,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (Teleport - {#IFDESCR})'
+                        name: 'Teleport VPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: SSTSZ
@@ -3059,7 +3105,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (L2TP - {#IFDESCR})'
+                        name: 'L2TP VPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: VIFUD
@@ -3077,7 +3123,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (WireGuard - {#IFDESCR})'
+                        name: 'WireGuard VPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: YIVFQ
@@ -3095,7 +3141,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (PPTP - {#IFDESCR})'
+                        name: 'PPTP VPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: MRKHB
@@ -3113,7 +3159,7 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'Ubiquiti Firewall'
-                        name: 'VPN Traffic (OpenVPN - {#IFDESCR})'
+                        name: 'OpenVPN: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
                       value: KCCZT

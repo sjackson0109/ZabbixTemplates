@@ -996,6 +996,8 @@ zabbix_export:
       tags:
         - tag: Author
           value: 'Simon Jackson'
+        - tag: Vendor
+          value: APC
       macros:
         - macro: '{$NETBOTZ_AMP_HIGH}'
           value: '5'

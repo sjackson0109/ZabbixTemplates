@@ -5,15 +5,15 @@ zabbix_export:
       name: Environment
   templates:
     - uuid: 715c3827caa842aea3428c26c4cd4dfa
-      template: 'Denco pCO'
-      name: 'Denco pCO'
+      template: 'Carel pCOWeb'
+      name: 'Carel pCOWeb'
       description: |
         Technical Details:
         https://www.rittal.com/imf/none/3_4342/3311320_Instructions_spec__EN
         
         MIB:
         https://netopslife.wordpress.com/2017/10/12/nagios-snmp-denco-pco-web-carel/
-
+        
         Author: Simon Jackson / @sjackson0109
       groups:
         - name: Environment
@@ -597,7 +597,7 @@ zabbix_export:
                 - '0.1'
           triggers:
             - uuid: 56d60ea42a93494b86bce52ad79bdeb9
-              expression: 'last(/Denco pCO/denco.environment.humidity,#1)>=70'
+              expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)>=70'
               name: 'High Humidity'
               priority: WARNING
               manual_close: 'YES'
@@ -666,13 +666,13 @@ zabbix_export:
                 - '2'
           triggers:
             - uuid: 4f82ead6055a4cf5abf29300543ad977
-              expression: 'last(/Denco pCO/denco.system.status,#1)=2'
+              expression: 'last(/Carel pCOWeb/denco.system.status,#1)=2'
               name: 'Standby Unit'
               opdata: denco.system.status
               priority: INFO
               manual_close: 'YES'
             - uuid: 9719407341ad414e9b1c1b2c5cc423fa
-              expression: 'last(/Denco pCO/denco.system.status,#1)=1'
+              expression: 'last(/Carel pCOWeb/denco.system.status,#1)=1'
               name: 'Status Alarm'
               priority: WARNING
               description: 'Unit System Status reporting non-zero value. As a result you should login to the webpage to investigate.'
@@ -701,7 +701,7 @@ zabbix_export:
               value: Trap
           triggers:
             - uuid: 81c8d63f87b8480ca6f017ae59ed4fe1
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.12")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.12")=1'
               name: 'Alarm Received: Airflow Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -710,7 +710,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: aeb395f810ad471abf477745f88d3cae
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.15")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.15")=1'
               name: 'Alarm Received: Auxiliary Alarm'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -719,7 +719,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 1bac388e487c443abd175d89498ca10c
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.27")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.27")=1'
               name: 'Alarm Received: Circuit 1 (VRF) High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -728,7 +728,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: a4136050242642ff8226efdac7702cd4
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.33")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.33")=1'
               name: 'Alarm Received: Circuit 1 (VRF) Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -737,7 +737,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: cb1f5e2121e24580801db39d16c8ee69
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.28")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.28")=1'
               name: 'Alarm Received: Circuit 2 (VRF) High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -746,7 +746,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 878c98c1392440c6a9b9d7e210b06b6c
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.34")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.34")=1'
               name: 'Alarm Received: Circuit 2 (VRF) Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -755,7 +755,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 61bb3daa1f4a4627a4bdb850bc4c0943
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.23")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.23")=1'
               name: 'Alarm Received: Compressor 1 High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -764,7 +764,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 09660ddbee734b7f910878d56a5b8947
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.29")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.29")=1'
               name: 'Alarm Received: Compressor 1 Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -773,7 +773,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 11911ee5f778479a9caff045d7e81872
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.24")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.24")=1'
               name: 'Alarm Received: Compressor 2 High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -782,7 +782,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: ef6365054ca94546adb9d1a281d3cf98
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.30")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.30")=1'
               name: 'Alarm Received: Compressor 2 Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -791,7 +791,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 848f7a79037844a78293a7f3245beeed
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.25")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.25")=1'
               name: 'Alarm Received: Compressor 3 High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -800,7 +800,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: dac0f9de22ea44349e35a5330f80c596
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.31")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.31")=1'
               name: 'Alarm Received: Compressor 3 Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -809,7 +809,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 55bec8ac026e4d4eb7be560a47e56cee
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.26")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.26")=1'
               name: 'Alarm Received: Compressor 4 High Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -818,7 +818,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: a620afe47fb140e6a91309f86056f2e4
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.32")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.32")=1'
               name: 'Alarm Received: Compressor 4 Low Pressure Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -827,7 +827,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: a6d4f5005379400f8e51bcdad5b3d9e9
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.7")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.7")=1'
               name: 'Alarm Received: Condensing Pressure 1 Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -836,7 +836,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 42ce956bdd2540f5ac5d759c15c9bac7
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.8")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.8")=1'
               name: 'Alarm Received: Condensing Pressure 2 Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -845,7 +845,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 5c8fa3cbef4f43a1a8576583c2af759f
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.35")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.35")=1'
               name: 'Alarm Received: DencoNet Comms'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -854,7 +854,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: b8610fe7f2c141bea4565b81d54e4b9f
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.13")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.13")=1'
               name: 'Alarm Received: Filter Blocked'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -863,7 +863,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: e0846e26bcf94964b7d7ec38190245f4
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.18")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.18")=1'
               name: 'Alarm Received: High Control Humidity'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -872,7 +872,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 598cb028d3794899aac5d70004e7a297
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.16")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.16")=1'
               name: 'Alarm Received: High Control Temperature'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -881,7 +881,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 88d56af2d7894cbe9308b50df57e2d98
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.21")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.21")=1'
               name: 'Alarm Received: High Supply Temperature'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -890,7 +890,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: dd724dc2b3ff4335b0bf1bb2b1daaf43
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.66")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.66")=1'
               name: 'Alarm Received: Humidifier Cylinder Exhausted'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -899,7 +899,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 9e40b787ebb842529ec5cd7482ba3c4a
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.36")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.36")=1'
               name: 'Alarm Received: Humidifier High Current'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -908,7 +908,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 9a82d386fe0448b1a5f81f896bbb9127
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.37")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.37")=1'
               name: 'Alarm Received: Humidifier Lack Of Water'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -917,7 +917,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: f406ac4d47a942ea98bcca6051dabe05
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.38")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.38")=1'
               name: 'Alarm Received: Humidifier Low Current'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -926,7 +926,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: ad76911f2d7e4e638777d65de909ad47
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.22")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.22")=1'
               name: 'Alarm Received: Kilxon Trip'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -935,7 +935,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: b638754f0ea344cabc90beefa9738ee4
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.19")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.19")=1'
               name: 'Alarm Received: Low Control Humidity'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -944,7 +944,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: b66c19fbacac44018befff3b44529b46
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.17")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.17")=1'
               name: 'Alarm Received: Low Control Temperature'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -953,7 +953,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 7ce8f105cefe4b079610ae26d77158af
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.20")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.20")=1'
               name: 'Alarm Received: Low Supply Temperature'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -962,7 +962,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: daf35866bdec48de88ed36b71737cf27
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.85")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.85")=1'
               name: 'Alarm Received: Refrigerant Leak Detected'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -971,7 +971,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 21285f8ecb9e487aa952c98add59546e
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.6")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.6")=1'
               name: 'Alarm Received: Return Air Humidity Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -980,7 +980,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: f8397552dff4406a885951fdd9a14bfb
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.5")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.5")=1'
               name: 'Alarm Received: Return Air Temperature Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -989,7 +989,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 082bc59b6deb4659891775b3cf7c2156
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.11")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.11")=1'
               name: 'Alarm Received: Supply Air Humidity Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -998,7 +998,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 7efd4f94da8c42768a910987f6497ee5
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.10")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.10")=1'
               name: 'Alarm Received: Supply Air Temperature Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -1007,7 +1007,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: 92e3d065822c4c678616055b6bec7e83
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.14")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.14")=1'
               name: 'Alarm Received: Water Detection'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -1016,7 +1016,7 @@ zabbix_export:
                 - tag: Component
                   value: Trap
             - uuid: a6de41b4e3f245f9ba44e2aa71706e57
-              expression: 'find(/Denco pCO/snmptrap.fallback,,"like","9839.2.1.1.9")=1'
+              expression: 'find(/Carel pCOWeb/snmptrap.fallback,,"like","9839.2.1.1.9")=1'
               name: 'Alarm Received: Water Temperature Sensor Fail'
               priority: AVERAGE
               description: 'SNMP Trap Received with the OID value matching this alarm. Please investigate..'
@@ -1107,7 +1107,7 @@ zabbix_export:
               value: General
           triggers:
             - uuid: 66bba5e28652406983046aa9dc3d58ca
-              expression: '(last(/Denco pCO/system.name,#1)<>last(/Denco pCO/system.name,#2))=1 and length(last(/Denco pCO/system.name))>0'
+              expression: '(last(/Carel pCOWeb/system.name,#1)<>last(/Carel pCOWeb/system.name,#2))=1 and length(last(/Carel pCOWeb/system.name))>0'
               name: 'System name has changed (new name: {ITEM.VALUE})'
               priority: INFO
               description: 'System name has changed. Ack to close.'
@@ -1152,14 +1152,14 @@ zabbix_export:
               value: Status
           triggers:
             - uuid: d764ffc453654248b54cad21534c43eb
-              expression: 'last(/Denco pCO/system.uptime[sysUpTime.0])<10m'
+              expression: 'last(/Carel pCOWeb/system.uptime[sysUpTime.0])<10m'
               name: '{HOST.NAME} has been restarted (uptime < 10m)'
               priority: WARNING
               description: 'Uptime is less than 10 minutes'
               manual_close: 'YES'
               dependencies:
                 - name: 'No SNMP data collection'
-                  expression: 'max(/Denco pCO/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  expression: 'max(/Carel pCOWeb/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
         - uuid: 91b55333f09645a19efedc423c1618cd
           name: 'SNMP agent availability'
           type: INTERNAL
@@ -1170,7 +1170,7 @@ zabbix_export:
               value: Status
           triggers:
             - uuid: aa79cb4b2942477bbe215ea07ca7487f
-              expression: 'max(/Denco pCO/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              expression: 'max(/Carel pCOWeb/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
               name: 'No SNMP data collection'
               opdata: 'Current state: {ITEM.LASTVALUE1}'
               priority: WARNING
@@ -1178,6 +1178,8 @@ zabbix_export:
       tags:
         - tag: Author
           value: 'Simon Jackson'
+        - tag: Vendor
+          value: Carel
       dashboards:
         - uuid: 431a0fd62e7e4ce3b474e70657807646
           name: 'Denco Dashboard'
@@ -1244,36 +1246,36 @@ zabbix_export:
                       value: '0'
   triggers:
     - uuid: 7d0cc66bb0874813bf8c2b3b63f726d2
-      expression: 'last(/Denco pCO/denco.environment.temperature,#1)>=25 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)>=25 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'High Temperature'
       priority: HIGH
     - uuid: 1056d2441aad4bdd9f3603334aa73fbc
-      expression: 'last(/Denco pCO/denco.environment.humidity,#1)<=25 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)<=25 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Low Humidity'
       priority: HIGH
       manual_close: 'YES'
     - uuid: 9b85a82c1fa042e08a12598e51ef23f5
-      expression: 'last(/Denco pCO/denco.environment.temperature,#1)<=5 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)<=5 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Low Temperature'
       priority: HIGH
       manual_close: 'YES'
     - uuid: 9168337f8438449f9305f9113760c340
-      expression: 'last(/Denco pCO/denco.environment.humidity,#1)>=90 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)>=90 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Very High Humidity'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: 97947a45fc514d959885df98ff2b7c9b
-      expression: 'last(/Denco pCO/denco.environment.temperature,#1)>=40 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)>=40 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Very High Temperature'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: f1073853c7bc4049916b60da12a16175
-      expression: 'last(/Denco pCO/denco.environment.humidity,#1)<=10 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)<=10 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Very Low Humidity'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: 237f03df75144db9afcf7c25af524c0d
-      expression: 'last(/Denco pCO/denco.environment.temperature,#1)<=0 and not last(/Denco pCO/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)<=0 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
       name: 'Very Low Temperature'
       priority: DISASTER
       manual_close: 'YES'
@@ -1286,13 +1288,13 @@ zabbix_export:
         - color: FF0080
           calc_fnc: ALL
           item:
-            host: 'Denco pCO'
+            host: 'Carel pCOWeb'
             key: denco.environment.humidity
         - sortorder: '1'
           color: FF4000
           calc_fnc: ALL
           item:
-            host: 'Denco pCO'
+            host: 'Carel pCOWeb'
             key: denco.system.setpoint.humidity
     - uuid: 5a58eb1a2c074b269ac2df4a4a32a209
       name: Temperature
@@ -1301,10 +1303,10 @@ zabbix_export:
       graph_items:
         - color: 0080FF
           item:
-            host: 'Denco pCO'
+            host: 'Carel pCOWeb'
             key: denco.environment.temperature
         - sortorder: '1'
           color: 00FF00
           item:
-            host: 'Denco pCO'
+            host: 'Carel pCOWeb'
             key: denco.system.setpoint.temperature
