@@ -1,0 +1,114 @@
+# template_agent_web_checks.yaml
+zabbix_export:
+  version: "5.0"
+  date: "2025-07-21T12:00:00Z"
+
+groups:
+  - name: Templates
+
+templates:
+  - template: Agent Web Checks
+    name: Agent Web Checks
+    description: |
+      Discover the availability of 'agent_web_checks.ps1' on the Zabbix Agent file-system
+      and run it to perform HTTP/S checks on a URL parameter.
+
+      Author: Simon Jackson / @sjackson0109
+    tags:
+      - tag: Author
+        value: 'Simon Jackson' 
+    macros:
+      - macro: '{$WEB.URL}'
+        value: 'http://example.com'
+        description: Endpoint to probe
+      - macro: '{$WEB.METHOD}'
+        value: 'HEAD'
+      - macro: '{$WEB.TIMEOUT}'
+        value: '30'
+      - macro: '{$WEB.ALLOWINVALIDCERT}'
+        value: '0'
+      - macro: '{$WEB.FOLLOWREDIRECT}'
+        value: '1'
+      - macro: '{$WEB.MAXREDIRECTS}'
+        value: '5'
+      - macro: '{$WEB.MINSTATUSCODE}'
+        value: '200'
+      - macro: '{$WEB.MAXSTATUSCODE}'
+        value: '399'
+      - macro: '{$WEB.EXCLUDECODES}'
+        value: ''
+
+    discovery_rules:
+      - name: Agent web script discovery
+        type: 0             # Zabbix agent
+        key: >
+          system.run[
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& {
+              $base = 'C:\Program Files\Zabbix Agent\scripts';
+              $files = Get-ChildItem -Path $base -Filter 'agent_web_checks.ps1' -File |
+                       Select-Object -ExpandProperty Name;
+              @{ data = ($files | ForEach-Object { @{ '{#SCRIPT.NAME}' = $_ } }) } |
+              ConvertTo-Json -Compress
+            }"
+          ]
+        delay: 3600
+        status: 0
+
+        item_prototypes:
+          - name: Web check from {HOST.NAME} to {$WEB.URL}
+            type: 0           # Zabbix agent
+            key: >
+              system.run[
+                powershell -NoProfile -ExecutionPolicy Bypass -File
+                  "C:\Program Files\Zabbix Agent\scripts\agent_web_checks.ps1"
+                  -Url "{$WEB.URL}"
+                  -Method "{$WEB.METHOD}"
+                  -Timeout {$WEB.TIMEOUT}"
+                  -AllowInvalidCert:$([convert]::ToBoolean({$WEB.ALLOWINVALIDCERT}))
+                  -FollowRedirect:$([convert]::ToBoolean({$WEB.FOLLOWREDIRECT}))
+                  -MaxRedirects {$WEB.MAXREDIRECTS}"
+                  -MinStatusCode {$WEB.MINSTATUSCODE}"
+                  -MaxStatusCode {$WEB.MAXSTATUSCODE}"
+                  -ExcludeStatusCodes "{$WEB.EXCLUDECODES}"
+              ]
+            value_type: 3     # unsigned numeric
+            delay: 3600
+            filter:
+              evaltype: 0
+              conditions:
+                - type: 4    # {#SCRIPT.NAME}
+                  operator: 8 # =
+                  value: agent_web_checks.ps1
+
+        trigger_prototypes:
+          - name: Web check failed on {HOST.NAME} to {$WEB.URL}
+            expression: >
+              ({Template Agent Web Checks:system.run[
+                "powershell -NoProfile -ExecutionPolicy Bypass -File
+                 C:\Program Files\Zabbix Agent\scripts\agent_web_checks.ps1
+                 -Url {$WEB.URL}
+                 -Method {$WEB.METHOD}
+                 -Timeout {$WEB.TIMEOUT}
+                 -AllowInvalidCert:$([convert]::ToBoolean({$WEB.ALLOWINVALIDCERT}))
+                 -FollowRedirect:$([convert]::ToBoolean({$WEB.FOLLOWREDIRECT}))
+                 -MaxRedirects {$WEB.MAXREDIRECTS}
+                 -MinStatusCode {$WEB.MINSTATUSCODE}
+                 -MaxStatusCode {$WEB.MAXSTATUSCODE}
+                 -ExcludeStatusCodes {$WEB.EXCLUDECODES}"
+              ].last()}=0)
+            severity: average
+            description: |
+              Web check to {$WEB.URL} returned failure (0). 
+
+        graph_prototypes:
+          - name: Web availability for {HOST.NAME} to {$WEB.URL}
+            width: 900
+            height: 200
+            yaxismin: 0
+            yaxismax: 1
+            graph_items:
+              - item_prototype:
+                  name: Web check from {HOST.NAME} to {$WEB.URL}
+                type: 0          # Zabbix agent
+                drawtype: 2      # line
+                color: "00cc00"
