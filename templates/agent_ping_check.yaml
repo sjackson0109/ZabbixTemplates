@@ -1,0 +1,77 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: dead552a9d6b468baa232b79d08448b7
+      template: 'Agent Ping Check'
+      name: 'Agent Ping Check'
+      description: |
+        Discover the availability of 'agent_ping_checks.ps1' on the Zabbix Agent file-system
+        and run it to perform PING checks on a PING.IP parameter.
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Templates
+      discovery_rules:
+        - uuid: ad64ee6aaac14165abe925d6695127cd
+          name: 'Ping Target Discovery'
+          key: 'custom.ping.discovery'
+          delay: 1h
+          description: 'Discovers ping targets for monitoring.'
+          item_prototypes:
+            - uuid: ac52e1d6117b4c23bca52f1968958407
+              name: 'Ping Availability from {HOST.NAME} to {#PING_TARGET} ({#DESC})'
+              key: 'agent.ping[{#PING_TARGET},{$PING_COUNT},{$PING_TIMEOUT},{$PING_SIZE},{$PING_TTL},{$PING_DF}]'
+              delay: 1m
+              value_type: UINT64
+              trends: '0'
+              units: ''
+              trigger_prototypes:
+                - uuid: 650098ecc145412dbb053c17a31f866a
+                  expression: 'last(/Agent Ping Check/agent.ping[{#PING_TARGET},{$PING_COUNT},{$PING_TIMEOUT},{$PING_SIZE},{$PING_TTL},{$PING_DF}])=0'
+                  name: 'Ping failure from {HOST.NAME} to {#PING_TARGET}'
+                  priority: HIGH
+                  description: 'No ICMP echo reply received from {#PING_TARGET} after {$PING_COUNT} attempts.'
+            - uuid: 1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a
+              name: 'Ping Latency from {HOST.NAME} to {#PING_TARGET} ({#DESC})'
+              key: 'agent.ping.latency[{#PING_TARGET},{$PING_COUNT},{$PING_TIMEOUT},{$PING_SIZE},{$PING_TTL},{$PING_DF}]'
+              delay: 1m
+              value_type: FLOAT
+              trends: '0'
+              units: ms
+              trigger_prototypes:
+                - uuid: 2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b
+                  expression: 'last(/Agent Ping Check/agent.ping.latency[{#PING_TARGET},{$PING_COUNT},{$PING_TIMEOUT},{$PING_SIZE},{$PING_TTL},{$PING_DF}])>{$PING_MAX_RTT}'
+                  name: 'High ping latency from {HOST.NAME} to {#PING_TARGET}'
+                  priority: WARNING
+                  description: 'Ping latency to {#PING_TARGET} exceeded {$PING_MAX_RTT} ms.'
+          graph_prototypes:
+            - uuid: 47972a093f984f38a32aadb0a971de7e
+              name: 'PING Latency for {HOST.NAME} to {#PING_TARGET}'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Agent Ping Check'
+                    key: 'agent.ping.latency[{#PING_TARGET},{$PING_COUNT},{$PING_TIMEOUT},{$PING_SIZE},{$PING_TTL},{$PING_DF}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$PING_SIZE}'
+          value: '32'
+        - macro: '{$PING_COUNT}'
+          value: '4'
+        - macro: '{$PING_DF}'
+          value: '0'
+          description: 'Set to 1 to enable "do not fragment" flag'
+        - macro: '{$PING_TIMEOUT}'
+          value: '1000'
+          description: 'Timeout per echo (ms)'
+        - macro: '{$PING_TTL}'
+          value: '64'
+        - macro: '{$PING_MAX_RTT}'
+          value: '100'
+          description: 'Max acceptable ping latency (ms)'

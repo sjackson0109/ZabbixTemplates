@@ -1,4 +1,4 @@
-"""
+<#
 Author: Simon Jackson (@sjackson0109)
 Created: 2025/07/21
 Version: 1.0
@@ -11,85 +11,72 @@ Instructions:
     - Place this script in the Zabbix Agent scripts directory
     - Ensure the script is executable by the Zabbix user
     - Configure the Zabbix Agent to allow remote commands if necessary
-"""
-param (
-    [Parameter(Mandatory=$true, Position=0)]
+#>
+param(
     [string]$Url,
-
-    [ValidateSet('GET','HEAD','POST','PUT','DELETE','OPTIONS','TRACE','PATCH')]
-    [string]$Method = 'HEAD',
-
-    [int]$Timeout        = 30,     # Total request timeout, in seconds
-    [switch]$AllowInvalidCert,     # Bypass SSL certificate errors
-
-    [switch]$FollowRedirect,       # Whether to follow 3xx redirects
-    [int]$MaxRedirects    = 5,     # Maximum number of automatic redirects
-
-    [hashtable]$Headers,           # Custom request headers, as a name/value map
-
-    [string]$Body,                 # Request body (for POST, PUT, etc)
-    [string]$ContentType    = 'application/json',  # MIME type for the body
-
-    [int]    $MinStatusCode = 200,  # Lower bound of “acceptable” status
-    [int]    $MaxStatusCode = 599,  # Upper bound of “acceptable” status
-    [int[]]  $ExcludeStatusCodes = @(502,503,504)  # Specific codes to treat as failure
+    [int]$Timeout = 5000,
+    [int]$ExpectCode = 200,
+    [string]$ExpectContent = "",
+    [string]$Username = "",
+    [string]$Password = "",
+    [string]$Headers = ""
 )
 
-# --- Initialise handler and client ---
-$handler = [System.Net.Http.HttpClientHandler]::new()
-$handler.AllowAutoRedirect = $FollowRedirect.IsPresent
-$handler.MaxAutomaticRedirections = $MaxRedirects
-if ($AllowInvalidCert.IsPresent) {
-    # Globally accept any cert
-    $handler.ServerCertificateCustomValidationCallback = { return $true }
-}
-
-$client = [System.Net.Http.HttpClient]::new($handler)
-$client.Timeout = [System.TimeSpan]::FromSeconds($Timeout)
-
-# --- Apply custom headers if provided ---
-if ($Headers) {
-    foreach ($name in $Headers.Keys) {
-        # Remove any pre‑existing header of the same name
-        if ($client.DefaultRequestHeaders.Contains($name)) {
-            $client.DefaultRequestHeaders.Remove($name)
-        }
-        $client.DefaultRequestHeaders.Add($name, $Headers[$name])
-    }
-}
-
-# --- Build the request message ---
-$request = [System.Net.Http.HttpRequestMessage]::new($Method, $Url)
-if ($Body) {
-    $request.Content = [System.Net.Http.StringContent]::new(
-        $Body,
-        [System.Text.Encoding]::UTF8,
-        $ContentType
-    )
-}
-
-# --- Send synchronously and capture status code ---
+$result = @{ available = 0; time_ms = -1; status = 0; content_match = 0 }
 try {
-    $response   = $client.SendAsync($request).Result
-    $statusCode = [int]$response.StatusCode
-}
-catch {
-    # Network failure, DNS error, timeout etc
-    Write-Output 0
-    return
-}
-finally {
-    # Clean up disposable objects
-    if ($response) { $response.Dispose() }
-    $client.Dispose()
-}
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    $client = New-Object System.Net.Http.HttpClient($handler)
+    $client.Timeout = [System.TimeSpan]::FromMilliseconds($Timeout)
 
-# --- Determine success or failure ---
-if (($statusCode -ge $MinStatusCode) -and
-    ($statusCode -le $MaxStatusCode) -and
-    ($statusCode -notin $ExcludeStatusCodes)) {
-    Write-Output 1
+    # Basic Auth
+    if ($Username -and $Password) {
+        $pair = "$Username:$Password"
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
+        $base64 = [Convert]::ToBase64String($bytes)
+        $client.DefaultRequestHeaders.Authorization = "Basic $base64"
+    }
+
+    # Custom Headers
+    if ($Headers) {
+        try {
+            $headerObj = $null
+            if ($Headers.Trim().StartsWith('{')) {
+                $headerObj = $Headers | ConvertFrom-Json
+            } else {
+                $headerObj = @{}
+                foreach ($kv in $Headers -split ';') {
+                    if ($kv -match '=') {
+                        $k,$v = $kv -split '=',2
+                        $headerObj[$k.Trim()] = $v.Trim()
+                    }
+                }
+            }
+            foreach ($name in $headerObj.Keys) {
+                $client.DefaultRequestHeaders.Add($name, $headerObj[$name])
+            }
+        } catch {}
+    }
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $response = $client.GetAsync($Url).Result
+    $sw.Stop()
+    $result.time_ms = [math]::Round($sw.Elapsed.TotalMilliseconds,2)
+    $result.status = [int]$response.StatusCode
+    $body = $response.Content.ReadAsStringAsync().Result
+    if ($result.status -eq $ExpectCode) {
+        $result.available = 1
+    }
+    if ($ExpectContent) {
+        if ($body -match $ExpectContent) {
+            $result.content_match = 1
+        }
+    } else {
+        $result.content_match = 1
+    }
+} catch {
+    $result.available = 0
+    $result.time_ms = -1
+    $result.status = 0
+    $result.content_match = 0
 }
-else {
-    Write-Output 0
-}
+Write-Output ($result | ConvertTo-Json -Compress)

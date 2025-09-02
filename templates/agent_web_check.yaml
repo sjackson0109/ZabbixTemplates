@@ -1,0 +1,119 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: e1a9f64b6c1146a28f6c2a9a6c8b1f7d
+      template: 'Agent Web Check'
+      name: 'Agent Web Check'
+      description: |
+        Discover the availability of 'agent_web_checks.ps1' on the Zabbix Agent file-system
+        and run it to perform HTTP/S checks on a URL parameter.
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Templates
+      discovery_rules:
+        - uuid: 4096b3c81c0742629078cb05f05e5a0f
+          name: 'Web Endpoint Discovery'
+          key: 'custom.web.discovery'
+          delay: 1h
+          description: 'Discovers web endpoints for monitoring.'
+          item_prototypes:
+            - uuid: a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+              name: 'Web Availability for {#WEB_URL} ({#CUSTOMER}, {#PRIORITY})'
+              key: 'agent.web.available[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}]'
+              delay: 5m
+              value_type: UINT64
+              trends: '0'
+              units: ''
+              tags:
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+              trigger_prototypes:
+                - uuid: b2952de40d3e44b8aa07a503d9820cc6
+                  expression: 'last(/Agent Web Check/agent.web.available[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}])=0'
+                  name: 'Site down: {#WEB_URL} ({#CUSTOMER})'
+                  priority: HIGH
+                  description: 'Web check to {#WEB_URL} returned failure (0).'
+            - uuid: b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2
+              name: 'Web Latency for {#WEB_URL} ({#CUSTOMER}, {#PRIORITY})'
+              key: 'agent.web.latency[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              units: ms
+              tags:
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+              trigger_prototypes:
+                - uuid: c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3
+                  expression: 'last(/Agent Web Check/agent.web.latency[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}])>{$WEB_MAX_LATENCY}'
+                  name: 'High latency: {#WEB_URL} ({#CUSTOMER})'
+                  priority: WARNING
+                  description: 'Web latency to {#WEB_URL} exceeded {$WEB_MAX_LATENCY} ms.'
+            - uuid: d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4
+              name: 'Web Status Code for {#WEB_URL} ({#CUSTOMER}, {#PRIORITY})'
+              key: 'agent.web.code[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}]'
+              delay: 5m
+              value_type: UINT64
+              trends: '0'
+              units: ''
+              tags:
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+              trigger_prototypes:
+                - uuid: e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
+                  expression: 'last(/Agent Web Check/agent.web.code[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}])<>{$WEB_EXPECTCODE}'
+                  name: 'Wrong status code: {#WEB_URL} ({#CUSTOMER})'
+                  priority: WARNING
+                  description: 'Web check to {#WEB_URL} returned unexpected status code.'
+            - uuid: f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6
+              name: 'Web Content Match for {#WEB_URL} ({#CUSTOMER}, {#PRIORITY})'
+              key: 'agent.web.content[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE},{$WEB_EXPECTCONTENT}]'
+              delay: 5m
+              value_type: UINT64
+              trends: '0'
+              units: ''
+              tags:
+                - tag: Customer
+                  value: '{#CUSTOMER}'
+                - tag: Priority
+                  value: '{#PRIORITY}'
+              trigger_prototypes:
+                - uuid: g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7
+                  expression: 'last(/Agent Web Check/agent.web.content[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE},{$WEB_EXPECTCONTENT}])=0'
+                  name: 'Content mismatch: {#WEB_URL} ({#CUSTOMER})'
+                  priority: WARNING
+                  description: 'Web check to {#WEB_URL} did not match expected content.'
+          graph_prototypes:
+            - uuid: 3efa18443c234ef5b96587e6a41d7160
+              name: 'Web Latency for {HOST.NAME} to {#WEB_URL}'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Agent Web Check'
+                    key: 'agent.web.latency[{#WEB_URL},{$WEB_TIMEOUT},{$WEB_EXPECTCODE}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$WEB_TIMEOUT}'
+          value: '5000'
+        - macro: '{$WEB_EXPECTCODE}'
+          value: '200'
+        - macro: '{$WEB_EXPECTCONTENT}'
+          value: ''
+        - macro: '{$WEB_MAX_LATENCY}'
+          value: '2000'
+          description: 'Endpoint to probe'
+        - macro: '{$ZABBIX.SCRIPTPATH}'
+          value: 'C:\Program Files\Zabbix Agent 2\Scripts'

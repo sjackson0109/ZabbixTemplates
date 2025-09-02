@@ -1,4 +1,4 @@
-"""
+<#
 Author: Simon Jackson (@sjackson0109)
 Created: 2025/07/21
 Version: 1.0
@@ -11,33 +11,37 @@ Instructions:
     - Place this script in the Zabbix Agent scripts directory
     - Ensure the script is executable by the Zabbix user
     - Configure the Zabbix Agent to allow remote commands if necessary
-"""
-param (
-    [Parameter(Mandatory = $true, Position = 0)]
-    [string]$Ip,
-
-    [Parameter(Mandatory = $false)]
-    [int]$Count = 4,
-
-    [Parameter(Mandatory = $false)]
-    [int]$Timeout = 1000,
-
-    [Parameter(Mandatory = $false)]
-    [int]$BufferSize = 32,
-
-    [Parameter(Mandatory = $false)]
-    [int]$TimeToLive = 128,
-
-    [Parameter(Mandatory = $false)]
-    [switch]$DontFragment
+#>
+param(
+    [Parameter(Mandatory=$true)][string]$Ip,
+    [Parameter(Mandatory=$true)][int]$Count,
+    [Parameter(Mandatory=$true)][int]$Timeout,
+    [Parameter(Mandatory=$true)][int]$BufferSize,
+    [Parameter(Mandatory=$true)][int]$TimeToLive,
+    [Parameter(Mandatory=$true)][int]$DontFragment
 )
 
-# Initialise Ping sender and options
-$pingSender = [System.Net.NetworkInformation.Ping]::new()
-$pingOptions = [System.Net.NetworkInformation.PingOptions]::new($TimeToLive, $DontFragment.IsPresent)
-
-# Prepare buffer of the requested size (filled with ASCII 'a')
-$buffer = [Text.Encoding]::ASCII.GetBytes(('a' * $BufferSize))
+try {
+    $pingOptions = New-Object System.Net.NetworkInformation.PingOptions
+    $pingOptions.Ttl = $TimeToLive
+    $pingOptions.DontFragment = [bool]$DontFragment
+    $buffer = New-Object byte[] $BufferSize
+    $ping = New-Object System.Net.NetworkInformation.Ping
+    $results = @()
+    for ($i = 0; $i -lt $Count; $i++) {
+        $reply = $ping.Send($Ip, $Timeout, $buffer, $pingOptions)
+        if ($reply.Status -eq 'Success') {
+            $results += $reply.RoundtripTime
+        }
+    }
+    if ($results.Count -gt 0) {
+        [math]::Round(($results | Measure-Object -Average).Average, 2)
+    } else {
+        -1
+    }
+} catch {
+    -1
+}
 
 # Collect successful round‑trip times
 $times = [System.Collections.Generic.List[long]]::new()
