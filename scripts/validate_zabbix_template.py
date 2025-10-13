@@ -179,9 +179,28 @@ def find_line_number(lines, search_value, current_index=0):
 
 def validate_yaml_file(file_path):
     try:
-        with open(file_path, 'r') as file:
-            file_content = file.read()
-            yaml_data = yaml.safe_load(file_content)
+        # Try different encodings to handle various file formats
+        encodings_to_try = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+        file_content = None
+        used_encoding = None
+        
+        for encoding in encodings_to_try:
+            try:
+                with open(file_path, 'r', encoding=encoding) as file:
+                    file_content = file.read()
+                    used_encoding = encoding
+                    break
+            except UnicodeDecodeError:
+                continue
+        
+        if file_content is None:
+            print(f"❌ Could not decode file with any supported encoding: {encodings_to_try}")
+            return False
+            
+        if used_encoding != 'utf-8':
+            print(f"⚠️  Warning: File decoded using {used_encoding} encoding (not UTF-8)")
+            
+        yaml_data = yaml.safe_load(file_content)
             
         # Basic YAML syntax is valid, now check Zabbix schema
         schema_errors, version = validate_zabbix_schema(yaml_data, file_content)
