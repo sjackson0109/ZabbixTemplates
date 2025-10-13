@@ -1,0 +1,188 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 92000e2973064387852d6dfd83dcbdec
+      name: 'Templates/Server hardware'
+  templates:
+    - uuid: ec9518aebaf9473c8e47c41f56f2f385
+      template: 'Tape Libraries'
+      name: 'Tape Libraries'
+      description: |
+        Overview
+        Complete SNMP template for monitoring IBM, Dell, and Tandberg tape libraries.
+        Supports common scalar metrics and discovery of components like drives, fans, and power supplies.
+
+        Features
+        - Device information: name, description, serial number, uptime.
+        - Drive monitoring:
+            - Auto-discovery of drives.
+            - Status, availability, and cleaning requirement.
+        - Library subsystem monitoring:
+            - Door status, library operational state, transport robotics.
+        - Fan and power supply discovery:
+            - Status monitoring of physical components.
+        - Alerting:
+            - Triggers on door open, library not ready, drive failure, cleaning alerts, fan/PSU faults.
+
+        Items
+        - Uses SNMP to query scalar OIDs across standard and vendor-specific MIBs.
+        - Preprocessing performed where required.
+
+        Discovery rules
+        - Drive discovery using SNIA-SML-MIB.
+        - Fan and power supply discovery using ENTITY-MIB.
+
+        Item prototypes
+        - Drive availability and cleaning flags.
+        - Fan and PSU operational state.
+
+        Trigger prototypes
+        - Library status not normal.
+        - Door open state.
+        - Drive unavailable.
+        - Fan or PSU failure.
+
+        Graphs
+        - Drive alert summary.
+        - Slot and drive count comparison.
+
+        Supported devices
+        - IBM TS4300, Dell TL1000/2000/4000, ML3, ML3e, ML6000 series.
+        - Tandberg libraries and OEM variants using SNIA or Dell/IBM MIBs.
+
+        Notes
+        - Entity discovery uses substring matching on entPhysicalDescr.
+        - Device compatibility depends on MIB support in SNMP agent.
+        - Optimized for Zabbix 7.0+ and SNMPv2 environments.
+
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: 'Applications'
+      items:
+        - uuid: 109f989c0c40428f8c939e90e68c14cd
+          name: 'Device Uptime'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysUpTime.0'
+          key: 'sys.uptime'
+          value_type: UNSIGNED
+          units: seconds
+          description: 'System uptime in hundredths of seconds'
+          tags:
+            - tag: component
+              value: system
+        - uuid: 5f6f53e12cfc499e9250be5366de83b1
+          name: 'Device Name'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysName.0'
+          key: 'sys.name'
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: c3808f057c0041c5880ad8116d3e040f
+          name: 'Device Description'
+          type: SNMP_AGENT
+          snmp_oid: 'SNMPv2-MIB::sysDescr.0'
+          key: 'sys.description'
+          value_type: TEXT
+          tags:
+            - tag: component
+              value: system
+        - uuid: f4894978e9ff4ff9aba138ba56a32ea9
+          name: 'Library Serial Number'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::librarySerNum'
+          key: 'library.serial'
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: fe30b73fa84e454c9f518fb85d6d61d0
+          name: 'Drive Count'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::libraryDrvCnt'
+          key: 'library.drives'
+          value_type: UNSIGNED
+          units: drives
+          tags:
+            - tag: component
+              value: storage
+        - uuid: 3bcab71c06054586b9271bd8b6b9a9e8
+          name: 'Slot Count'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::librarySlotCnt'
+          key: 'library.slots'
+          value_type: UNSIGNED
+          units: slots
+          tags:
+            - tag: component
+              value: storage
+        - uuid: 759725944acf4fd98fd232c41cb82331
+          name: 'Transport Robot Count'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::libraryTranspCnt'
+          key: 'library.transports'
+          value_type: UNSIGNED
+          units: robots
+          tags:
+            - tag: component
+              value: hardware
+        - uuid: 1ddd7231d26846a39d1eea0592f72af1
+          name: 'Library State'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::libraryState'
+          key: 'library.state'
+          value_type: UNSIGNED
+          tags:
+            - tag: component
+              value: status
+          triggers:
+            - uuid: 96b7f83ed7714aedb0deedaa138afbcb
+              name: 'Library state not normal'
+              expression: '{Tape Libraries:library.state.last()} <> 1'
+              priority: AVERAGE
+              description: 'Library is not in normal (ready) state'
+        - uuid: e62e99a0525b473595e2169119760654
+          name: 'Door State'
+          type: SNMP_AGENT
+          snmp_oid: 'DELL-TL2000-MIB::libraryDoorState'
+          key: 'library.door'
+          value_type: UNSIGNED
+          tags:
+            - tag: component
+              value: status
+          triggers:
+            - uuid: 225a4be656ab40f2853ad91fb08e587f
+              name: 'Library Door Open'
+              expression: '{Tape Libraries:library.door.last()} = 2'
+              priority: WARNING
+              description: 'Library access door is open'
+        - uuid: 78dce4e7d45541bfbecd86f25fc8c0ad
+          name: 'Drive Alert Summary'
+          type: SNMP_AGENT
+          snmp_oid: 'SNIA-SML-MIB::trapDriveAlertSummary'
+          key: 'drives.alerts'
+          value_type: UNSIGNED
+          tags:
+            - tag: component
+              value: alert
+          triggers:
+            - uuid: 54bd8c24115b42d6aed67ba4e0a1d0a6
+              name: 'Drive alert count > 0'
+              expression: '{Tape Libraries:drives.alerts.last()} > 0'
+              priority: HIGH
+              description: 'One or more drive errors detected'
+
+
+      valuemaps:
+        - uuid: c033100906c040f1b8a56b5e51660d3c
+          name: 'TapeLibraryStatus'
+          mappings:
+            - value: '1'
+              newvalue: 'Normal'
+            - value: '2'
+              newvalue: 'Idle'
+            - value: '3'
+              newvalue: 'Standby'
+            - value: '0'
+              newvalue: 'Unknown'

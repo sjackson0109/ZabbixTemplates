@@ -1,7 +1,7 @@
 <#
 Author: Simon Jackson (@sjackson0109)
 Created: 2025/07/21
-Version: 1.0
+Version: 1.1
 Description:
     - Perform HTTP/S checks on a URL from the Zabbix Agent
     - Returns the average round-trip time of pings to the specified IP address 
@@ -30,7 +30,7 @@ try {
 
     # Basic Auth
     if ($Username -and $Password) {
-        $pair = "$Username:$Password"
+        $pair = "${Username}:${Password}"
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
         $base64 = [Convert]::ToBase64String($bytes)
         $client.DefaultRequestHeaders.Authorization = "Basic $base64"

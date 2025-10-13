@@ -1,0 +1,79 @@
+zabbix_export:
+  version: "7.0"
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Network/Communication
+  templates:
+    - uuid: a1b2c3d4e5f6789012345678901234ab
+      template: "STUN and TURN Checks"
+      name: "STUN and TURN Checks"
+      description: |
+        STUN/TURN monitoring template using get_stun_turn_checks.py
+        
+        Features:
+        - Auto-discovery of STUN/TURN services
+        - Fast monitoring with 2-second timeout
+        - Support for UDP, TCP, TLS transports
+        - TURN authentication support
+        
+        Installation:
+        1. Copy get_stun_turn_checks.py to /usr/lib/zabbix/externalscripts/
+        2. Make executable: chmod +x /usr/lib/zabbix/externalscripts/get_stun_turn_checks.py
+        3. Import this template
+        
+        Author: Simon Jackson (@sjackson0109)
+      groups:
+        - name: Templates/Network
+      macros:
+        - macro: "{$STUN_TURN_TIMEOUT}"
+          value: "2"
+          description: "Timeout for STUN/TURN requests in seconds"
+        - macro: "{$STUN_TURN_USERNAME}"
+          value: ""
+          description: "TURN username for authentication"
+        - macro: "{$STUN_TURN_PASSWORD}"
+          value: ""
+          description: "TURN password for authentication"
+      discovery_rules:
+        - uuid: b2c3d4e5f6789012345678901234abcd
+          name: "STUN/TURN Service Discovery"
+          key: "get_stun_turn_checks.py[--discover]"
+          delay: 1h
+          lifetime: 7d
+          item_prototypes:
+            - uuid: c3d4e5f6789012345678901234abcdef
+              name: "STUN {#TRANSPORT}:{PORT}"
+              key: "get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{PORT},--check,--timeout,{$STUN_TURN_TIMEOUT}]"
+              value_type: FLOAT
+              delay: 2m
+              history: 7d
+              trends: 90d
+              description: "STUN service status: 1=OK, 0=FAIL"
+              filter:
+                conditions:
+                  - macro: "{#MODE}"
+                    value: "stun"
+                    formulaid: A
+              trigger_prototypes:
+                - uuid: d4e5f6789012345678901234abcdef01
+                  name: "STUN {#TRANSPORT}:{PORT} is down"
+                  expression: "last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{PORT},--check,--timeout,{$STUN_TURN_TIMEOUT}])=0"
+                  priority: HIGH
+            - uuid: e4f5678901234567890123456789abcd
+              name: "TURN {#TRANSPORT}:{PORT}"
+              key: "get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{PORT},--check,--turn-mode,--username,{$STUN_TURN_USERNAME},--password,{$STUN_TURN_PASSWORD},--timeout,{$STUN_TURN_TIMEOUT}]"
+              value_type: FLOAT
+              delay: 2m
+              history: 7d
+              trends: 90d
+              description: "TURN service status: 1=OK, 0=FAIL"
+              filter:
+                conditions:
+                  - macro: "{#MODE}"
+                    value: "turn"
+                    formulaid: A
+              trigger_prototypes:
+                - uuid: f567890123456789012345678901abcd
+                  name: "TURN {#TRANSPORT}:{PORT} is down"
+                  expression: "last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{PORT},--check,--turn-mode,--username,{$STUN_TURN_USERNAME},--password,{$STUN_TURN_PASSWORD},--timeout,{$STUN_TURN_TIMEOUT}])=0"
+                  priority: HIGH
