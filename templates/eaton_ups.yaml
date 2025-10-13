@@ -1,0 +1,716 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 0e60ac85bc3941e2a1d66a048ff164da
+      name: UPS
+  templates:
+    - uuid: 8c0bbe5e12014b8a874ef5620967f7ce
+      template: 'Eaton UPS'
+      name: 'Eaton UPS'
+      description: |
+        Overview
+        Complete template for monitoring Eaton UPS systems via SNMP.
+        Provides dynamic discovery of power, battery, load, environment, and identity data using XUPS-MIB.
+        
+        Features
+        - Device information: model, serial number, firmware version, location, manufacturer ID, contact info, and uptime.
+        - Battery monitoring:
+            - Battery charge percentage, voltage, current, temperature, and runtime remaining.
+            - Real-time battery status (normal, charging, discharging, low, etc.).
+        - Input power:
+            - Voltage, frequency, line fail status, and number of active input lines.
+            - Phase-level voltage and current readings (when available).
+        - Output power:
+            - Output load percentage, wattage, voltage, frequency, and power status.
+            - Output current and voltage per phase (where supported).
+        - Environment monitoring:
+            - Ambient temperature (internal and external sensors).
+            - Overtemperature alarms and sensor status codes.
+        - Alarms and events:
+            - Real-time alarm table with severity and descriptions.
+            - Triggered fault and warning conditions using SNMP state values.
+        
+        Items
+        - SNMP polling of all standard XUPS-MIB metrics.
+        - Preprocessing of raw counters to normalized units (V, %, A, W, °C, seconds).
+        - Value mapping of alarm and state integers into human-readable text.
+        - Optimized polling intervals by sensor category (battery vs input vs ID).
+        
+        Discovery rules
+        - Input line discovery (for multi-phase UPS systems).
+        - Output phase discovery for voltage/current/load data.
+        - Alarm log discovery and alarm severity tracking.
+        
+        Item prototypes
+        - Per-phase input/output current, voltage, and frequency items.
+        - Alarm table entries with message, state, and severity mapping.
+        
+        Trigger prototypes
+        - Battery capacity thresholds (critical/warning).
+        - Output load overcapacity detection.
+        - Input or output voltage anomalies.
+        - Battery temperature overheat and internal fault triggers.
+        - Active alarm state changes.
+        
+        Graph prototypes
+        - Battery charge, runtime, and temperature graphs.
+        - Input/output voltage and load across discovered lines/phases.
+        - Aggregated UPS health overview charts.
+        
+        Supported devices
+        - Eaton UPS systems supporting XUPS-MIB:
+            - 5PX, 5SC, 9PX, 9SX, 9PHD, 93E, 93PM, BladeUPS, and similar SNMP-enabled models.
+            - SNMP cards with firmware v3.0 or higher (ConnectUPS, Network-M2, Industrial Gateway Card).
+        
+        Notes
+        - Assumes full SNMP OID support from Eaton XUPS-MIB; limited support on older firmware.
+        - Designed for use with SNMPv1 or SNMPv2 (no authentication logic included).
+        - Compatible with multi-phase and single-phase UPS deployments.
+        - Suitable for datacenter and edge deployments, both on-prem and remote.
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: UPS
+      items:
+        - uuid: dac8b1aa4cd34d1faec0afcd2f1eb725
+          name: 'Alarm Input Failure'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.7.14.0
+          key: alarm.inputFailure
+          triggers:
+            - uuid: ec13f56f49894483aec30eb624b60834
+              expression: 'last(/Eaton UPS/alarm.inputFailure,#1)=1'
+              name: 'UPS input failure on {HOST.NAME}'
+              priority: WARNING
+              description: 'The UPS is alarming of an Input power-supply problem. Compare the trands of voltage, current and frequency to observe any irregularities.'
+        - uuid: 15d7c201c63440ef8c00913e041f8e0b
+          name: 'Alarm Bypass-Mode-On'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.7.11.0
+          key: alarm.onBypass
+          triggers:
+            - uuid: c3aeba696fcf48f295d641f5b936daa2
+              expression: 'last(/Eaton UPS/alarm.onBypass,#1)=1'
+              name: 'UPS is operating on BYPASS MODE {HOST.NAME}'
+              priority: WARNING
+              description: |
+                This UPS is operating on BYPASS Mode (ON). Meaning the INPUT power is directly connected to the OUTPUT feeds, and the Batteries are receiving charge from the INPUT and are also not used to supply current to the OUTPUT.
+                
+                Unless the UPS is undergoing maintenance, this may need investigating.
+        - uuid: bd13e5e436b046ccb3d0921b58b207f1
+          name: 'Alarm Output Supply Off'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.7.13.0
+          key: alarm.outputOff
+        - uuid: 123b26d3423a476e9e3ecb8f9008e008
+          name: 'Battery ABM Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.2.5.0
+          key: battery.abmStatus
+          value_type: TEXT
+          trends: '0'
+        - uuid: cfa36ce1069c47c281b378922d5c2cff
+          name: 'Battery Capacity'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.2.4.0
+          key: battery.capacity
+          value_type: FLOAT
+          units: '%'
+          triggers:
+            - uuid: 46eaf6c82e3f465bb9231bbfb9482891
+              expression: 'last(/Eaton UPS/battery.capacity,#10)<10'
+              name: 'Battery capacity low on {HOST.NAME}'
+              priority: WARNING
+              description: 'Battery isn''t charging above 10% - Please investigate.'
+        - uuid: 00fc3a3b10ee4f47b42a22e2cc5e7c70
+          name: 'Battery Failure Flags'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.2.7.0
+          key: battery.failure
+          triggers:
+            - uuid: 8b0c43a6567b4b1082ae68e2dc521311
+              expression: 'last(/Eaton UPS/battery.failure,#3)<>0'
+              name: 'Battery failure on {HOST.NAME}'
+              priority: HIGH
+              description: 'Check the condition of the batteries.'
+        - uuid: ef498adcf3c74839bf7bca71897ede0b
+          name: 'Battery Runtime Remaining'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.2.1.0
+          key: battery.timeRemaining
+          value_type: FLOAT
+          units: min
+        - uuid: 07556e163df846d98f824b6729486d64
+          name: 'Battery Voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.2.2.0
+          key: battery.voltage
+          value_type: FLOAT
+          units: V
+        - uuid: 5f10ed13929845639a7aa46f7af3d226
+          name: Firmware
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.1.3.0
+          key: firmware
+          delay: 10m
+          value_type: TEXT
+          trends: '0'
+          inventory_link: OS
+        - uuid: b39ee114ac5b4b39b1836c377bdde58e
+          name: 'Input Average Current'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.8.2.0
+          key: input.avgCurrent
+          value_type: FLOAT
+          units: A
+        - uuid: f4121c8c68dd4e2e851f880627d6f962
+          name: 'Input Average Voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.8.1.0
+          key: input.avgVoltage
+          value_type: FLOAT
+          units: V
+        - uuid: 4a72c995601c4ec790fe18ac7eb1a269
+          name: 'Input Frequency'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.1.0
+          key: input.frequency
+          value_type: FLOAT
+          units: Hz
+        - uuid: 4bfc981939f049a98e87f0af35dc7578
+          name: 'Input Source'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.5.0
+          key: input.source
+          value_type: TEXT
+          trends: '0'
+        - uuid: 34827e79763244c9b61f63d19d6a59a3
+          name: 'Input Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.9.0
+          key: input.status
+          value_type: TEXT
+          trends: '0'
+        - uuid: 84881a3128644a61a3e0a309b0ad0567
+          name: 'Input Total Watts'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.3.8.3.0
+          key: input.totalWatts
+          value_type: FLOAT
+          units: W
+        - uuid: 1726e3b7f37c42a1be4e7fbf01ba2665
+          name: Manufacturer
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.1.1.0
+          key: manufacturer
+          delay: 10m
+          value_type: TEXT
+          trends: '0'
+          inventory_link: VENDOR
+        - uuid: 892ba3266f9e4832849ec4bf0e730722
+          name: Model
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.1.2.0
+          key: model
+          delay: 10m
+          value_type: TEXT
+          trends: '0'
+          inventory_link: MODEL
+        - uuid: 6781c04aa81c4b13878b7ca95491c66f
+          name: 'Output Average Current'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.9.2.0
+          key: output.avgCurrent
+          value_type: FLOAT
+          units: A
+        - uuid: 63ec25c70ce44b72be9cfbd7b0a95859
+          name: 'Output Average Voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.9.1.0
+          key: output.avgVoltage
+          value_type: FLOAT
+          units: V
+        - uuid: 6cd9e5c1316c4fba8685e0394f5bf5eb
+          name: 'Output Load'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.1.0
+          key: output.loadPct
+          value_type: FLOAT
+          units: '%'
+          triggers:
+            - uuid: 6a9f112cc5714a1b911032a27dc19624
+              expression: 'avg(/Eaton UPS/output.loadPct,#3)>80'
+              name: 'Output load > 80% on {HOST.NAME}'
+              priority: AVERAGE
+              description: 'Output load is greater than 80% of the capability of this UPS.'
+            - uuid: cc0386109a624919ae5b16750deb60f3
+              expression: 'avg(/Eaton UPS/output.loadPct,#3)>90'
+              name: 'Output load > 90% on {HOST.NAME}'
+              priority: HIGH
+              description: 'Output load is greater than 90% of the capability of this UPS.'
+            - uuid: a89525c701cf45a48ecbbc3c534a6a79
+              expression: 'avg(/Eaton UPS/output.loadPct,#3)>95'
+              name: 'Output load > 95% on {HOST.NAME}'
+              priority: DISASTER
+              description: 'Output load is greater than 95% of the capability of this UPS.'
+        - uuid: 46a469a50e524296ad5c800ff09537ec
+          name: 'Output Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.10.0
+          key: output.status
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: 90a6fe60b4e94cd0be38d7329b72bb4a
+              expression: 'last(/Eaton UPS/output.status,#1)=1'
+              name: 'UPS output turned OFF {HOST.NAME}'
+              priority: HIGH
+              description: 'Unless the UPS is undergoing maintenance, this may need investigating.'
+              manual_close: 'YES'
+        - uuid: 75414df313ba470f832b09abd83ad1e8
+          name: 'Output Total VA'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.9.4.0
+          key: output.totalVA
+          value_type: FLOAT
+          units: VA
+        - uuid: 7becfae2264948e9ab48b1eb929ea399
+          name: 'Output Total Watts'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.4.9.3.0
+          key: output.totalWatts
+          value_type: FLOAT
+          units: W
+        - uuid: 7e4367108af5435094e2fe7b7b08b2ee
+          name: Serial
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.1.6.0
+          key: serial
+          delay: 10m
+          value_type: TEXT
+          trends: '0'
+          inventory_link: SERIALNO_A
+        - uuid: ab1f36cc19fc43619fed67c3923dac77
+          name: Temperature
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.534.1.6.5.0
+          key: temperature
+          value_type: FLOAT
+          units: °C
+          triggers:
+            - uuid: 4c763b80833b4f57af2468d1358da5ea
+              expression: 'last(/Eaton UPS/temperature,#3)>30'
+              name: 'Ambient temperature > 30°C on {HOST.NAME}'
+              priority: AVERAGE
+              description: 'Ambient temperature greater than 30 degrees C.'
+            - uuid: 121dcc15958b466e804df1e7155795ac
+              expression: 'last(/Eaton UPS/temperature,#3)>50'
+              name: 'Extremely High Ambient temperature > 50°C on {HOST.NAME}'
+              priority: DISASTER
+              description: 'Ambient temperature greater than 50 degrees C - this needs URGENT attention'
+            - uuid: be95165651ba4e0f9afa33ae440a2ffb
+              expression: 'last(/Eaton UPS/temperature,#3)>40'
+              name: 'High Ambient temperature > 40°C on {HOST.NAME}'
+              priority: HIGH
+              description: 'Ambient temperature greater than 40 degrees C.'
+      discovery_rules:
+        - uuid: 9e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+          name: 'Alarm Table Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#ALARMINDEX},.1.3.6.1.4.1.534.1.7.2.1.1]'
+          key: alarm.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: ae2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Alarm Message [Alarm {#ALARMINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.7.2.1.2.{#ALARMINDEX}'
+              key: 'alarm.message[{#ALARMINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: be2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Alarm Severity [Alarm {#ALARMINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.7.2.1.3.{#ALARMINDEX}'
+              key: 'alarm.severity[{#ALARMINDEX}]'
+              value_type: TEXT
+              trends: '0'
+        - uuid: 2ef4c364aeed40a998becb3908c28a63
+          name: 'Battery Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#BATTERYINDEX},.1.3.6.1.4.1.534.1.2.3.1.1]'
+          key: battery.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 1001be9b08ac4d7d89556355a4512045
+              name: 'Battery Capacity [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.5.{#BATTERYINDEX}'
+              key: 'battery.capacity[{#BATTERYINDEX}]'
+              value_type: FLOAT
+              units: '%'
+            - uuid: b9cd324c590d43d3aa7bf3d9c838dd6e
+              name: 'Battery Current [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.3.{#BATTERYINDEX}'
+              key: 'battery.current[{#BATTERYINDEX}]'
+              value_type: FLOAT
+              units: A
+            - uuid: 5d06a5e780e34052b77532235e627229
+              name: 'Battery Failure Flags [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.7.{#BATTERYINDEX}'
+              key: 'battery.failure[{#BATTERYINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: d3367488f37945a5b0550dfd2c741d07
+              name: 'Battery Status [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.6.{#BATTERYINDEX}'
+              key: 'battery.status[{#BATTERYINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 4c2aeafcbedd4aa5b6e17c3ac5dc6849
+              name: 'Battery Temperature [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.4.{#BATTERYINDEX}'
+              key: 'battery.temperature[{#BATTERYINDEX}]'
+              value_type: FLOAT
+              units: °C
+            - uuid: eb78c753c02e47d19511606ffd6da4c6
+              name: 'Battery Voltage [Battery {#BATTERYINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.2.{#BATTERYINDEX}'
+              key: 'battery.voltage[{#BATTERYINDEX}]'
+              value_type: FLOAT
+              units: V
+        - uuid: ce2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+          name: 'Environment Sensor Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#ENVINDEX},.1.3.6.1.4.1.534.1.6.2.1.1]'
+          key: env.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: de2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Sensor Value [Sensor {#ENVINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.6.2.1.2.{#ENVINDEX}'
+              key: 'env.value[{#ENVINDEX}]'
+              value_type: FLOAT
+              units: °C
+        - uuid: 3e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+          name: 'Input Line Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#INPUTINDEX},.1.3.6.1.4.1.534.1.3.2.1.1]'
+          key: input.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 5e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Input Current [Line {#INPUTINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.3.2.1.3.{#INPUTINDEX}'
+              key: 'input.current[{#INPUTINDEX}]'
+              value_type: FLOAT
+              units: A
+            - uuid: 4e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Input Voltage [Line {#INPUTINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.3.2.1.2.{#INPUTINDEX}'
+              key: 'input.voltage[{#INPUTINDEX}]'
+              value_type: FLOAT
+              units: V
+        - uuid: 6e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+          name: 'Output Line Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#OUTPUTINDEX},.1.3.6.1.4.1.534.1.4.2.1.1]'
+          key: output.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 8e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Output Current [Line {#OUTPUTINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.4.2.1.3.{#OUTPUTINDEX}'
+              key: 'output.current[{#OUTPUTINDEX}]'
+              value_type: FLOAT
+              units: A
+            - uuid: 7e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
+              name: 'Output Voltage [Line {#OUTPUTINDEX}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.534.1.4.2.1.2.{#OUTPUTINDEX}'
+              key: 'output.voltage[{#OUTPUTINDEX}]'
+              value_type: FLOAT
+              units: V
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+        - tag: Vendor
+          value: Eaton
+      dashboards:
+        - uuid: 17aba55d350a4e7eb894b9c56a3ade8b
+          name: 'Eaton UPS'
+          pages:
+            - name: Overview
+              widgets:
+                - type: graph
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Eaton UPS'
+                        name: 'Input Average Voltage'
+                    - type: STRING
+                      name: reference
+                      value: MSQHZ
+                - type: svggraph
+                  name: 'Input Frequency'
+                  'y': '4'
+                  width: '11'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 00FF00
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Input Frequency'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: reference
+                      value: SVXGH
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: graph
+                  'y': '9'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Eaton UPS'
+                        name: 'Output Average Voltage'
+                    - type: STRING
+                      name: reference
+                      value: UKDNZ
+                - type: graph
+                  name: Temperature
+                  x: '11'
+                  'y': '4'
+                  width: '35'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Eaton UPS'
+                        name: 'Ambient Temperature'
+                    - type: STRING
+                      name: reference
+                      value: UOOWK
+                    - type: STRING
+                      name: time_period.from
+                      value: now-6h
+                    - type: STRING
+                      name: time_period.to
+                      value: now
+                - type: graph
+                  x: '18'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Eaton UPS'
+                        name: 'Input Average Current'
+                    - type: STRING
+                      name: reference
+                      value: BJPSU
+                - type: graph
+                  x: '18'
+                  'y': '9'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Eaton UPS'
+                        name: 'Output Average Current'
+                    - type: STRING
+                      name: reference
+                      value: KDIVP
+                - type: gauge
+                  name: 'Input Power'
+                  x: '36'
+                  width: '11'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS'
+                        key: input.totalWatts
+                    - type: STRING
+                      name: max
+                      value: '9'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: gauge
+                  name: 'Output Power'
+                  x: '36'
+                  'y': '9'
+                  width: '11'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS'
+                        key: output.totalWatts
+                    - type: STRING
+                      name: max
+                      value: '9'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: honeycomb
+                  x: '47'
+                  width: '24'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Alarm Bypass-Mode-On'
+                    - type: STRING
+                      name: items.1
+                      value: 'Alarm Input Failure'
+                    - type: STRING
+                      name: items.2
+                      value: 'Alarm Output Supply Off'
+                    - type: STRING
+                      name: items.3
+                      value: 'Battery ABM Status'
+                    - type: STRING
+                      name: items.4
+                      value: Firmware
+                    - type: STRING
+                      name: items.5
+                      value: 'Input Status'
+                    - type: STRING
+                      name: items.6
+                      value: Manufacturer
+                    - type: STRING
+                      name: items.7
+                      value: Model
+                    - type: STRING
+                      name: items.8
+                      value: 'Output Status'
+                    - type: STRING
+                      name: items.9
+                      value: Serial
+                    - type: STRING
+                      name: reference
+                      value: KYMNO
+  graphs:
+    - uuid: e34480ccb7104496a471071447c96132
+      name: 'Ambient Temperature'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: temperature
+    - uuid: a40ee830cb124017a29a5aa9ff6c6136
+      name: 'Battery Capacity (%)'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: battery.capacity
+    - uuid: 07b2a1b0670743359a5f6ac1d57ebb20
+      name: 'Battery Voltage'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: MIN
+          item:
+            host: 'Eaton UPS'
+            key: battery.voltage
+    - uuid: a8e866ce8d934acab96bd0e1e688df20
+      name: 'Input Average Current'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: input.avgCurrent
+    - uuid: 4dd211932fc742ae9a8d962406930fa0
+      name: 'Input Average Voltage'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: input.avgVoltage
+    - uuid: 9a0281c29c3f44e8848053dcdd8d4c4b
+      name: 'Input Power'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: input.totalWatts
+    - uuid: 153e52daf3364cc8b17f7b48b3f75cb7
+      name: 'Output Average Current'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: output.avgCurrent
+    - uuid: 81ddbafa3c6144b79573e4f838a02f7b
+      name: 'Output Average Voltage'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: output.avgVoltage
+    - uuid: 32c716490bbf4845a5a64f29ec744e4c
+      name: 'Output Load %'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: output.loadPct
+    - uuid: 5ffe642082e44624a3d9a0a8027d304c
+      name: 'Output Power'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Eaton UPS'
+            key: output.totalWatts
