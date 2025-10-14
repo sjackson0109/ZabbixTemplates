@@ -1,229 +1,37 @@
----
 zabbix_export:
-  version: 7.0
-  date: 2023-10-15T12:00:00Z
-
+  version: '7.0'
+  date: '2023-10-15T12:00:00Z'
+  groups:
+    - uuid: 846977d1dfed4968bc5f8bdb839e05db
+      name: Storage
   templates:
     - uuid: 6622867ea11544a0a59215d9ef03045d
-      template: Dell Unity Arrays
-      name: Dell Unity Arrays
-      description: |
-        ### Template for monitoring EMC Unity XT series storage arrays using the REST API.
+      template: 'Dell Unity Arrays'
+      name: 'Dell Unity Arrays'
+      description: 'Template for monitoring EMC Unity XT series storage arrays using the REST API.'
       groups:
         - name: Storage
       items:
         - uuid: a918d42dbbe9462b88d9b8ca7a8c040c
-          name: Get Discovery Data
-          type: 10
-          snmp_community:
-          snmp_oid:
-          key: get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={$API_PORT}\",\"--api_user={$API_USER}\",\"--api_password={$API_PASSWORD}\",\"--storage_name={HOST.NAME}\",\"--discovery\"]
+          name: 'Get Discovery Data'
+          type: EXTERNAL
+          key: 'get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={\}\",\"--api_user={\}\",\"--api_password={\}\",\"--storage_name={HOST.NAME}\",\"--discovery\"]'
           delay: 15m
           history: 90d
           trends: 365d
-          status: 0
-          value_type: 3
-          allowed_hosts:
-          units:
-          params:
-          ipmi_sensor:
-          authtype: 0
-          username:
-          password:
-          publickey:
-          privatekey:
-          port:
-          description: Executes the discovery script to fetch resource data from the Unity storage array.
-          inventory_link: 0
-          applications:
-            application:
-              name: Discovery
-          valuemap:
-          logtimefmt:
-          preprocessing:
-          jmx_endpoint:
+          value_type: TEXT
+          description: 'Executes the discovery script to fetch resource data from the Unity storage array.'
           timeout: 3s
-          url:
-          query_fields:
-          posts:
-          status_codes: 200
-          follow_redirects: 1
-          post_type: 0
-          http_proxy:
-          headers:
-          retrieve_mode: 0
-          request_method: 1
-          output_format: 0
-          allow_traps: 0
-          ssl_cert_file:
-          ssl_key_file:
-          ssl_key_password:
-          verify_peer: 0
-          verify_host: 0
-          master_item:
-        - uuid: 07cae4eefd234a0fb062782fe018e100
-          name: Get Health and Performance Data
-          type: 10
-          key: get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={$API_PORT}\",\"--api_user={$API_USER}\",\"--api_password={$API_PASSWORD}\",\"--storage_name={HOST.NAME}\",\"--status\"]
-          delay: 3m
-          history: 90d
-          trends: 365d
-          status: 0
-          value_type: 3
-          allowed_hosts:
-          units:
-          snmpv3_contextname:
-          snmpv3_securityname:
-          snmpv3_securitylevel: 0
-          snmpv3_authprotocol: 0
-          snmpv3_authpassphrase:
-          snmpv3_privprotocol: 0
-          snmpv3_privpassphrase:
-          params:
-          ipmi_sensor:
-          authtype: 0
-          username:
-          password:
-          publickey:
-          privatekey:
-          port:
-          description: Executes the script to fetch health and performance metrics from the Unity storage array.
-          inventory_link: 0
-          applications:
-            application:
-            -
-              name: Health
-            -
-              name: Performance
-          valuemap:
-          logtimefmt:
-          preprocessing:
-          jmx_endpoint:
-          timeout: 3s
-          url:
-          query_fields:
-          posts:
-          status_codes: 200
-          follow_redirects: 1
-          post_type: 0
-          http_proxy:
-          headers:
-          retrieve_mode: 0
-          request_method: 1
-          output_format: 0
-          allow_traps: 0
-          ssl_cert_file:
-          ssl_key_file:
-          ssl_key_password:
-          verify_peer: 0
-          verify_host: 0
-          master_item:
-      discovery_rules:
-      httptests:
       macros:
-        macro:
-        -
-          macro: {$API_PASSWORD}
-          value:
-        -
-          macro: {$API_PORT}
-          value: 443
-        -
-          macro: {$API_USER}
-          value:
-        -
-          macro: {$SUBSCRIBED_PERCENT}
-          value: 91
-        -
-          macro: {$USED_PERCENT}
-          value: 91
-      templates:
-      screens:
-  triggers:
-    trigger:
-    -
-      expression: {Dell Unity XT Series:get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={$API_PORT}\",\"--api_user={$API_USER}\",\"--api_password={$API_PASSWORD}\",\"--storage_name={HOST.NAME}\",\"--discovery\"].count(30m,2,le)}>5
-      recovery_mode: 0
-      recovery_expression:
-      name: {HOST.NAME} -> Error occurs in getting metrics
-      correlation_mode: 0
-      correlation_tag:
-      url:
-      status: 0
-      priority: 4
-      description: Errors in zabbix-sender. Values 1 or 2 occur more than 5 times in 30 minutes.
-      type: 0
-      manual_close: 0
-      dependencies:
-      tags:
-        tag:
-          tag: Department
-          value: MON.RTK
-    -
-      expression: {Dell Unity XT Series:get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={$API_PORT}\",\"--api_user={$API_USER}\",\"--api_password={$API_PASSWORD}\",\"--storage_name={HOST.NAME}\",\"--status\"].count(30m,50,ge)}>5
-      recovery_mode: 0
-      recovery_expression:
-      name: {HOST.NAME} -> Error occurs in sending metrics
-      correlation_mode: 0
-      correlation_tag:
-      url:
-      status: 0
-      priority: 4
-      description: Values greater than or equal to 50 occur more than 5 times in 30 minutes.
-      type: 0
-      manual_close: 0
-      dependencies:
-      tags:
-        tag:
-          tag: Department
-          value: MON.RTK
-    -
-      expression: {Dell Unity XT Series:get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={$API_PORT}\",\"--api_user={$API_USER}\",\"--api_password={$API_PASSWORD}\",\"--storage_name={HOST.NAME}\",\"--status\"].nodata(3600)}=1
-      recovery_mode: 0
-      recovery_expression:
-      name: {HOST.NAME} -> No data from storage for 1 hour
-      correlation_mode: 0
-      correlation_tag:
-      url:
-      status: 0
-      priority: 4
-      description: No data received from the storage array for 1 hour.
-      type: 0
-      manual_close: 0
-      dependencies:
-      tags:
-        - tag: 'Department'
-          value: 'MON.RTK'
-  value_maps:
-    - name: Unity_Health_Status
-      mappings:
-        mapping:
-        - value: 0
-          newvalue: 'UNKNOWN'
-        - value: 5
-          newvalue: 'OK'
-        - value: 7
-          newvalue: 'OK_BUT'
-        - value: 10
-          newvalue: 'DEGRADED'
-        - value: 15
-          newvalue: 'MINOR'
-        - value: 20
-          newvalue: 'MAJOR'
-        - value: 25
-          newvalue: 'CRITICAL'
-        - value: 30
-          newvalue: 'NON_RECOVERABLE'
-    - name: Unity_Running_Status
-      mappings:
-        mapping:
-        - value: 5
-          newvalue: 'NOT_OK'
-        - value: 6
-          newvalue: 'DISK_SLOT_EMPTY'
-        - value: 8
-          newvalue: 'COMPONENT_OK'
-        - value: 10
-          newvalue: 'LINK_UP'
-        - value: 11
-          newvalue: 'LINK_DOWN'
+        - macro: '{\}'
+          value: ''
+        - macro: '{\}'
+          value: '443'
+        - macro: '{\}'
+          value: ''
+      triggers:
+        - uuid: 1a2b3c4d5e6f7890123456789abcdef0
+          name: '{HOST.NAME} -> Error occurs in getting metrics'
+          expression: 'count(/Dell Unity Arrays/get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={\}\",\"--api_user={\}\",\"--api_password={\}\",\"--storage_name={HOST.NAME}\",\"--discovery\"],30m,\"le\",\"2\")>5'
+          priority: HIGH
+          description: 'Errors in zabbix-sender. Values 1 or 2 occur more than 5 times in 30 minutes.'

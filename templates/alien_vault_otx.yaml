@@ -1,0 +1,71 @@
+zabbix_export:
+  version: '7.0'
+  date: '2025-07-16T12:00:00Z'
+  groups:
+    - name: Templates
+  templates:
+    - name: Template AlienVault OTX
+      description: |-
+        Monitors AlienVault OTX pulses and indicators via external script.
+
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Templates
+      macros:
+        - macro: '{$OTX_API_KEY}'
+          value: ''
+        - macro: '{$OTX_SINCE_HOURS}'
+          value: '24'
+        - macro: '{$SEVERITY_THRESHOLD}'
+          value: '7'
+      items:
+        - name: OTX Pulses Count (last {$OTX_SINCE_HOURS}h)
+          type: EXTERNAL
+          key: 'otx.fetch[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 90d
+          trends: 365d
+          value_type: UNSIGNED
+        - name: OTX Last Update Time
+          type: EXTERNAL
+          key: 'otx.fetch[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          trends: 365d
+          value_type: TEXT
+      discovery_rules:
+        - name: AlienVault OTX IOC Discovery
+          type: EXTERNAL
+          key: 'get_alien_vault_otx.py discover,{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#VALUE}'
+                operator: MATCHES_REGEX
+                value: '.+'
+          item_prototypes:
+            - name: 'OTX IOC {#TYPE}: {#VALUE}'
+              type: EXTERNAL
+              key: 'get_alien_vault_otx.py ioc,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+              delay: 1h
+              history: 30d
+              trends: 365d
+              value_type: TEXT
+            - name: 'OTX IOC Severity {#TYPE}: {#VALUE}'
+              type: EXTERNAL
+              key: 'get_alien_vault_otx.py severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+              delay: 1h
+              history: 30d
+              trends: 365d
+              value_type: UNSIGNED
+          trigger_prototypes:
+            - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
+              expression: 'last(/Template AlienVault OTX/get_alien_vault_otx.py[severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              priority: WARNING
+      triggers:
+        - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
+          expression: 'last(/Template AlienVault OTX/otx.fetch[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
+          priority: AVERAGE
+        - name: 'OTX data not updated for over 2 hours'
+          expression: 'nodata(/Template AlienVault OTX/otx.fetch[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
+          priority: HIGH
