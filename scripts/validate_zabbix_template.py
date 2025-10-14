@@ -2,6 +2,12 @@ import yaml
 from yaml import YAMLError
 import sys
 import re
+import io
+
+# Configure stdout to use UTF-8 encoding to support Unicode emojis
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Supported Zabbix versions and their schema formats
 SUPPORTED_VERSIONS = {
