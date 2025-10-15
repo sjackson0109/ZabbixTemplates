@@ -1,5 +1,6 @@
 ## Overview
 ### Available Scripts:
+- **[snmp_client.py](README-SNMP-Client.md)** - A comprehensive SNMPv1/v2c/v3 client with full authentication and privacy support. RFC 3414 compliant implementation supporting MD5/SHA authentication and DES/AES encryption. Designed for Zabbix external script integration with discovery, check, and detailed check modes.
 - **[get_stun_turn_checks.py](README-STUN-TURN-Checks.md)** - A comprehensive STUN/TURN monitoring script with full RFC 5389/5766 support. Includes STUN binding requests, TURN allocation with authentication, and support for UDP/TCP/TLS transports. Performance-optimized for fast monitoring (2-second default timeout).
 - **[get_tcp_port_scan.py](README-TCP-Port-Scan.md)** - A multithreaded TCP scanner written in Python3, built to assist with service discovery and exposure audits. It's designed for use with Zabbix low-level discovery (LLD), but can also be used interactively from the command line.
 - **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
@@ -21,7 +22,8 @@ All custom monitoring scripts reside under this repository. Below are the availa
 - **[Zabbix Template: Ubiquiti Firewall](README-Ubiquiti_Firewall.md)** - Another complete several MIB packs; tested on a UCG and USG, no other devices available to test against. Spent approx 1 weeks testing, and customising graphs, triggers and the device dashboard.
 
 ### Available Scripts:
-- **[get_tcp_port_scan.py](README-TCP-Port-Scan.md)** - A multithreaded TCP scanner written in Python3, built to assist with service discovery and exposure audits. It’s designed for use with Zabbix low-level discovery (LLD), but can also be used interactively from the command line. 
+- **[snmp_client.py](README-SNMP-Client.md)** - A comprehensive SNMPv1/v2c/v3 client with full authentication and privacy support. RFC 3414 compliant implementation supporting MD5/SHA authentication and DES/AES encryption. Designed for Zabbix external script integration with discovery, check, and detailed check modes.
+- **[get_tcp_port_scan.py](README-TCP-Port-Scan.md)** - A multithreaded TCP scanner written in Python3, built to assist with service discovery and exposure audits. It's designed for use with Zabbix low-level discovery (LLD), but can also be used interactively from the command line. 
 - **[get_sip_options.py](README-SIP-Options.md)** - A Python script designed to send SIP OPTIONS requests to a specified SIP server and verify its response. The script is fully compliant with RFC 3261 and supports a wide variety of optional arguments.
 - **[get_tls_handshake.py](README-TLS-Handshake.md)** - A Python script designed to test TLS handshake capabilities of a specified HOST (Hostname, FQDN or IP endpoint). It dynamically detects the available SSL/TLS protocols and ciphers on the client-system, tests their compatibility against the supplied host/port, and provides a breakdown report of successful and failed connections.
 
