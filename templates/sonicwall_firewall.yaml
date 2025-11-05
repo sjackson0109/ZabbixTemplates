@@ -1,5 +1,5 @@
 zabbix_export:
-  version: '7.0'
+  version: '7.4'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
       name: Firewall
@@ -75,8 +75,6 @@ zabbix_export:
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
-              parameters:
-                - ''
           tags:
             - tag: Component
               value: Feature
@@ -112,8 +110,6 @@ zabbix_export:
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
-              parameters:
-                - ''
           tags:
             - tag: Component
               value: Feature
@@ -133,8 +129,6 @@ zabbix_export:
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
-              parameters:
-                - ''
           tags:
             - tag: Component
               value: Feature
@@ -326,7 +320,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.8741.1.3.1.2.0
           key: sonicwall.connections.active
           value_type: FLOAT
-          units: conn
+          units: connections
           description: 'Current active firewall connections'
           tags:
             - tag: Metrics
@@ -346,7 +340,7 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.8741.1.3.1.1.0
           key: sonicwall.connections.max
           value_type: FLOAT
-          units: conn
+          units: connections
           description: 'Maximum no of active firewall connections supported'
           tags:
             - tag: Metrics
@@ -380,7 +374,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: CHAR
-          trends: '0'
           description: 'Device Administrator'
           tags:
             - tag: Component
@@ -467,7 +460,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'Firmware version currently running on the SonicWall device.'
           inventory_link: SOFTWARE
           preprocessing:
@@ -520,7 +512,6 @@ zabbix_export:
           delay: 1h
           history: 1w
           value_type: CHAR
-          trends: '0'
           description: 'Location currently running on the SonicWall device.'
           inventory_link: LOCATION
           tags:
@@ -534,7 +525,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'Model name or identifier of the SonicWall hardware.'
           inventory_link: MODEL
           preprocessing:
@@ -553,7 +543,6 @@ zabbix_export:
           delay: 1h
           history: 1w
           value_type: CHAR
-          trends: '0'
           description: 'An administratively-assigned name for this managed node.'
           inventory_link: NAME
           tags:
@@ -567,7 +556,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'Primary Serial Number'
           inventory_link: SERIALNO_A
           tags:
@@ -610,7 +598,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'ROM version currently running on the SonicWall device.'
           tags:
             - tag: Component
@@ -623,7 +610,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'Secondary Serial Number'
           inventory_link: SERIALNO_B
           tags:
@@ -637,7 +623,6 @@ zabbix_export:
           delay: 5m
           history: 1w
           value_type: TEXT
-          trends: '0'
           description: 'Physical port assignments for WAN zone (e.g., "X1,X2")'
           preprocessing:
             - type: TRIM
@@ -746,14 +731,11 @@ zabbix_export:
               - macro: '{#IFDESCR}'
                 value: '.*HA-Link*'
                 operator: NOT_MATCHES_REGEX
-                formulaid: A
               - macro: '{#IFDESCR}'
                 value: '^.*\(Unassigned\)$'
                 operator: NOT_MATCHES_REGEX
-                formulaid: B
               - macro: '{#IFTYPE}'
                 value: ^(6|117|127|128|161|560|561|800)$
-                formulaid: C
           description: |
             Discover physical Ethernet interfaces on the firewall.
             
@@ -778,8 +760,6 @@ zabbix_export:
               description: 'Inbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -813,8 +793,6 @@ zabbix_export:
               description: 'Incoming traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -833,8 +811,6 @@ zabbix_export:
               description: 'Outbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -860,8 +836,6 @@ zabbix_export:
               description: 'Outgoing traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -930,18 +904,14 @@ zabbix_export:
               - macro: '{#IFDESCR}'
                 value: '.*HA-Link*'
                 operator: NOT_MATCHES_REGEX
-                formulaid: A
               - macro: '{#IFDESCR}'
                 value: '.*Portshield(ed)? (To|Host).*'
                 operator: NOT_MATCHES_REGEX
-                formulaid: B
               - macro: '{#IFDESCR}'
                 value: '^.*\(Unassigned\)$'
                 operator: NOT_MATCHES_REGEX
-                formulaid: C
               - macro: '{#IFTYPE}'
                 value: ^(39|48|56|195|243|244|559|562)$
-                formulaid: D
           description: |
             Discover fibre-optic or high-speed physical interfaces, typically SFP/SFP+ ports, used for WAN uplinks, interconnects, or high-throughput LAN segments.
             
@@ -967,8 +937,6 @@ zabbix_export:
               description: 'Inbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1002,8 +970,6 @@ zabbix_export:
               description: 'Incoming traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1022,8 +988,6 @@ zabbix_export:
               description: 'Outbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1049,8 +1013,6 @@ zabbix_export:
               description: 'Outgoing traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1118,10 +1080,8 @@ zabbix_export:
             conditions:
               - macro: '{#INDEX}'
                 value: ^1$
-                formulaid: A
               - macro: '{#MODEL}'
                 value: '^(?!.*NSa|NSA).*$'
-                formulaid: B
           lifetime: 1d
           description: 'Collects scalar firewall metrics from sonicwallFwStats using synthetic discovery. Only available on some models of firewall'
           item_prototypes:
@@ -1240,7 +1200,6 @@ zabbix_export:
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(161|166)$
-                formulaid: A
           description: |
             Discover bonded or aggregated interfaces on the firewall, such as Link Aggregation Groups (LAGs) or PortChannel interfaces.
               
@@ -1263,8 +1222,6 @@ zabbix_export:
               key: 'lag.ifInErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1291,8 +1248,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1310,8 +1265,6 @@ zabbix_export:
               key: 'lag.ifOutErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1338,8 +1291,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1417,7 +1368,6 @@ zabbix_export:
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(53|135)$
-                formulaid: A
           description: |
             Discover VLAN-tagged interfaces, including both Layer 2 and Layer 3 subinterfaces configured on physical or virtual ports.
             
@@ -1441,8 +1391,6 @@ zabbix_export:
               key: 'vlan.ifInErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1467,8 +1415,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1495,8 +1441,6 @@ zabbix_export:
               key: 'vlan.ifOutErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1521,8 +1465,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1601,14 +1543,11 @@ zabbix_export:
             conditions:
               - macro: '{#LOCALONE}'
                 value: '^((?!0\.0\.0\.0).)*$'
-                formulaid: A
               - macro: '{#REMOTEONE}'
                 value: '^((?!0\.0\.0\.0).)*$'
-                formulaid: B
               - macro: '{#VPNNAME}'
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
-                formulaid: C
           description: |
             Discover active IPsec Phase-2 Security Associations (SAs) for policy-based VPNs.
               
@@ -1634,8 +1573,6 @@ zabbix_export:
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1656,8 +1593,6 @@ zabbix_export:
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1677,8 +1612,6 @@ zabbix_export:
               trends: 1d
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: VPN
@@ -1740,7 +1673,6 @@ zabbix_export:
                   }
                   
                   return JSON.stringify(obj);
-                  
         - uuid: 5b8828f520044cb4aee1248934790d9b
           name: 'VPN Tunnels (Route Based)'
           type: SNMP_AGENT
@@ -1752,14 +1684,11 @@ zabbix_export:
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^131$
-                formulaid: A
               - macro: '{#VPNADMINSTATE}'
                 value: ^1$
-                formulaid: B
               - macro: '{#VPNNAME}'
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
-                formulaid: C
           description: |
             Discover dynamically instantiated route-based VPN TUNNEL interfaces (ifType=131).
               
@@ -1783,8 +1712,6 @@ zabbix_export:
               description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1822,8 +1749,6 @@ zabbix_export:
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1842,8 +1767,6 @@ zabbix_export:
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1880,8 +1803,6 @@ zabbix_export:
               description: 'Bytes Out counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1905,17 +1826,6 @@ zabbix_export:
                 - tag: VPN
                   value: Route
               trigger_prototypes:
-                - uuid: 5e016d178d42463da36607da2c11536a
-                  expression: |
-                    count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
-                    and nodata(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],120s)=0
-                  name: 'VPN Route: Tunnel {#VPNNAME} status changed'
-                  priority: AVERAGE
-                  description: 'Status counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  manual_close: 'YES'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
                 - uuid: 7e5b193f9d734c2ea2745793eebfe8fc
                   expression: |
                     count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
@@ -1931,6 +1841,17 @@ zabbix_export:
                       value: VPN
                     - tag: VPN
                       value: Route
+                - uuid: 5e016d178d42463da36607da2c11536a
+                  expression: |
+                    count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
+                    and nodata(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],120s)=0
+                  name: 'VPN Route: {#VPNNAME} Status changed'
+                  priority: AVERAGE
+                  description: 'Status counter not exposed during testing - Bug in the Sonicwall Firmware?'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Condition
+                      value: Threshold
           graph_prototypes:
             - uuid: dc809c23462c460ebb13a0ade5159b38
               name: 'VPN Route: {#VPNNAME} Traffic'
@@ -1970,7 +1891,6 @@ zabbix_export:
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(131)$
-                formulaid: A
           description: |
             Discover route-based VPN interfaces (ifType=131).
               
@@ -1989,8 +1909,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -2009,8 +1927,6 @@ zabbix_export:
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -2028,8 +1944,6 @@ zabbix_export:
               key: 'vti.errorsIn[{#VTINAME}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -2059,8 +1973,6 @@ zabbix_export:
               key: 'vti.errorsOut[{#VTINAME}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
-                  parameters:
-                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -2646,9 +2558,71 @@ zabbix_export:
             - name: VLANs
               widgets:
                 - type: honeycomb
+                  name: VLANs
+                  width: '58'
+                  fields:
+                    - type: INTEGER
+                      name: interpolation
+                      value: '1'
+                    - type: STRING
+                      name: items.0
+                      value: 'VLAN: * Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: Interface
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: VLAN
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield): (.+?) (Bytes|Errors|Status).*$", "\2")}'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: STRING
+                      name: reference
+                      value: FYSJN
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: FFFF00
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF8000
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '100'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '1000'
+                - type: honeycomb
                   name: 'VLAN Errors'
-                  width: '16'
-                  height: '13'
+                  'y': '2'
+                  width: '19'
+                  height: '14'
                   fields:
                     - type: INTEGER
                       name: interpolation
@@ -2715,9 +2689,10 @@ zabbix_export:
                       value: '1000'
                 - type: graphprototype
                   name: 'VLAN: Traffic'
-                  x: '16'
+                  x: '19'
+                  'y': '2'
                   width: '39'
-                  height: '10'
+                  height: '14'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2736,7 +2711,7 @@ zabbix_export:
             - name: 'VPNs (VTI)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Tunnels'
+                  name: 'VPN Routes'
                   width: '21'
                   height: '5'
                   fields:
@@ -2757,7 +2732,7 @@ zabbix_export:
                       value: Route
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)_VTI \(VPN\) Status$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)\(VPN\) Status$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2765,8 +2740,14 @@ zabbix_export:
                       name: reference
                       value: TFRQV
                     - type: INTEGER
-                      name: show.0
-                      value: '1'
+                      name: secondary_label_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_pos
+                      value: '0'
                     - type: STRING
                       name: thresholds.0.color
                       value: '666699'
@@ -2808,7 +2789,7 @@ zabbix_export:
                       value: VTI
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VTI: (.+?)_VTI \(VPN\) Status.*$", "\1 (VTI)")}'
+                      value: '{{ITEM.NAME}.regsub("^VTI: (.+?)\(VPN\) Status$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2816,8 +2797,11 @@ zabbix_export:
                       name: reference
                       value: DDBCC
                     - type: INTEGER
-                      name: show.0
-                      value: '1'
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_pos
+                      value: '0'
                     - type: STRING
                       name: thresholds.0.color
                       value: '666699'
@@ -2895,7 +2879,7 @@ zabbix_export:
                       value: Policy
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN Policy: (.+?) Status.*$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^VPN Policy: (.+) Status$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2903,8 +2887,14 @@ zabbix_export:
                       name: reference
                       value: TCHRH
                     - type: INTEGER
-                      name: show.0
-                      value: '1'
+                      name: secondary_label_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_pos
+                      value: '0'
                     - type: STRING
                       name: thresholds.0.color
                       value: 80FF00
@@ -2913,69 +2903,10 @@ zabbix_export:
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
-                      value: 00FFFF
+                      value: FF465C
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '2'
-                - type: honeycomb
-                  name: 'VPN Statuses'
-                  'y': '8'
-                  width: '21'
-                  height: '8'
-                  fields:
-                    - type: INTEGER
-                      name: interpolation
-                      value: '1'
-                    - type: STRING
-                      name: items.0
-                      value: 'VPN Policy: * Status'
-                    - type: INTEGER
-                      name: item_tags.0.operator
-                      value: '1'
-                    - type: STRING
-                      name: item_tags.0.tag
-                      value: VPN
-                    - type: STRING
-                      name: item_tags.0.value
-                      value: Policy
-                    - type: STRING
-                      name: primary_label
-                      value: |
-                        {ITEM.NAME.regsub("^VPN Policy: (.+?) \\[(.+?)\\] Status$", "\\1
-                        \\2")}
-                    - type: STRING
-                      name: primary_label_color
-                      value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: JIXUM
-                    - type: INTEGER
-                      name: show.0
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: 80FF00
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '0'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: 00FFFF
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '2'
                 - type: svggraph
                   name: 'VPN Policy: Bytes In/Out'
                   x: '21'
@@ -2990,24 +2921,30 @@ zabbix_export:
                       value: 00FF00
                     - type: INTEGER
                       name: ds.0.fill
-                      value: '1'
+                      value: '0'
                     - type: STRING
                       name: ds.0.items.0
                       value: 'VPN Policy: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '3'
                     - type: STRING
                       name: ds.1.color
                       value: 00BFFF
                     - type: INTEGER
                       name: ds.1.fill
-                      value: '1'
+                      value: '0'
                     - type: STRING
                       name: ds.1.items.0
                       value: 'VPN Policy: * Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.width
                       value: '3'
                     - type: INTEGER
                       name: legend_lines
@@ -3083,6 +3020,7 @@ zabbix_export:
               avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) < {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} or
               avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
       name: 'HA Status Anomaly Detected'
+      status: DISABLED
       priority: WARNING
       description: |
         HA sync status metrics are outside the expected passive/active bounds.
