@@ -14,7 +14,9 @@ SUPPORTED_VERSIONS = {
     '4.0': 'Zabbix 6.0',
     '5.0': 'Zabbix 6.4+ (including 6.7)',
     '6.0': 'Zabbix 7.0+',
-    '7.0': 'Zabbix 7.0+ (direct)'
+    '7.0': 'Zabbix 7.0+ (direct)',
+    '7.2': 'Zabbix 7.2',
+    '7.4': 'Zabbix 7.4'
 }
 
 def validate_zabbix_uuid(value):
