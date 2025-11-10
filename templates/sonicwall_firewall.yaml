@@ -1605,15 +1605,13 @@ zabbix_export:
                   value: Policy
             - uuid: c1669e15dc4a4f379b3d7e854c699a9d
               name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Status'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.8.{#SNMPINDEX}'
+              type: CALCULATED
               key: 'vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
-              history: 1d
-              trends: 1d
+              history: 7d
+              trends: 90d
+              params: 'max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1m)>0 or max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1m)>0'
               valuemap:
                 name: sonicwall.vpn.policy.status.valuemap
-              preprocessing:
-                - type: CHANGE_PER_SECOND
               tags:
                 - tag: Component
                   value: VPN
@@ -1622,17 +1620,78 @@ zabbix_export:
           trigger_prototypes:
             - uuid: a0ea00382b334bedb5483277d7aab49f
               expression: |
-                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 1 and
-                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],3h) < {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Low Traffic (Idle)'
+                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
+                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 1 hour'
+              status: DISABLED
+              description: |
+                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 1-hour period.
+                  
+                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
+                This trigger is for debugging purposes and intended to highlight short-term idle SAs for review.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: c2669e15dc4a4f379b3d7e854c699a9f
+              expression: |
+                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
+                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 7 days'
+              status: DISABLED
+              priority: WARNING
+              description: |
+                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 7-day period.
+                  
+                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
+                This trigger is intended to highlight weekly idle SAs for review and potential decommissioning.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: b1669e15dc4a4f379b3d7e854c699a9e
+              expression: |
+                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
+                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 24 hours'
+              status: DISABLED
+              description: |
+                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 24-hour period.
+                  
+                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
+                This trigger is for debugging purposes and intended to highlight daily idle SAs for review.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: d3669e15dc4a4f379b3d7e854c699a90
+              expression: |
+                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
+                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 30 days'
+              status: DISABLED
               priority: INFO
               description: |
                 This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic for this SA have been zero for a continuous 3-hour period.
+                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 30-day period.
                   
                 Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
-                This trigger is informational and intended to highlight long-idle SAs for review.
+                This trigger is informational and intended to highlight long-term idle SAs for review and potential decommissioning.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
               tags:
                 - tag: Condition
@@ -1724,25 +1783,6 @@ zabbix_export:
                   value: Errors
                 - tag: VPN
                   value: Route
-              trigger_prototypes:
-                - uuid: b2f59c886b324cd88518d38dca6c0244
-                  expression: 'avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],3m) > {$SONICWALL_VPN_CRITICAL_THRESHOLD}'
-                  name: 'VPN Route: {#VPNNAME} Inbound Errors (Error)'
-                  priority: HIGH
-                  description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
-                - uuid: 0b5b79c341af4a4382c02676b245dd38
-                  expression: 'avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],3m) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
-                  name: 'VPN Route: {#VPNNAME} Inbound Errors (Warning)'
-                  priority: AVERAGE
-                  description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  tags:
-                    - tag: Component
-                      value: VPN
-                    - tag: VPN
-                      value: Route
             - uuid: 4a06318935bd4a8d803dd9109db9ba7e
               name: 'VPN Route: {#VPNNAME} Bytes In'
               type: SNMP_AGENT
@@ -1779,23 +1819,6 @@ zabbix_export:
                   value: Errors
                 - tag: VPN
                   value: Route
-              trigger_prototypes:
-                - uuid: 1379731bc5b0416abb4fd261fac82c79
-                  expression: 'last(/Sonicwall Firewall/vpn.route.ifOutErrors[{#VPNNAME}]) > {$SONICWALL_VPN_CRITICAL_THRESHOLD}'
-                  name: 'VPN Route: {#VPNNAME} Outbound Errors (Error)'
-                  priority: HIGH
-                  description: 'IfOutErrors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
-                - uuid: e8c4770f6c18443a89d3009bef1a2ce2
-                  expression: 'last(/Sonicwall Firewall/vpn.route.ifOutErrors[{#VPNNAME}]) > {$SONICWALL_VPN_WARNING_THRESHOLD}'
-                  name: 'VPN Route: {#VPNNAME} Outbound Errors (Warning)'
-                  priority: AVERAGE
-                  description: 'IfOutErrors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  tags:
-                    - tag: Condition
-                      value: Threshold
             - uuid: 5c4f71c24d51433fa572275b0726f2f1
               name: 'VPN Route: {#VPNNAME} Bytes Out'
               type: SNMP_AGENT
@@ -1854,6 +1877,147 @@ zabbix_export:
                   tags:
                     - tag: Condition
                       value: Threshold
+          trigger_prototypes:
+            - uuid: 1a669e15dc4a4f379b3d7e854c699a10
+              expression: |
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 1 hour'
+              status: DISABLED
+              description: |
+                This trigger monitors route-based VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-hour period while the tunnel status is Active.
+                  
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is for debugging purposes and intended to highlight short-term idle tunnels for review.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: 3c669e15dc4a4f379b3d7e854c699a12
+              expression: |
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 7 days'
+              status: DISABLED
+              priority: WARNING
+              description: |
+                This trigger monitors route-based VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 7-day period while the tunnel status is Active.
+                  
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is intended to highlight weekly idle tunnels for review and potential decommissioning.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: 2b669e15dc4a4f379b3d7e854c699a11
+              expression: |
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 24 hours'
+              status: DISABLED
+              description: |
+                This trigger monitors route-based VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 24-hour period while the tunnel status is Active.
+                  
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is for debugging purposes and intended to highlight daily idle tunnels for review.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: 4d669e15dc4a4f379b3d7e854c699a13
+              expression: |
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 30 days'
+              status: DISABLED
+              priority: INFO
+              description: |
+                This trigger monitors route-based VPN tunnel "{#VPNNAME}".
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 30-day period while the tunnel status is Active.
+                  
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is informational and intended to highlight long-term idle tunnels for review and potential decommissioning.
+                
+                This trigger requires consistent data - it will not fire if there are gaps in data collection.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: b2f59c886b324cd88518d38dca6c0244
+              expression: |
+                avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],5m) > {$SONICWALL_VPN_CRITICAL_THRESHOLD} and
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1
+              name: 'VPN Route: {#VPNNAME} Inbound Errors (Critical)'
+              status: DISABLED
+              priority: HIGH
+              description: |
+                The VPN tunnel is experiencing a high rate of inbound errors (>{$SONICWALL_VPN_CRITICAL_THRESHOLD} errors/sec averaged over 5 minutes).
+                This may indicate network issues, MTU problems, encryption failures, or hardware problems.
+                
+                Note: This trigger is disabled by default as error counters may not be exposed on all SonicWall firmware versions.
+              tags:
+                - tag: Condition
+                  value: Threshold
+            - uuid: 0b5b79c341af4a4382c02676b245dd38
+              expression: |
+                avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],5m) > {$SONICWALL_VPN_WARNING_THRESHOLD} and
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1
+              name: 'VPN Route: {#VPNNAME} Inbound Errors (Warning)'
+              status: DISABLED
+              priority: AVERAGE
+              description: |
+                The VPN tunnel is experiencing elevated inbound errors (>{$SONICWALL_VPN_WARNING_THRESHOLD} errors/sec averaged over 5 minutes).
+                Monitor for increasing error rates or impact on tunnel performance.
+                
+                Note: This trigger is disabled by default as error counters may not be exposed on all SonicWall firmware versions.
+              tags:
+                - tag: Component
+                  value: VPN
+                - tag: VPN
+                  value: Route
+            - uuid: 1379731bc5b0416abb4fd261fac82c79
+              expression: |
+                avg(/Sonicwall Firewall/vpn.route.ifOutErrors[{#VPNNAME}],5m) > {$SONICWALL_VPN_CRITICAL_THRESHOLD} and
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1
+              name: 'VPN Route: {#VPNNAME} Outbound Errors (Critical)'
+              status: DISABLED
+              priority: HIGH
+              description: |
+                The VPN tunnel is experiencing a high rate of outbound errors (>{$SONICWALL_VPN_CRITICAL_THRESHOLD} errors/sec averaged over 5 minutes).
+                This may indicate network issues, MTU problems, encryption failures, or hardware problems.
+                
+                Note: This trigger is disabled by default as error counters may not be exposed on all SonicWall firmware versions.
+              tags:
+                - tag: Condition
+                  value: Threshold
+            - uuid: e8c4770f6c18443a89d3009bef1a2ce2
+              expression: |
+                avg(/Sonicwall Firewall/vpn.route.ifOutErrors[{#VPNNAME}],5m) > {$SONICWALL_VPN_WARNING_THRESHOLD} and
+                last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1
+              name: 'VPN Route: {#VPNNAME} Outbound Errors (Warning)'
+              status: DISABLED
+              priority: AVERAGE
+              description: |
+                The VPN tunnel is experiencing elevated outbound errors (>{$SONICWALL_VPN_WARNING_THRESHOLD} errors/sec averaged over 5 minutes).
+                Monitor for increasing error rates or impact on tunnel performance.
+                
+                Note: This trigger is disabled by default as error counters may not be exposed on all SonicWall firmware versions.
+              tags:
+                - tag: Condition
+                  value: Threshold
           graph_prototypes:
             - uuid: dc809c23462c460ebb13a0ade5159b38
               name: 'VPN Route: {#VPNNAME} Traffic'
@@ -2125,6 +2289,9 @@ zabbix_export:
         - macro: '{$SONICWALL_VLAN_WARNING}'
           value: '10'
           description: 'Threshold for input/output warnings on VLAN interfaces.'
+        - macro: '{$SONICWALL_VPN_CRITICAL_THRESHOLD}'
+          value: '1000'
+          description: 'Threshold for VPN tunnel error rate (errors per second) that triggers a critical alert.'
         - macro: '{$SONICWALL_VPN_ERROR}'
           value: '5'
           description: 'Threshold for input/output errors on VPN interfaces before triggering an error-level alert.'
@@ -2135,8 +2302,8 @@ zabbix_export:
           value: '1'
           description: 'Minimum expected average VPN traffic (bps) over 3 hours before considering a tunnel idle.'
         - macro: '{$SONICWALL_VPN_WARNING_THRESHOLD}'
-          value: '2'
-          description: 'Threshold for VPN tunnel errors that triggers a warning alert.'
+          value: '100'
+          description: 'Threshold for VPN tunnel error rate (errors per second) that triggers a warning alert.'
       dashboards:
         - uuid: abbbec0248734fc58ae96712a5cf32e6
           name: 'SonicWALL Firewalls'
@@ -2734,7 +2901,7 @@ zabbix_export:
                       value: Route
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)\(VPN\) Status$", "\1")}'
+                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)_(VTI|TUN[0-9]+) \(VPN\) Status$", "\1 (VPN)")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
@@ -2909,18 +3076,18 @@ zabbix_export:
                     - type: INTEGER
                       name: secondary_label_decimal_places
                       value: '0'
-                    - type: INTEGER
-                      name: secondary_label_units_show
-                      value: '0'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: bps
                     - type: STRING
                       name: thresholds.0.color
-                      value: 80FF00
+                      value: 00FFBF
                     - type: STRING
                       name: thresholds.0.threshold
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
-                      value: FF465C
+                      value: 80FF00
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
@@ -3026,9 +3193,10 @@ zabbix_export:
           name: sonicwall.vpn.policy.status.valuemap
           mappings:
             - value: '0'
-              newvalue: Up
-            - value: '1'
-              newvalue: Down
+              newvalue: Inactive
+            - type: GREATER_OR_EQUAL
+              value: '1'
+              newvalue: Active
         - uuid: 047402633de04c5ba71b55790ecc24ab
           name: sonicwall.vpn.route.status.valuemap
           mappings:
