@@ -1,5 +1,5 @@
 zabbix_export:
-  version: '6.0'
+  version: '7.4'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
       name: Firewall
@@ -1610,6 +1610,8 @@ zabbix_export:
               key: 'vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
               history: 1d
               trends: 1d
+              valuemap:
+                name: sonicwall.vpn.policy.status.valuemap
               preprocessing:
                 - type: CHANGE_PER_SECOND
               tags:
@@ -1819,7 +1821,7 @@ zabbix_export:
               snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
               key: 'vpn.route.status[{#VPNNAME}]'
               valuemap:
-                name: sonicwall.vpn.status.valuemap
+                name: sonicwall.vpn.route.status.valuemap
               tags:
                 - tag: Component
                   value: VPN
@@ -2001,7 +2003,7 @@ zabbix_export:
               snmp_oid: 'IF-MIB::ifOperStatus.{#SNMPINDEX}'
               key: 'vti.ifOperStatus[{#VTINAME}]'
               valuemap:
-                name: sonicwall.interface.status.valuemap
+                name: sonicwall.vpn.route.status.valuemap
               preprocessing:
                 - type: DISCARD_UNCHANGED_HEARTBEAT
                   parameters:
@@ -2742,11 +2744,14 @@ zabbix_export:
                     - type: INTEGER
                       name: secondary_label_bold
                       value: '0'
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
                     - type: INTEGER
                       name: secondary_label_decimal_places
                       value: '0'
                     - type: INTEGER
-                      name: secondary_label_units_pos
+                      name: secondary_label_units_show
                       value: '0'
                     - type: STRING
                       name: thresholds.0.color
@@ -2762,7 +2767,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: FF465C
+                      value: 00FFBF
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
@@ -2770,7 +2775,7 @@ zabbix_export:
                   name: 'VPN Interfaces (VTI)'
                   'y': '5'
                   width: '21'
-                  height: '6'
+                  height: '5'
                   fields:
                     - type: INTEGER
                       name: interpolation
@@ -2797,10 +2802,19 @@ zabbix_export:
                       name: reference
                       value: DDBCC
                     - type: INTEGER
+                      name: secondary_label_bold
+                      value: '0'
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
+                    - type: INTEGER
                       name: secondary_label_decimal_places
                       value: '0'
                     - type: INTEGER
                       name: secondary_label_units_pos
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
                       value: '0'
                     - type: STRING
                       name: thresholds.0.color
@@ -2816,7 +2830,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: FF465C
+                      value: 00FFBF
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
@@ -2842,7 +2856,7 @@ zabbix_export:
                   x: '21'
                   'y': '5'
                   width: '51'
-                  height: '6'
+                  height: '5'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2889,11 +2903,14 @@ zabbix_export:
                     - type: INTEGER
                       name: secondary_label_bold
                       value: '0'
+                    - type: STRING
+                      name: secondary_label_color
+                      value: '666699'
                     - type: INTEGER
                       name: secondary_label_decimal_places
                       value: '0'
                     - type: INTEGER
-                      name: secondary_label_units_pos
+                      name: secondary_label_units_show
                       value: '0'
                     - type: STRING
                       name: thresholds.0.color
@@ -3003,15 +3020,34 @@ zabbix_export:
               newvalue: 'Not Present'
             - value: '7'
               newvalue: 'Lower Layer Down'
+            - value: '0'
+              newvalue: Disabled
+        - uuid: 240f720148cb48afa20f299aea2445ab
+          name: sonicwall.vpn.policy.status.valuemap
+          mappings:
+            - value: '0'
+              newvalue: Up
+            - value: '1'
+              newvalue: Down
         - uuid: 047402633de04c5ba71b55790ecc24ab
-          name: sonicwall.vpn.status.valuemap
+          name: sonicwall.vpn.route.status.valuemap
           mappings:
             - value: '0'
               newvalue: Disabled
             - value: '1'
-              newvalue: Up
+              newvalue: Active
             - value: '2'
-              newvalue: Down
+              newvalue: Standby
+            - value: '3'
+              newvalue: Testing
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not Present'
+            - value: '7'
+              newvalue: 'Lower Layer Down'
   triggers:
     - uuid: cce7dc83fa7e425ca800d918fe76563b
       expression: |
