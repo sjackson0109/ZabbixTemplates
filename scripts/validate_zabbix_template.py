@@ -20,7 +20,17 @@ SUPPORTED_VERSIONS = {
 }
 
 def validate_zabbix_uuid(value):
-    """Validate UUID in Zabbix format - 32-character hex string without hyphens"""
+    """
+    Validate UUID in Zabbix format - must be a valid UUIDv4 as 32-character hex string without hyphens
+    
+    UUIDv4 format (with hyphens): xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+    - Position 12 (13th char): must be '4' (version 4)
+    - Position 16 (17th char): must be '8', '9', 'a', or 'b' (variant bits 10xx)
+    
+    Zabbix removes hyphens, so: xxxxxxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx
+    - Position 12: must be '4'
+    - Position 16: must be '8', '9', 'a', 'A', 'b', or 'B'
+    """
     # Must be a string
     if not isinstance(value, str):
         return False
@@ -31,6 +41,15 @@ def validate_zabbix_uuid(value):
     
     # Must contain only hexadecimal characters (case-insensitive)
     if not re.match(r'^[a-fA-F0-9]{32}$', value):
+        return False
+    
+    # Check UUIDv4 structure
+    # Position 12 (0-indexed) must be '4' (version 4)
+    if value[12] != '4':
+        return False
+    
+    # Position 16 (0-indexed) must be one of '8', '9', 'a', 'b', 'A', 'B' (variant 10xx)
+    if value[16].lower() not in ['8', '9', 'a', 'b']:
         return False
     
     return True
@@ -115,6 +134,74 @@ def validate_zabbix_schema(yaml_data, file_content):
                             line = find_line_number(lines, group) or find_line_number(lines, groups) or template_line
                             errors.append(f"Line ~{line}: {prefix}.groups[{group_idx}]: Missing 'name' attribute")
             
+            # Validate items (items cannot have *_prototypes, only regular versions)
+            if 'items' in template_data:
+                items = template_data['items']
+                
+                # Normalize items
+                if isinstance(items, dict):
+                    items = [items]
+                elif not isinstance(items, list):
+                    line = find_line_number(lines, items) or template_line
+                    errors.append(f"Line ~{line}: {prefix}.items: Should be list/dict")
+                    items = []
+                
+                for item_idx, item in enumerate(items):
+                    item_prefix = f"{prefix}.items[{item_idx}]"
+                    
+                    # Check for invalid *_prototypes under items (prototypes only valid in discovery_rules)
+                    invalid_prototypes = {
+                        'item_prototypes': 'items',
+                        'trigger_prototypes': 'triggers',
+                        'graph_prototypes': 'graphs',
+                        'host_prototypes': 'hosts'
+                    }
+                    
+                    for proto_key, correct_key in invalid_prototypes.items():
+                        if proto_key in item:
+                            line = find_line_number(lines, item) or template_line
+                            errors.append(f"Line ~{line}: {item_prefix}: Invalid tag '{proto_key}' - items can only have '{correct_key}', not '{proto_key}'. Prototypes (*_prototypes) are only valid inside discovery_rules.")
+            
+            # Validate graphs (graphs cannot have graph_prototypes)
+            if 'graphs' in template_data:
+                graphs = template_data['graphs']
+                
+                # Normalize graphs
+                if isinstance(graphs, dict):
+                    graphs = [graphs]
+                elif not isinstance(graphs, list):
+                    line = find_line_number(lines, graphs) or template_line
+                    errors.append(f"Line ~{line}: {prefix}.graphs: Should be list/dict")
+                    graphs = []
+                
+                for graph_idx, graph in enumerate(graphs):
+                    graph_prefix = f"{prefix}.graphs[{graph_idx}]"
+                    
+                    # Check for invalid graph_prototypes under graphs
+                    if 'graph_prototypes' in graph:
+                        line = find_line_number(lines, graph) or template_line
+                        errors.append(f"Line ~{line}: {graph_prefix}: Invalid tag 'graph_prototypes' - graphs section cannot contain 'graph_prototypes'. Graph prototypes are only valid inside discovery_rules.")
+            
+            # Validate triggers (triggers cannot have trigger_prototypes)
+            if 'triggers' in template_data:
+                triggers = template_data['triggers']
+                
+                # Normalize triggers
+                if isinstance(triggers, dict):
+                    triggers = [triggers]
+                elif not isinstance(triggers, list):
+                    line = find_line_number(lines, triggers) or template_line
+                    errors.append(f"Line ~{line}: {prefix}.triggers: Should be list/dict")
+                    triggers = []
+                
+                for trigger_idx, trigger in enumerate(triggers):
+                    trigger_prefix = f"{prefix}.triggers[{trigger_idx}]"
+                    
+                    # Check for invalid trigger_prototypes under triggers
+                    if 'trigger_prototypes' in trigger:
+                        line = find_line_number(lines, trigger) or template_line
+                        errors.append(f"Line ~{line}: {trigger_prefix}: Invalid tag 'trigger_prototypes' - triggers section cannot contain 'trigger_prototypes'. Trigger prototypes are only valid inside discovery_rules.")
+            
             # Validate discovery rules
             if 'discovery_rules' in template_data:
                 discovery_rules = template_data['discovery_rules']
@@ -147,6 +234,12 @@ def validate_zabbix_schema(yaml_data, file_content):
                         elif not isinstance(prototypes, list):
                             line = find_line_number(lines, prototypes) or find_line_number(lines, rule_data) or template_line
                             errors.append(f"Line ~{line}: {rule_prefix}.item_prototypes: Should be list/dict")
+                        
+                        # Check for invalid triggers in item_prototypes (should be trigger_prototypes)
+                        for proto_idx, proto in enumerate(prototypes) if isinstance(prototypes, list) else []:
+                            if 'triggers' in proto:
+                                line = find_line_number(lines, proto) or find_line_number(lines, rule_data) or template_line
+                                errors.append(f"Line ~{line}: {rule_prefix}.item_prototypes[{proto_idx}]: Invalid tag 'triggers' - item prototypes inside discovery rules should use 'trigger_prototypes', not 'triggers'.")
     
     # Validate UUID formats (strict 32-char hex without hyphens)
     def check_uuids(data, path=""):
@@ -156,8 +249,11 @@ def validate_zabbix_schema(yaml_data, file_content):
                 if key == 'uuid' or key.endswith('_uuid'):
                     if not validate_zabbix_uuid(value):
                         line = find_line_number(lines, data) or find_line_number(lines, value) or 0
-                        msg = f"Line ~{line}: Invalid UUID format at '{current_path}': '{value}'\n"
-                        msg += "     Zabbix requires exactly 32 hexadecimal characters (0-9, a-f) WITHOUT hyphens"
+                        msg = f"Line ~{line}: Invalid UUIDv4 format at '{current_path}': '{value}'\n"
+                        msg += "     Zabbix requires valid UUIDv4 as 32 hexadecimal characters WITHOUT hyphens.\n"
+                        msg += "     UUIDv4 structure: xxxxxxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx\n"
+                        msg += "       - Character at position 13 must be '4' (version 4)\n"
+                        msg += "       - Character at position 17 must be '8', '9', 'a', or 'b' (variant bits)"
                         errors.append(msg)
                 check_uuids(value, current_path)
         elif isinstance(data, list):
@@ -166,7 +262,146 @@ def validate_zabbix_schema(yaml_data, file_content):
     
     check_uuids(export_data)
     
+    # Validate item references in graphs and triggers
+    errors.extend(validate_item_references(export_data, lines))
+    
     return errors, version
+
+def validate_item_references(export_data, lines):
+    """
+    Validate that all item references in graphs and triggers point to items that exist in the template.
+    Checks:
+    - Graph items reference existing item keys
+    - Graph prototypes reference existing item prototype keys
+    - Trigger expressions reference existing item keys
+    - Trigger prototypes reference existing item prototype keys
+    """
+    errors = []
+    
+    if 'templates' not in export_data:
+        return errors
+    
+    templates = export_data['templates']
+    if not isinstance(templates, list):
+        templates = [templates]
+    
+    for template_idx, template in enumerate(templates):
+        if not isinstance(template, dict):
+            continue
+        
+        template_name = template.get('template', template.get('name', 'Unknown'))
+        
+        # Collect all item keys
+        item_keys = set()
+        if 'items' in template and isinstance(template['items'], list):
+            for item in template['items']:
+                if isinstance(item, dict) and 'key' in item:
+                    item_keys.add(item['key'])
+        
+        # Validate regular graphs
+        if 'graphs' in template and isinstance(template['graphs'], list):
+            for graph_idx, graph in enumerate(template['graphs']):
+                if not isinstance(graph, dict):
+                    continue
+                graph_name = graph.get('name', f'Graph {graph_idx}')
+                if 'graph_items' in graph and isinstance(graph['graph_items'], list):
+                    for gi_idx, graph_item in enumerate(graph['graph_items']):
+                        if not isinstance(graph_item, dict) or 'item' not in graph_item:
+                            continue
+                        item_ref = graph_item['item']
+                        if isinstance(item_ref, dict):
+                            ref_host = item_ref.get('host')
+                            ref_key = item_ref.get('key')
+                            if ref_host and ref_key:
+                                # Check if host matches template name
+                                if ref_host != template_name:
+                                    line = find_line_number(lines, graph) or 0
+                                    errors.append(f"Line ~{line}: Graph '{graph_name}' references host '{ref_host}' but template name is '{template_name}'")
+                                # Check if item key exists
+                                if ref_key not in item_keys:
+                                    line = find_line_number(lines, graph) or 0
+                                    errors.append(f"Line ~{line}: Graph '{graph_name}' references non-existent item key '{ref_key}'")
+        
+        # Validate discovery rules and their prototypes
+        if 'discovery_rules' in template and isinstance(template['discovery_rules'], list):
+            for rule_idx, rule in enumerate(template['discovery_rules']):
+                if not isinstance(rule, dict):
+                    continue
+                rule_name = rule.get('name', f'Discovery rule {rule_idx}')
+                
+                # Collect all item prototype keys in this discovery rule
+                item_proto_keys = set()
+                if 'item_prototypes' in rule and isinstance(rule['item_prototypes'], list):
+                    for item_proto in rule['item_prototypes']:
+                        if isinstance(item_proto, dict) and 'key' in item_proto:
+                            item_proto_keys.add(item_proto['key'])
+                
+                # Validate graph prototypes
+                if 'graph_prototypes' in rule and isinstance(rule['graph_prototypes'], list):
+                    for gp_idx, graph_proto in enumerate(rule['graph_prototypes']):
+                        if not isinstance(graph_proto, dict):
+                            continue
+                        gp_name = graph_proto.get('name', f'Graph prototype {gp_idx}')
+                        if 'graph_items' in graph_proto and isinstance(graph_proto['graph_items'], list):
+                            for gi_idx, graph_item in enumerate(graph_proto['graph_items']):
+                                if not isinstance(graph_item, dict) or 'item' not in graph_item:
+                                    continue
+                                item_ref = graph_item['item']
+                                if isinstance(item_ref, dict):
+                                    ref_host = item_ref.get('host')
+                                    ref_key = item_ref.get('key')
+                                    if ref_host and ref_key:
+                                        # Check if host matches template name
+                                        if ref_host != template_name:
+                                            line = find_line_number(lines, graph_proto) or 0
+                                            errors.append(f"Line ~{line}: Discovery rule '{rule_name}', graph prototype '{gp_name}' references host '{ref_host}' but template name is '{template_name}'")
+                                        # Check if item prototype key exists
+                                        if ref_key not in item_proto_keys:
+                                            line = find_line_number(lines, graph_proto) or 0
+                                            errors.append(f"Line ~{line}: Discovery rule '{rule_name}', graph prototype '{gp_name}' references non-existent item prototype key '{ref_key}'")
+                
+                # Validate trigger prototypes
+                if 'trigger_prototypes' in rule and isinstance(rule['trigger_prototypes'], list):
+                    for tp_idx, trigger_proto in enumerate(rule['trigger_prototypes']):
+                        if not isinstance(trigger_proto, dict):
+                            continue
+                        tp_name = trigger_proto.get('name', f'Trigger prototype {tp_idx}')
+                        expression = trigger_proto.get('expression', '')
+                        if expression:
+                            # Extract item keys from expression (simplified regex)
+                            # Matches patterns like: /template_name/item_key
+                            item_refs = re.findall(r'/([^/]+)/([^/\)\],\s]+)', expression)
+                            for ref_template, ref_key in item_refs:
+                                # Check if template matches
+                                if ref_template != template_name:
+                                    line = find_line_number(lines, trigger_proto) or 0
+                                    errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' references template '{ref_template}' but template name is '{template_name}'")
+                                # Check if item prototype key exists
+                                if ref_key not in item_proto_keys:
+                                    line = find_line_number(lines, trigger_proto) or 0
+                                    errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' references non-existent item prototype key '{ref_key}'")
+        
+        # Validate regular triggers
+        if 'triggers' in template and isinstance(template['triggers'], list):
+            for trigger_idx, trigger in enumerate(template['triggers']):
+                if not isinstance(trigger, dict):
+                    continue
+                trigger_name = trigger.get('name', f'Trigger {trigger_idx}')
+                expression = trigger.get('expression', '')
+                if expression:
+                    # Extract item keys from expression
+                    item_refs = re.findall(r'/([^/]+)/([^/\)\],\s]+)', expression)
+                    for ref_template, ref_key in item_refs:
+                        # Check if template matches
+                        if ref_template != template_name:
+                            line = find_line_number(lines, trigger) or 0
+                            errors.append(f"Line ~{line}: Trigger '{trigger_name}' references template '{ref_template}' but template name is '{template_name}'")
+                        # Check if item key exists
+                        if ref_key not in item_keys:
+                            line = find_line_number(lines, trigger) or 0
+                            errors.append(f"Line ~{line}: Trigger '{trigger_name}' references non-existent item key '{ref_key}'")
+    
+    return errors
 
 def find_line_number(lines, search_value, current_index=0):
     """Find approximate line number for a value in YAML content"""
@@ -215,12 +450,12 @@ def validate_yaml_file(file_path):
         
         if not schema_errors:
             if version in SUPPORTED_VERSIONS:
-                print(f"✅ Valid YAML ({SUPPORTED_VERSIONS[version]} schema)")
+                print(f"[PASS] Valid YAML ({SUPPORTED_VERSIONS[version]} schema)")
             else:
-                print(f"✅ Valid YAML (version: {version if version else 'unknown'})")
+                print(f"[PASS] Valid YAML (version: {version if version else 'unknown'})")
             return True
         else:
-            print(f"❌ Found {len(schema_errors)} validation errors:")
+            print(f"[FAIL] Found {len(schema_errors)} validation errors:")
             for i, error in enumerate(schema_errors, 1):
                 # Format multi-line errors with proper indentation
                 if '\n' in error:
