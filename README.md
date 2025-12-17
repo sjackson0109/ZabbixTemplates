@@ -173,4 +173,4 @@ For usage details of each script, refer to the individual README files linked ab
 
 ## License
 This project is licensed under the **Apache License 2.0**.  
-See the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) for details.
+See the [License.md](LICENSE.md) for details.
