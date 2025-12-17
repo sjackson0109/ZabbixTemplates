@@ -8,8 +8,6 @@ RUN apk add --no-cache \
     py3-pip \
     build-base \
     openssl \
-    libressl \
-    libressl-dev \
     libffi-dev \
     musl-dev \
     gcc \
@@ -21,24 +19,28 @@ RUN apk add --no-cache \
     git
 
 # ---- [ 2. Python packages ] --------------------------------------------------
-# Pinning avoids Alpine pip conflicts with --break-system-packages
+# Upgrade pip tooling first
 RUN pip3 install --upgrade pip setuptools wheel
+
+# Install Python dependencies
 RUN pip3 install \
     requests \
+    urllib3 \
     py-zabbix \
     cryptography \
     pyOpenSSL \
     idna \
-    urllib3 \
     certifi \
     dnspython
 
-# ---- [ 3. Validate versions ] ------------------------------------------------
-RUN python3 --version && pip3 --version && python3 -m pip show cryptography pyOpenSSL
+# ---- [ 3. Validate installations ] -------------------------------------------
+RUN python3 --version && \
+    pip3 --version && \
+    python3 -m pip show requests urllib3 py-zabbix cryptography pyOpenSSL
 
 # ---- [ 4. Optional Debug Tooling ] -------------------------------------------
 # Uncomment below if needed:
-# RUN apk add --no-cache nmap openssl-dev tcpdump socat bind-tools
+# RUN apk add --no-cache nmap tcpdump socat bind-tools
 
 # ---- [ 5. Return to safe user ] ----------------------------------------------
 USER zabbix

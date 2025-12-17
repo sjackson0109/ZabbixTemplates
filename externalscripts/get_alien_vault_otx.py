@@ -2,22 +2,20 @@
 """
 Author: Simon Jackson (sjackson0109)
 Created: 2025/07/16
-Updated: 2025/07/16
-Version: 2.3
-
+Updated: 2025/12/17
+Version: 2.5
 Description:
    This script interacts with the AlienVault OTX API to fetch threat intelligence data.
-   It supports discovering IOCs, fetching IOC details, and retrieving severity levels.
-   Returns structured JSON suitable for Zabbix LLD.
+   Supports Zabbix external script format with positional parameters.
 
-Usage:
-  python get_alien_vault_otx.py -k <API_KEY> -d -h <HOURS>
-  python get_alien_vault_otx.py -k <API_KEY> -i <TYPE> <VALUE>
-  python get_alien_vault_otx.py -k <API_KEY> -s <TYPE> <VALUE>
-  python get_alien_vault_otx.py -?
+Usage (Zabbix format):
+  python get_alien_vault_otx.py discover <API_KEY> <HOURS>
+  python get_alien_vault_otx.py ioc <TYPE> <VALUE> <API_KEY> <HOURS>
+  python get_alien_vault_otx.py severity <TYPE> <VALUE> <API_KEY> <HOURS>
+  python get_alien_vault_otx.py pulses <API_KEY> <HOURS>
+  python get_alien_vault_otx.py lastupdate <API_KEY> <HOURS>
 """
 
-import argparse
 import sys
 import requests
 import json
@@ -30,12 +28,11 @@ OTX_BASE = 'https://otx.alienvault.com/api/v1'
 HTTP_TIMEOUT = 30
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.WARNING)
 
 # Perform GET with API key, timeout, and optional params
 def otx_get(endpoint, api_key, params=None):
     url = f"{OTX_BASE}{endpoint}"
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(f"GET {url} params={params}")
     resp = requests.get(url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
     resp.raise_for_status()
     return resp.json()
@@ -54,17 +51,13 @@ def fetch_pulses(api_key, since_dt):
     }
     next_url = f"{OTX_BASE}/pulses/subscribed"
     while next_url:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"Fetching pulses page: {next_url}")
         resp = requests.get(next_url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
         page = data.get('results', [])
         pulses.extend(page)
         next_url = data.get('next')
-        # After first page, clear params to continue pagination
         params = None
-    logger.info(f"Total pulses fetched: {len(pulses)}")
     return pulses
 
 # Fetch indicators for a pulse, optionally filtered by server-side date
@@ -76,75 +69,117 @@ def fetch_indicators(pulse_id, api_key, since_ts):
     }
     next_url = f"{OTX_BASE}/pulses/{pulse_id}/indicators"
     while next_url:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"Fetching indicators page: {next_url}")
         resp = requests.get(next_url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
         indicators.extend(data.get('results', []))
         next_url = data.get('next')
         params = None
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(f"Total indicators for pulse {pulse_id}: {len(indicators)}")
     return indicators
 
-# CLI entry point
+# CLI entry point - Zabbix positional format
 def main():
-    parser = argparse.ArgumentParser(description='AlienVault OTX Zabbix helper', add_help=False)
-    parser.add_argument('-k', '--api-key', required=True, help='OTX API key')
-    parser.add_argument('-d', '--discover', action='store_true', help='Discover IOCs')
-    parser.add_argument('-i', '--ioc', nargs=2, metavar=('TYPE','VALUE'), help='Fetch IOC details')
-    parser.add_argument('-s', '--severity', nargs=2, metavar=('TYPE','VALUE'), help='Fetch IOC severity')
-    parser.add_argument('-h', '--hours', type=int, help='Hours lookback for discovery')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('-?', '--help', action='help', help='Show help and exit')
-    args = parser.parse_args()
-
-    logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG if args.verbose else logging.WARNING)
-    api_key = args.api_key
-
-    if args.discover:
-        if args.hours is None:
-            print('Error: -h <HOURS> required with -d')
-            sys.exit(1)
-        since_dt = datetime.now(timezone.utc) - timedelta(hours=args.hours)
-        since_ts = since_dt.isoformat()
-        pulses = fetch_pulses(api_key, since_dt)
-        seen = set()
-        data = []
-        for pulse in pulses:
-            pid = pulse.get('id')
-            indicators = fetch_indicators(pid, api_key, since_ts)
-            for ind in indicators:
-                ioc_type = ind.get('indicator_type')
-                ioc_val = ind.get('indicator')
-                if ioc_type and ioc_val:
-                    key = (ioc_type, ioc_val)
-                    if key not in seen:
-                        seen.add(key)
-                        if logger.isEnabledFor(logging.DEBUG):
-                            logger.debug(f"Appending IOC {ioc_type}:{ioc_val}")
-                        data.append({'{#TYPE}': ioc_type, '{#VALUE}': ioc_val})
-        print(json.dumps({'data': data}))
-    elif args.ioc:
-        ioc_type, ioc_val = args.ioc
-        if args.verbose: logger.debug(f"Fetching details for IOC {ioc_type}:{ioc_val}")
-        try:
+    if len(sys.argv) < 2:
+        print("Error: Operation required", file=sys.stderr)
+        sys.exit(1)
+    
+    operation = sys.argv[1].lower()
+    
+    try:
+        if operation == 'discover':
+            # discover <API_KEY> <HOURS>
+            if len(sys.argv) < 4:
+                print("Error: discover requires API_KEY and HOURS", file=sys.stderr)
+                sys.exit(1)
+            api_key = sys.argv[2]
+            hours = int(sys.argv[3])
+            
+            since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+            since_ts = since_dt.isoformat()
+            pulses = fetch_pulses(api_key, since_dt)
+            seen = set()
+            data = []
+            for pulse in pulses:
+                pid = pulse.get('id')
+                indicators = fetch_indicators(pid, api_key, since_ts)
+                for ind in indicators:
+                    ioc_type = ind.get('indicator_type')
+                    ioc_val = ind.get('indicator')
+                    if ioc_type and ioc_val:
+                        key = (ioc_type, ioc_val)
+                        if key not in seen:
+                            seen.add(key)
+                            data.append({'{#TYPE}': ioc_type, '{#VALUE}': ioc_val})
+            print(json.dumps({'data': data}))
+            
+        elif operation == 'ioc':
+            # ioc <TYPE> <VALUE> <API_KEY> <HOURS>
+            if len(sys.argv) < 6:
+                print("Error: ioc requires TYPE, VALUE, API_KEY, and HOURS", file=sys.stderr)
+                sys.exit(1)
+            ioc_type = sys.argv[2]
+            ioc_val = sys.argv[3]
+            api_key = sys.argv[4]
+            
             details = otx_get(f'/indicators/{ioc_type}/{ioc_val}/general', api_key)
             print(json.dumps(details))
-        except Exception:
-            print('')
-    elif args.severity:
-        ioc_type, ioc_val = args.severity
-        if args.verbose: logger.debug(f"Fetching severity for IOC {ioc_type}:{ioc_val}")
-        try:
+            
+        elif operation == 'severity':
+            # severity <TYPE> <VALUE> <API_KEY> <HOURS>
+            if len(sys.argv) < 6:
+                print("Error: severity requires TYPE, VALUE, API_KEY, and HOURS", file=sys.stderr)
+                sys.exit(1)
+            ioc_type = sys.argv[2]
+            ioc_val = sys.argv[3]
+            api_key = sys.argv[4]
+            
             details = otx_get(f'/indicators/{ioc_type}/{ioc_val}/general', api_key)
             confidence = details.get('pulse_info', {}).get('confidence')
             if confidence is None:
                 confidence = details.get('confidence', 0)
             print(confidence if confidence is not None else 0)
-        except Exception:
+            
+        elif operation == 'pulses':
+            # pulses <API_KEY> <HOURS>
+            if len(sys.argv) < 4:
+                print("Error: pulses requires API_KEY and HOURS", file=sys.stderr)
+                sys.exit(1)
+            api_key = sys.argv[2]
+            hours = int(sys.argv[3])
+            
+            since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+            pulses = fetch_pulses(api_key, since_dt)
+            print(len(pulses))
+            
+        elif operation == 'lastupdate':
+            # lastupdate <API_KEY> <HOURS>
+            if len(sys.argv) < 4:
+                print("Error: lastupdate requires API_KEY and HOURS", file=sys.stderr)
+                sys.exit(1)
+            api_key = sys.argv[2]
+            hours = int(sys.argv[3])
+            
+            since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+            pulses = fetch_pulses(api_key, since_dt)
+            if pulses:
+                latest = max(parse_ts(p.get('modified', p.get('created', ''))) for p in pulses if p.get('modified') or p.get('created'))
+                print(latest.isoformat())
+            else:
+                print('')
+        else:
+            print(f"Error: Unknown operation '{operation}'", file=sys.stderr)
+            sys.exit(1)
+            
+    except Exception as e:
+        logger.error(f"Error in {operation}: {e}")
+        # Return safe defaults for Zabbix
+        if operation == 'severity':
             print(0)
+        elif operation == 'pulses':
+            print(0)
+        else:
+            print('')
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

@@ -15,6 +15,8 @@ zabbix_export:
         - Supports multiple PHP versions, i.e. you can use PHP 7.2 and PHP 7.3 on the same server and we will detect them all.
         Original Authors Homepage https://github.com/rvalitov/zabbix-php-fpm
         Upgraded to Zabbix v6.0 Schema, and validated against Zabbix 7.0.4
+        
+        Author: Simon Jackson / @sjackson0109
       groups:
         - name: "Templates/Applications"
       items:
@@ -30,9 +32,8 @@ zabbix_export:
           description: "Number of active CPUs"
           inventory_link: 0
           tags:
-            - tag:
-                name: "Applications"
-                value: "PHP-FPM"
+            - tag: Applications
+              value: PHP-FPM
           timeout: "3s"
       discovery_rules:
         - uuid: 506ad336291d45a69bf6d61758d22f36
@@ -54,7 +55,7 @@ zabbix_export:
               name: "Pool {#POOLNAME}: Connections"
               value_type: FLOAT
               type: "0"
-              key: "php-fpm.accepted_conn[{#POOLSOCKET}]"
+              key: "php.fpm.accepted.conn[{#POOLSOCKET}]"
               units: "/s"
               history: "7d"
               trends: "180d"
@@ -62,9 +63,9 @@ zabbix_export:
                 The number of incoming requests per second that the pool has accepted.
                 When a connection is accepted it is removed from the listen queue.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               preprocessing:
                 step:
@@ -79,7 +80,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 105c27f4034642f986906a2f026f9043
               name: "Pool {#POOLNAME}: Active Processes"
-              key: "php-fpm.active_processes[{#POOLSOCKET}]"
+              key: "php.fpm.active.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -88,9 +89,9 @@ zabbix_export:
               description: >-
                 The number of servers current processing a page - the minimum is 1 (so even on a fully idle server, the result will be not read 0).
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Processes"
               preprocessing:
                 step:
@@ -108,14 +109,14 @@ zabbix_export:
               history: "7d"
               trends: "180d"
               units: "%"
-              key: "php-fpm.cpu[{#POOLNAME}]"
+              key: "php.fpm.cpu[{#POOLNAME}]"
               params: >-
                 last(proc.cpu.util[\"php-fpm: pool {#POOLNAME}\"])/last(system.cpu.num[\"online\"])
               description: "CPU utilization used by the pool normalized by the number of cores."
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               preprocessing: []
               application_prototypes:
@@ -124,7 +125,7 @@ zabbix_export:
               master_item: {}
             - uuid: 567e676579154bd7add247cfb065ea6f
               name: "Pool {#POOLNAME}: Idle Processes"
-              key: "php-fpm.idle_processes[{#POOLSOCKET}]"
+              key: "php.fpm.idle.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -132,9 +133,9 @@ zabbix_export:
               units: ""
               description: "The total number of idle processes."
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Processes"
               preprocessing:
                 step:
@@ -147,7 +148,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 1c7bd0b641274c43bfe65415cf513f98
               name: "Pool {#POOLNAME}: Listen Queue"
-              key: "php-fpm.listen_queue[{#POOLSOCKET}]"
+              key: "php.fpm.listen.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -156,9 +157,9 @@ zabbix_export:
               description: >-
                 The current number of connections that have been initiated, but not yet accepted. If this value is non-zero it typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This property follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Queue"
               preprocessing:
                 step:
@@ -171,7 +172,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 9ec8ffb87c7b4a6bb178fd287ec88a5b
               name: "Pool {#POOLNAME}: Listen Queue Length"
-              key: "php-fpm.listen_queue_len[{#POOLSOCKET}]"
+              key: "php.fpm.listen.queue.len[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -180,9 +181,9 @@ zabbix_export:
               description: >-
                 The upper limit on the number of connections that will be queued. Once this limit is reached, subsequent connections will either be refused, or ignored. This value is set by the php-fpm per pool configuration option 'listen.backlog', which defaults to -1 (unlimited). However, this value is also limited by the system (sysctl) value 'net.core.somaxconn', which defaults to 128 on many Linux systems.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Queue"
               preprocessing:
                 step:
@@ -195,7 +196,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 0e0f474cf71944b7a0470d272cb6cfde
               name: "Pool {#POOLNAME}: Max Active Processes"
-              key: "php-fpm.max_active_processes[{#POOLSOCKET}]"
+              key: "php.fpm.max.active.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -204,9 +205,9 @@ zabbix_export:
               description: >-
                 The highest value that 'active processes' has reached since the php-fpm server started. This value should not exceed pm.max_children.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Processes"
               preprocessing:
                 step:
@@ -219,7 +220,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 22c5b34393d7414695878e68c0fec9ad
               name: "Pool {#POOLNAME}: Max Children Reached"
-              key: "php-fpm.max_children_reached[{#POOLSOCKET}]"
+              key: "php.fpm.max.children.reached[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -228,9 +229,9 @@ zabbix_export:
               description: >-
                 The number of times that pm.max_children has been reached since the php-fpm pool started (only applicable if the process manager is ondemand or dynamic).
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Processes"
               preprocessing:
                 step:
@@ -245,7 +246,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 1bb64b19f0fb4627af9f77a141f35bde
               name: "Pool {#POOLNAME}: Max Listen Queue"
-              key: "php-fpm.max_listen_queue[{#POOLSOCKET}]"
+              key: "php.fpm.max.listen.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -254,9 +255,9 @@ zabbix_export:
               description: >-
                 The maximum number of requests in the queue of pending connections since this FPM pool has started.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Queue"
               preprocessing:
                 step:
@@ -269,7 +270,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 705fd31fcb564e71932a4a01d28c50c9
               name: "Pool {#POOLNAME}: Process Manager"
-              key: "php-fpm.process_manager[{#POOLSOCKET}]"
+              key: "php.fpm.process.manager[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -278,9 +279,9 @@ zabbix_export:
               description: >-
                 The method used by the process manager to control the number of child processes (possible values: ondemand, dynamic or static) for this pool.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Processes"
               preprocessing:
                 step:
@@ -293,7 +294,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 1e8cb8345acc4462b9612987b876131a
               name: "Pool {#POOLNAME}: Queue Utilization"
-              key: "php-fpm.queue[{#POOLSOCKET}]"
+              key: "php.fpm.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -303,9 +304,9 @@ zabbix_export:
                 last(php-fpm.listen_queue[{#POOLSOCKET}])/(last(php-fpm.listen_queue_len[{#POOLSOCKET}])+0.0001)
               description: "Queue utilization."
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               preprocessing: []
               application_prototypes:
@@ -314,7 +315,7 @@ zabbix_export:
               master_item: {}
             - uuid: 82d780397bc54133a709457fc40f64d3
               name: "Pool {#POOLNAME}: Slow Requests"
-              key: "php-fpm.slow_requests[{#POOLSOCKET}]"
+              key: "php.fpm.slow.requests[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -323,9 +324,9 @@ zabbix_export:
               description: >-
                 The number of requests that exceeded your request_slowlog_timeout value.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               preprocessing:
                 step:
@@ -340,7 +341,7 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: e8049ac6976345ebac04b373296cc62d
               name: "Pool {#POOLNAME}: Start Since"
-              key: "php-fpm.start_since[{#POOLSOCKET}]"
+              key: "php.fpm.start.since[{#POOLSOCKET}]"
               value_type: FLOAT
               type: "0"
               history: "7d"
@@ -348,9 +349,9 @@ zabbix_export:
               units: ""
               description: "How long has this pool been running."
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Runtime"
               preprocessing:
                 step:
@@ -363,16 +364,16 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: fb44accb0b164cb4b6289c695770f045
               name: "Pool {#POOLNAME}: Start Time"
-              key: "php-fpm.start_time[{#POOLSOCKET}]"
+              key: "php.fpm.start.time[{#POOLSOCKET}]"
               delay: "0"
               history: "1d"
               trends: "365d"
               units: ""
               description: "The time when this pool was started."
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               preprocessing:
                 step:
@@ -385,16 +386,16 @@ zabbix_export:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
             - uuid: 55ea8d1bcdbd48e6bc0d5df1fa369bc1
               name: "Pool {#POOLNAME} Status"
-              key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
+              key: "php.fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
               delay: "0"
               history: "1d"
               trends: "365d"
               units: ""
               description: "The raw data of status page reported by PHP-FPM"
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Service"
             - uuid: a8f24e4814a048599ed19752a00c989d
               name: "Pool {#POOLNAME}: CPU Utilization"
@@ -406,9 +407,9 @@ zabbix_export:
               description: >-
                 CPU utilization used by the pool. The return value is based on the use of a single CPU core, in percent. For example, CPU utilization of the full use of two cores is 200%.
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               application_prototypes:
                 - uuid: 2785b5850ec04a61ae646635622dbc85
@@ -422,9 +423,9 @@ zabbix_export:
               units: "%"
               description: "Memory used percentage by this pool relative to total memory available"
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               application_prototypes:
                 - uuid: 2785b5850ec04a61ae646635622dbc85
@@ -438,9 +439,9 @@ zabbix_export:
               units: "B"
               description: "Memory used by this pool in Bytes"
               tags:
-                - name: "Applications"
+                - tag: "Applications"
                   value: "PHP-FPM"
-                - name: "Metrics"
+                - tag: "Metrics"
                   value: "Load"
               application_prototypes:
                 - uuid: 2785b5850ec04a61ae646635622dbc85
@@ -459,7 +460,7 @@ zabbix_export:
                 {'PHP-FastCGI Process Manager':php-fpm.slow_requests[{#POOLSOCKET}].change()}>0
               name: >-
                 PHP-FPM detected slow request on {HOST.NAME} pool {#POOLNAME}
-              priority: INFORMATION
+              priority: INFO
               description: >-
                 PHP-FPM detected slow request on pool {#POOLNAME}. A slow request means that it took more time to execute than expected (defined in the configuration of your pool). It means that your pool has performance issues: either it is under high load, your pool has non-optimal configuration, your server has insufficient resources, or your PHP scripts have slow code (have bugs or bad programming style).
             - uuid: 044214e42cf34362a33e9a4f46d81098
@@ -467,7 +468,7 @@ zabbix_export:
                 {'PHP-FastCGI Process Manager':php-fpm.process_manager[{#POOLSOCKET}].diff()}=1
               name: >-
                 PHP-FPM manager changed on {HOST.NAME} pool {#POOLNAME}
-              priority: debug
+              priority: NOT_CLASSIFIED
               description: >-
                 PHP-FPM manager changed on pool {#POOLNAME} from {ITEM.LASTVALUE} to {ITEM.VALUE}.
             - uuid: ff232059addf484381e47720ada5e672
@@ -475,7 +476,7 @@ zabbix_export:
                 {'PHP-FastCGI Process Manager':php-fpm.queue[{#POOLSOCKET}].last()}>=25
               name: >-
                 PHP-FPM queue utilization for pool {#POOLNAME} reached 25% on {HOST.NAME}
-              priority: INFORMATION
+              priority: INFO
               description: >-
                 The queue for this pool reached 25% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. The queue length is defined by the backlog option in your pool's configuration.
             - uuid: f09084d14e9c4e50a8a1dd151a439ad4

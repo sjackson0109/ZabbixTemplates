@@ -2928,13 +2928,13 @@ zabbix_export:
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
-                      value: 80FF00
+                      value: 00FFBF
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: 00FFBF
+                      value: 80FF00
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
@@ -2991,13 +2991,13 @@ zabbix_export:
                       value: '0'
                     - type: STRING
                       name: thresholds.1.color
-                      value: 80FF00
+                      value: 00FFBF
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: 00FFBF
+                      value: 80FF00
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
@@ -3203,9 +3203,9 @@ zabbix_export:
             - value: '0'
               newvalue: Disabled
             - value: '1'
-              newvalue: Active
-            - value: '2'
               newvalue: Standby
+            - value: '2'
+              newvalue: Active
             - value: '3'
               newvalue: Testing
             - value: '4'

@@ -56,10 +56,10 @@ UserParameter=custom.web.content[*],powershell.exe -NoProfile -ExecutionPolicy B
 
 ### 4. Import YAML Templates
 - Import `agent_ping_check.yaml` and `agent_web_check.yaml` into Zabbix via the web UI.
-- Assign templates to hosts.
+- Assign the relevant template to your chosen hosts with the Zabbix Agent 2 installed on.
 
 ### 5. Testing
-- Use `zabbix_get` to verify:
+- Use the Zabbix Frontend (or Proxy if you are using them) and execute `zabbix_get` to verify the agent can process your commands:
   ```
   zabbix_get -s <HOST> -k "custom.ping[8.8.8.8,4,1000,32,64,0]"
   zabbix_get -s <HOST> -k "custom.ping.latency[8.8.8.8,4,1000,32,64,0]"
@@ -72,5 +72,71 @@ UserParameter=custom.web.content[*],powershell.exe -NoProfile -ExecutionPolicy B
 - For legacy Zabbix Agent, use only the basic ping and web checks (no JSON parsing).
 - Advanced features (LLD, content match, tags) require Zabbix Agent 2 and updated templates.
 
-## Support
-For issues or enhancements, open a GitHub issue or contact the author.
+
+## Python Web Scenario Script: get_web_scenarios.py
+
+### Overview
+
+`get_web_scenarios.py` is a Python script designed for monitoring HTTP/HTTPS endpoints and web application functionality. It is intended for integration with Zabbix as an external script, enabling automated checks of web services, APIs, and application health.
+
+### Features
+- Supports HTTP and HTTPS endpoints
+- Customizable request methods (GET, POST, etc.)
+- Configurable headers, timeouts, and payloads
+- Response code and content validation
+- Designed for Zabbix external script integration
+- Suitable for both simple uptime checks and advanced web scenario monitoring
+
+### Usage
+
+#### Command Line
+You can run the script directly for ad-hoc checks:
+
+```bash
+python get_web_scenarios.py --url https://example.com --method GET --timeout 5
+```
+
+**Options:**
+- `--url <URL>`: Target URL to check (required)
+- `--method <METHOD>`: HTTP method (default: GET)
+- `--timeout <SECONDS>`: Request timeout (default: 5)
+- `--header <HEADER>`: Custom header(s), can be specified multiple times
+- `--data <DATA>`: Payload for POST/PUT requests
+- `--expect-code <CODE>`: Expected HTTP status code (default: 200)
+- `--expect-content <STRING>`: String that must appear in the response body
+
+#### Zabbix Integration
+1. Copy `get_web_scenarios.py` to your Zabbix `externalscripts` directory.
+2. Make it executable:
+  ```bash
+  chmod +x /usr/lib/zabbix/externalscripts/get_web_scenarios.py
+  ```
+3. Create an item in your Zabbix template or host:
+  - Type: External check
+  - Key: `get_web_scenarios.py[--url,<URL>,--method,<METHOD>,--timeout,<SECONDS>]`
+  - Adjust parameters as needed for your scenario.
+
+### Example
+Check if a website is up and returns HTTP 200:
+```bash
+python get_web_scenarios.py --url https://example.com --expect-code 200
+```
+
+Check for a specific string in the response:
+```bash
+python get_web_scenarios.py --url https://example.com --expect-content "Welcome"
+```
+
+### Output
+- Returns `1` if the check passes (expected code/content found)
+- Returns `0` if the check fails (unexpected code/content, timeout, or error)
+- Prints diagnostic output to stdout/stderr for troubleshooting
+
+### Requirements
+- Python 3.6+
+- `requests` library (install with `pip install requests`)
+
+### Troubleshooting
+- Ensure the script is executable and accessible by the Zabbix user
+- Check Zabbix server/proxy logs for script execution errors
+- Use the script in CLI mode for debugging before Zabbix integration

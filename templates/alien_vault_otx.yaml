@@ -4,7 +4,7 @@ zabbix_export:
   groups:
     - name: Templates
   templates:
-    - name: Template AlienVault OTX
+    - name: 'Alien Vault OTX'
       description: |-
         Monitors AlienVault OTX pulses and indicators via external script.
 
@@ -19,24 +19,24 @@ zabbix_export:
         - macro: '{$SEVERITY_THRESHOLD}'
           value: '7'
       items:
-        - name: OTX Pulses Count (last {$OTX_SINCE_HOURS}h)
+        - name: 'OTX Pulses Count (last {$OTX_SINCE_HOURS}h)'
           type: EXTERNAL
-          key: 'otx.fetch[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          key: 'get_alien_vault_otx.py[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
           delay: 1h
           history: 90d
           trends: 365d
           value_type: UNSIGNED
-        - name: OTX Last Update Time
+        - name: 'OTX Last Update Time'
           type: EXTERNAL
-          key: 'otx.fetch[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          key: 'get_alien_vault_otx.py[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
           delay: 1h
           history: 30d
           trends: 365d
           value_type: TEXT
       discovery_rules:
-        - name: AlienVault OTX IOC Discovery
+        - name: 'AlienVault OTX IOC Discovery'
           type: EXTERNAL
-          key: 'get_alien_vault_otx.py discover,{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+          key: 'get_alien_vault_otx.py[discover,{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
           delay: 1h
           filter:
             conditions:
@@ -46,26 +46,26 @@ zabbix_export:
           item_prototypes:
             - name: 'OTX IOC {#TYPE}: {#VALUE}'
               type: EXTERNAL
-              key: 'get_alien_vault_otx.py ioc,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+              key: 'get_alien_vault_otx.py[ioc,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
               trends: 365d
               value_type: TEXT
             - name: 'OTX IOC Severity {#TYPE}: {#VALUE}'
               type: EXTERNAL
-              key: 'get_alien_vault_otx.py severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}'
+              key: 'get_alien_vault_otx.py[severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
               trends: 365d
               value_type: UNSIGNED
           trigger_prototypes:
             - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
-              expression: 'last(/Template AlienVault OTX/get_alien_vault_otx.py[severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              expression: 'last(/Alien Vault OTX/get_alien_vault_otx.py[severity,{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: WARNING
       triggers:
         - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
-          expression: 'last(/Template AlienVault OTX/otx.fetch[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
+          expression: 'last(/Alien Vault OTX/get_alien_vault_otx.py[pulses,{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
           priority: AVERAGE
         - name: 'OTX data not updated for over 2 hours'
-          expression: 'nodata(/Template AlienVault OTX/otx.fetch[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
+          expression: 'nodata(/Alien Vault OTX/get_alien_vault_otx.py[lastupdate,{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
           priority: HIGH

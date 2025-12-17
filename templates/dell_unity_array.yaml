@@ -2,36 +2,145 @@ zabbix_export:
   version: '7.0'
   date: '2023-10-15T12:00:00Z'
   groups:
-    - uuid: 846977d1dfed4968bc5f8bdb839e05db
-      name: Storage
+  - uuid: 992e791c595b42b2961294d8a72a4f45
+    name: Storage
   templates:
-    - uuid: 6622867ea11544a0a59215d9ef03045d
-      template: 'Dell Unity Arrays'
-      name: 'Dell Unity Arrays'
-      description: 'Template for monitoring EMC Unity XT series storage arrays using the REST API.'
-      groups:
-        - name: Storage
-      items:
-        - uuid: a918d42dbbe9462b88d9b8ca7a8c040c
-          name: 'Get Discovery Data'
-          type: EXTERNAL
-          key: 'get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={\}\",\"--api_user={\}\",\"--api_password={\}\",\"--storage_name={HOST.NAME}\",\"--discovery\"]'
-          delay: 15m
-          history: 90d
-          trends: 365d
+  - uuid: db5a9c2cdc9040fba8eacb51ab0de67c
+    template: 'Dell Unity Arrays'
+    name: 'Dell Unity Arrays'
+    description: |
+      Monitors Dell Unity storage arrays via REST API using get_unity_array.py external script.
+
+      Features:
+      - Auto-discovery of Unity resources (LUNs, Pools, Disks, Ports, Batteries, etc.)
+      - Health and capacity monitoring
+      - Requires Python script get_unity_array.py in Zabbix externalscripts directory
+        
+      Author: Simon Jackson / @sjackson0109
+    groups:
+      - name: Storage
+    discovery_rules:
+    # LLD for each Unity resource type
+    - uuid: 0f45ebfce67a49d5bfe3d261545d3ef4
+      name: "Unity LUN Discovery"
+      type: EXTERNAL
+      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+      delay: 15m
+      lifetime: 7d
+      description: "Discovers Unity LUNs via REST API."
+      item_prototypes:
+        - name: "LUN {#NAME} Health"
+          key: "health.lun.[{#NAME}]"
+          type: DEPENDENT
           value_type: TEXT
-          description: 'Executes the discovery script to fetch resource data from the Unity storage array.'
-          timeout: 3s
-      macros:
-        - macro: '{\}'
-          value: ''
-        - macro: '{\}'
-          value: '443'
-        - macro: '{\}'
-          value: ''
-      triggers:
-        - uuid: 1a2b3c4d5e6f7890123456789abcdef0
-          name: '{HOST.NAME} -> Error occurs in getting metrics'
-          expression: 'count(/Dell Unity Arrays/get_unity_metrics.py[\"--api_ip={HOST.IP}\",\"--api_port={\}\",\"--api_user={\}\",\"--api_password={\}\",\"--storage_name={HOST.NAME}\",\"--discovery\"],30m,\"le\",\"2\")>5'
-          priority: HIGH
-          description: 'Errors in zabbix-sender. Values 1 or 2 occur more than 5 times in 30 minutes.'
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Health status of LUN {#NAME}"
+        - name: "LUN {#NAME} Size Total"
+          key: "sizeTotal.lun.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Total size of LUN {#NAME}"
+        - name: "LUN {#NAME} Size Allocated"
+          key: "sizeAllocated.lun.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Allocated size of LUN {#NAME}"
+    - uuid: 1f45ebfce67a49d5bfe3d261545d3ef5
+      name: "Unity Pool Discovery"
+      type: EXTERNAL
+      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+      delay: 15m
+      lifetime: 7d
+      description: "Discovers Unity Pools via REST API."
+      item_prototypes:
+        - name: "Pool {#NAME} Health"
+          key: "health.pool.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Health status of Pool {#NAME}"
+        - name: "Pool {#NAME} Size Used"
+          key: "sizeUsedBytes.pool.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Used size of Pool {#NAME}"
+        - name: "Pool {#NAME} Size Total"
+          key: "sizeTotalBytes.pool.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Total size of Pool {#NAME}"
+        - name: "Pool {#NAME} Size Subscribed"
+          key: "sizeSubscribedBytes.pool.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Subscribed size of Pool {#NAME}"
+    - uuid: 2f45ebfce67a49d5bfe3d261545d3ef6
+      name: "Unity Disk Discovery"
+      type: EXTERNAL
+      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+      delay: 15m
+      lifetime: 7d
+      description: "Discovers Unity Disks via REST API."
+      item_prototypes:
+        - name: "Disk {#NAME} Health"
+          key: "health.disk.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Health status of Disk {#NAME}"
+        - name: "Disk {#NAME} Model"
+          key: "model.disk.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Model of Disk {#NAME}"
+        - name: "Disk {#NAME} Serial"
+          key: "serial.disk.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Serial number of Disk {#NAME}"
+        - name: "Disk {#NAME} Capacity"
+          key: "capacity.disk.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Capacity of Disk {#NAME}"
+        - name: "Disk {#NAME} Firmware"
+          key: "firmware.disk.[{#NAME}]"
+          type: DEPENDENT
+          value_type: TEXT
+          master_item:
+            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
+          description: "Firmware version of Disk {#NAME}"
+    # Add similar discovery_rules for ethernetPort, fcPort, sasPort, battery, etc. as needed
+      
+    macros:
+    - macro: '{$UNITY_PASSWORD}'
+      value: ''
+      description: 'API password for Unity array authentication.'
+    - macro: '{$UNITY_PORT}'
+      value: '443'
+      description: 'API port for Unity array (default 443).'
+    - macro: '{$UNITY_TLS_VERIFY}'
+      value: '0'
+      description: '0 = ignore certs (default, current behavior), 1 = enforce cert check'
+    - macro: '{$UNITY_USER}'
+      value: ''
+      description: 'API username for Unity array authentication.'

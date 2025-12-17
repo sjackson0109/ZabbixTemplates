@@ -19,6 +19,306 @@ SUPPORTED_VERSIONS = {
     '7.4': 'Zabbix 7.4'
 }
 
+# Zabbix field enum values
+ITEM_TYPES = {
+    '0': 'ZABBIX_PASSIVE', 'ZABBIX_PASSIVE': '0',
+    '2': 'TRAP', 'TRAP': '2',
+    '3': 'SIMPLE', 'SIMPLE': '3',
+    '5': 'INTERNAL', 'INTERNAL': '5',
+    '7': 'ZABBIX_ACTIVE', 'ZABBIX_ACTIVE': '7',
+    '10': 'EXTERNAL', 'EXTERNAL': '10',
+    '11': 'ODBC', 'ODBC': '11',
+    '12': 'IPMI', 'IPMI': '12',
+    '13': 'SSH', 'SSH': '13',
+    '14': 'TELNET', 'TELNET': '14',
+    '15': 'CALCULATED', 'CALCULATED': '15',
+    '16': 'JMX', 'JMX': '16',
+    '17': 'SNMP_TRAP', 'SNMP_TRAP': '17',
+    '18': 'DEPENDENT', 'DEPENDENT': '18',
+    '19': 'HTTP_AGENT', 'HTTP_AGENT': '19',
+    '20': 'SNMP_AGENT', 'SNMP_AGENT': '20',
+    '21': 'ITEM_TYPE_SCRIPT', 'ITEM_TYPE_SCRIPT': '21',
+    '22': 'ITEM_TYPE_BROWSER', 'ITEM_TYPE_BROWSER': '22'
+}
+
+VALUE_TYPES = {
+    '0': 'FLOAT', 'FLOAT': '0',
+    '1': 'CHAR', 'CHAR': '1',
+    '2': 'LOG', 'LOG': '2',
+    '3': 'UNSIGNED', 'UNSIGNED': '3',
+    '4': 'TEXT', 'TEXT': '4',
+    '5': 'BINARY', 'BINARY': '5'
+}
+
+TRIGGER_PRIORITIES = {
+    '0': 'NOT_CLASSIFIED', 'NOT_CLASSIFIED': '0',
+    '1': 'INFO', 'INFO': '1',
+    '2': 'WARNING', 'WARNING': '2',
+    '3': 'AVERAGE', 'AVERAGE': '3',
+    '4': 'HIGH', 'HIGH': '4',
+    '5': 'DISASTER', 'DISASTER': '5'
+}
+
+STATUS_VALUES = {
+    '0': 'ENABLED', 'ENABLED': '0',
+    '1': 'DISABLED', 'DISABLED': '1'
+}
+
+TRIGGER_TYPES = {
+    '0': 'SINGLE', 'SINGLE': '0',
+    '1': 'MULTIPLE', 'MULTIPLE': '1'
+}
+
+MANUAL_CLOSE_VALUES = {
+    '0': 'NO', 'NO': '0',
+    '1': 'YES', 'YES': '1'
+}
+
+RECOVERY_MODES = {
+    '0': 'EXPRESSION', 'EXPRESSION': '0',
+    '1': 'RECOVERY_EXPRESSION', 'RECOVERY_EXPRESSION': '1',
+    '2': 'NONE', 'NONE': '2'
+}
+
+def validate_item_key(key):
+    """
+    Validate Zabbix item key format: key[param1,param2,...]
+    Returns: (is_valid, error_message)
+    """
+    if not isinstance(key, str):
+        return False, "Item key must be a string"
+    
+    # Check for unmatched brackets
+    open_count = key.count('[')
+    close_count = key.count(']')
+    
+    if open_count != close_count:
+        return False, f"Unmatched brackets: {open_count} '[' but {close_count} ']'"
+    
+    # Basic structure check: alphanumeric, dots, underscores, brackets
+    if not re.match(r'^[a-zA-Z0-9._]+(\[.*\])?$', key):
+        return False, "Invalid characters in item key"
+    
+    # Check bracket pairing
+    depth = 0
+    for i, char in enumerate(key):
+        if char == '[':
+            depth += 1
+        elif char == ']':
+            depth -= 1
+            if depth < 0:
+                return False, f"Closing bracket ']' at position {i} without opening bracket"
+    
+    if depth != 0:
+        return False, "Unclosed brackets in item key"
+    
+    return True, None
+
+def validate_time_unit(value):
+    """
+    Validate Zabbix time unit format: number + suffix (s/m/h/d/w) or user macro
+    Returns: (is_valid, error_message)
+    """
+    if not isinstance(value, str):
+        return False, "Time unit must be a string"
+    
+    # Allow user macros
+    if re.match(r'^\{[^}]+\}$', value):
+        return True, None
+    
+    # Allow numeric-only values (interpreted as seconds)
+    if re.match(r'^\d+$', value):
+        return True, None
+    
+    # Check for valid time unit format: <number><suffix>
+    if not re.match(r'^\d+[smhdw]$', value):
+        return False, "Invalid time unit format. Expected: <number><suffix> where suffix is s/m/h/d/w or a user macro"
+    
+    return True, None
+
+def validate_snmp_oid(oid):
+    """
+    Validate SNMP OID format: numeric (1.3.6.1...) or symbolic (IF-MIB::ifInOctets.{#SNMPINDEX})
+    Returns: (is_valid, error_message)
+    """
+    if not isinstance(oid, str):
+        return False, "SNMP OID must be a string"
+
+    # Allow special SNMP get/walk/discovery OID formats
+    if oid.startswith('get[') or oid.startswith('walk[') or oid.startswith('discovery['):
+        return True, None
+
+    # Remove LLD macros for validation
+    oid_clean = re.sub(r'\{#[^}]+\}', '', oid).rstrip('.')
+
+    # Accept numeric OIDs
+    if re.match(r'^\.?[0-9]+(\.[0-9]+)*$', oid_clean):
+        return True, None
+
+    # Accept symbolic OIDs in various formats
+    if re.match(r'^[A-Za-z0-9\-]+::[a-zA-Z0-9_]+(\.[^ ]+)?$', oid_clean):
+        return True, None
+
+    return False, (
+        "Invalid SNMP OID format. Expected: numeric.dotted.notation (e.g., 1.3.6.1.2.1.1.1.0), "
+        "symbolic (e.g., IF-MIB::ifInOctets.{#SNMPINDEX}), or get[]/walk[]/discovery[] format"
+    )
+
+def validate_enum_value(value, enum_dict, field_name):
+    """
+    Validate enum value against allowed values
+    Returns: (is_valid, error_message)
+    """
+    if value is None:
+        return True, None  # Optional fields
+    
+    value_str = str(value)
+    if value_str not in enum_dict:
+        # Show only the unique enum names for readability
+        enum_values = set()
+        for k, v in enum_dict.items():
+            enum_values.add(v if k.isdigit() else k)
+        allowed = ", ".join([f"'{v}'" for v in sorted(enum_values)])
+        return False, f"Invalid {field_name}: '{value}'. Allowed values: {allowed}"
+    
+    return True, None
+
+def parse_trigger_expression(expression):
+    """
+    Parse trigger expression to extract item references.
+    Returns list of (template_name, item_key) tuples.
+    
+    Handles complex expressions with:
+    - Math operations: +, -, *, /, ()
+    - Logical operations: and, or, not, <, >, =, <>
+    - Functions: last(), avg(), min(), max(), etc.
+    - Nested expressions
+    - Item keys with parameters: item[param1,param2,...]
+    """
+    if not isinstance(expression, str):
+        return []
+    
+    # Remove whitespace and newlines for parsing
+    expr = ' '.join(expression.split())
+    
+    matches = []
+    
+    # Find all function calls with /template/item pattern
+    # We need to manually parse to handle nested brackets correctly
+    func_pattern = r'(last|avg|min|max|sum|count|delta|nodata|date|time|now|change|diff|str|regexp|iregexp|band|forecast|timeleft|percentile)\s*\('
+    
+    for func_match in re.finditer(func_pattern, expr):
+        func_start = func_match.end()
+        
+        # Skip whitespace after opening paren
+        while func_start < len(expr) and expr[func_start].isspace():
+            func_start += 1
+        
+        # Check if this is a /template/item reference
+        if func_start >= len(expr) or expr[func_start] != '/':
+            continue
+        
+        # Parse /template/item
+        func_start += 1  # Skip the first /
+        
+        # Find template name (up to next /)
+        template_end = expr.find('/', func_start)
+        if template_end == -1:
+            continue
+        
+        template_name = expr[func_start:template_end].strip()
+        
+        # Now extract the item key - need to handle brackets carefully
+        item_start = template_end + 1
+        item_end = item_start
+        bracket_depth = 0
+        
+        while item_end < len(expr):
+            char = expr[item_end]
+            
+            if char == '[':
+                bracket_depth += 1
+                item_end += 1
+            elif char == ']':
+                bracket_depth -= 1
+                item_end += 1
+                # If we've closed all brackets, check if we're done
+                if bracket_depth == 0:
+                    # Peek ahead - if next char is ) or , (outside function), we're done
+                    if item_end >= len(expr) or expr[item_end] in ',)':
+                        break
+            elif char in ',)' and bracket_depth == 0:
+                # Found end of item key (comma or close paren outside brackets)
+                break
+            else:
+                item_end += 1
+        
+        item_key = expr[item_start:item_end].strip()
+        
+        if item_key:
+            matches.append((template_name, item_key))
+    
+    return matches
+
+def validate_yaml_multiline_strings(file_content):
+    """
+    Check for improperly terminated multi-line strings in YAML
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    in_string = False
+    string_start = None
+    quote_char = None
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Skip comments and empty lines
+        if not stripped or stripped.startswith('#'):
+            continue
+        
+        # Check for string starts
+        if not in_string:
+            # Look for field: ' or field: "
+            if re.search(r':\s*["\']', line):
+                # Check if string is closed on same line
+                if "'" in line:
+                    singles = line.count("'")
+                    # Odd number means unclosed
+                    if singles % 2 == 1:
+                        # Check if it continues on next line (legitimate multi-line)
+                        if i < len(lines):
+                            next_line = lines[i].strip()
+                            if next_line and not next_line.startswith('-') and not next_line.startswith('}'):
+                                # This might be intentional multi-line
+                                continue
+                        in_string = True
+                        string_start = i
+                        quote_char = "'"
+                elif '"' in line:
+                    doubles = line.count('"')
+                    if doubles % 2 == 1:
+                        if i < len(lines):
+                            next_line = lines[i].strip()
+                            if next_line and not next_line.startswith('-') and not next_line.startswith('}'):
+                                continue
+                        in_string = True
+                        string_start = i
+                        quote_char = '"'
+        else:
+            # We're in a multi-line string, look for closing quote
+            if quote_char in line:
+                in_string = False
+                string_start = None
+                quote_char = None
+    
+    if in_string and string_start:
+        errors.append((string_start, f"Unclosed string starting at line {string_start} (expecting closing {quote_char})"))
+    
+    return errors
+
 def validate_zabbix_uuid(value):
     """
     Validate UUID in Zabbix format - must be a valid UUIDv4 as 32-character hex string without hyphens
@@ -56,13 +356,19 @@ def validate_zabbix_uuid(value):
 
 def validate_zabbix_schema(yaml_data, file_content):
     errors = []
+    warnings = []
     version = None
     lines = file_content.splitlines()
+    
+    # Check for multi-line string issues
+    string_errors = validate_yaml_multiline_strings(file_content)
+    for line_num, msg in string_errors:
+        warnings.append(f"Line {line_num}: {msg}")
     
     # Check required top-level structure
     if 'zabbix_export' not in yaml_data:
         errors.append("Missing required top-level 'zabbix_export' key")
-        return errors, None
+        return errors, warnings, None
     
     export_data = yaml_data['zabbix_export']
     
@@ -134,114 +440,23 @@ def validate_zabbix_schema(yaml_data, file_content):
                             line = find_line_number(lines, group) or find_line_number(lines, groups) or template_line
                             errors.append(f"Line ~{line}: {prefix}.groups[{group_idx}]: Missing 'name' attribute")
             
-            # Validate items (items cannot have *_prototypes, only regular versions)
+            # Validate items
             if 'items' in template_data:
-                items = template_data['items']
-                
-                # Normalize items
-                if isinstance(items, dict):
-                    items = [items]
-                elif not isinstance(items, list):
-                    line = find_line_number(lines, items) or template_line
-                    errors.append(f"Line ~{line}: {prefix}.items: Should be list/dict")
-                    items = []
-                
-                for item_idx, item in enumerate(items):
-                    item_prefix = f"{prefix}.items[{item_idx}]"
-                    
-                    # Check for invalid *_prototypes under items (prototypes only valid in discovery_rules)
-                    invalid_prototypes = {
-                        'item_prototypes': 'items',
-                        'trigger_prototypes': 'triggers',
-                        'graph_prototypes': 'graphs',
-                        'host_prototypes': 'hosts'
-                    }
-                    
-                    for proto_key, correct_key in invalid_prototypes.items():
-                        if proto_key in item:
-                            line = find_line_number(lines, item) or template_line
-                            errors.append(f"Line ~{line}: {item_prefix}: Invalid tag '{proto_key}' - items can only have '{correct_key}', not '{proto_key}'. Prototypes (*_prototypes) are only valid inside discovery_rules.")
+                validate_items(template_data['items'], f"{prefix}.items", lines, template_line, errors, warnings)
             
-            # Validate graphs (graphs cannot have graph_prototypes)
+            # Validate graphs
             if 'graphs' in template_data:
-                graphs = template_data['graphs']
-                
-                # Normalize graphs
-                if isinstance(graphs, dict):
-                    graphs = [graphs]
-                elif not isinstance(graphs, list):
-                    line = find_line_number(lines, graphs) or template_line
-                    errors.append(f"Line ~{line}: {prefix}.graphs: Should be list/dict")
-                    graphs = []
-                
-                for graph_idx, graph in enumerate(graphs):
-                    graph_prefix = f"{prefix}.graphs[{graph_idx}]"
-                    
-                    # Check for invalid graph_prototypes under graphs
-                    if 'graph_prototypes' in graph:
-                        line = find_line_number(lines, graph) or template_line
-                        errors.append(f"Line ~{line}: {graph_prefix}: Invalid tag 'graph_prototypes' - graphs section cannot contain 'graph_prototypes'. Graph prototypes are only valid inside discovery_rules.")
+                validate_graphs(template_data['graphs'], f"{prefix}.graphs", lines, template_line, errors)
             
-            # Validate triggers (triggers cannot have trigger_prototypes)
+            # Validate triggers
             if 'triggers' in template_data:
-                triggers = template_data['triggers']
-                
-                # Normalize triggers
-                if isinstance(triggers, dict):
-                    triggers = [triggers]
-                elif not isinstance(triggers, list):
-                    line = find_line_number(lines, triggers) or template_line
-                    errors.append(f"Line ~{line}: {prefix}.triggers: Should be list/dict")
-                    triggers = []
-                
-                for trigger_idx, trigger in enumerate(triggers):
-                    trigger_prefix = f"{prefix}.triggers[{trigger_idx}]"
-                    
-                    # Check for invalid trigger_prototypes under triggers
-                    if 'trigger_prototypes' in trigger:
-                        line = find_line_number(lines, trigger) or template_line
-                        errors.append(f"Line ~{line}: {trigger_prefix}: Invalid tag 'trigger_prototypes' - triggers section cannot contain 'trigger_prototypes'. Trigger prototypes are only valid inside discovery_rules.")
+                validate_triggers(template_data['triggers'], f"{prefix}.triggers", lines, template_line, errors, warnings)
             
             # Validate discovery rules
             if 'discovery_rules' in template_data:
-                discovery_rules = template_data['discovery_rules']
-                
-                # Normalize discovery rules
-                if isinstance(discovery_rules, dict):
-                    discovery_rules = [discovery_rules]
-                elif not isinstance(discovery_rules, list):
-                    line = find_line_number(lines, discovery_rules) or template_line
-                    errors.append(f"Line ~{line}: {prefix}.discovery_rules: Should be list/dict")
-                    discovery_rules = []
-                
-                for rule_idx, rule in enumerate(discovery_rules):
-                    rule_prefix = f"{prefix}.discovery_rules[{rule_idx}]"
-                    
-                    # Handle different rule structures
-                    rule_data = None
-                    if 'discovery_rule' in rule and isinstance(rule['discovery_rule'], dict):
-                        rule_data = rule['discovery_rule']
-                    else:
-                        rule_data = rule
-                    
-                    # Validate item prototypes
-                    if rule_data and 'item_prototypes' in rule_data:
-                        prototypes = rule_data['item_prototypes']
-                        
-                        # Normalize prototypes
-                        if isinstance(prototypes, dict):
-                            prototypes = [prototypes]
-                        elif not isinstance(prototypes, list):
-                            line = find_line_number(lines, prototypes) or find_line_number(lines, rule_data) or template_line
-                            errors.append(f"Line ~{line}: {rule_prefix}.item_prototypes: Should be list/dict")
-                        
-                        # Check for invalid triggers in item_prototypes (should be trigger_prototypes)
-                        for proto_idx, proto in enumerate(prototypes) if isinstance(prototypes, list) else []:
-                            if 'triggers' in proto:
-                                line = find_line_number(lines, proto) or find_line_number(lines, rule_data) or template_line
-                                errors.append(f"Line ~{line}: {rule_prefix}.item_prototypes[{proto_idx}]: Invalid tag 'triggers' - item prototypes inside discovery rules should use 'trigger_prototypes', not 'triggers'.")
+                validate_discovery_rules(template_data['discovery_rules'], f"{prefix}.discovery_rules", lines, template_line, errors, warnings)
     
-    # Validate UUID formats (strict 32-char hex without hyphens)
+    # Validate UUID formats
     def check_uuids(data, path=""):
         if isinstance(data, dict):
             for key, value in data.items():
@@ -263,18 +478,217 @@ def validate_zabbix_schema(yaml_data, file_content):
     check_uuids(export_data)
     
     # Validate item references in graphs and triggers
-    errors.extend(validate_item_references(export_data, lines))
+    ref_errors = validate_item_references(export_data, lines)
+    errors.extend(ref_errors)
     
-    return errors, version
+    return errors, warnings, version
+
+def validate_items(items, prefix, lines, template_line, errors, warnings):
+    """Validate items section"""
+    if isinstance(items, dict):
+        items = [items]
+    elif not isinstance(items, list):
+        line = find_line_number(lines, items) or template_line
+        errors.append(f"Line ~{line}: {prefix}: Should be list/dict")
+        return
+    
+    for item_idx, item in enumerate(items):
+        item_prefix = f"{prefix}[{item_idx}]"
+        
+        if not isinstance(item, dict):
+            continue
+        
+        # Validate item key
+        if 'key' in item:
+            is_valid, error_msg = validate_item_key(item['key'])
+            if not is_valid:
+                line = find_line_number(lines, item) or template_line
+                errors.append(f"Line ~{line}: {item_prefix}: Invalid item key '{item['key']}': {error_msg}")
+        
+        # Validate time units
+        for field in ['delay', 'history', 'trends']:
+            if field in item:
+                is_valid, error_msg = validate_time_unit(item[field])
+                if not is_valid:
+                    line = find_line_number(lines, item) or template_line
+                    errors.append(f"Line ~{line}: {item_prefix}: Invalid {field} value '{item[field]}': {error_msg}")
+        
+        # Validate SNMP OID
+        if 'snmp_oid' in item:
+            is_valid, error_msg = validate_snmp_oid(item['snmp_oid'])
+            if not is_valid:
+                line = find_line_number(lines, item) or template_line
+                errors.append(f"Line ~{line}: {item_prefix}: Invalid SNMP OID '{item['snmp_oid']}': {error_msg}")
+        
+        # Validate enum fields
+        if 'type' in item:
+            is_valid, error_msg = validate_enum_value(item['type'], ITEM_TYPES, 'item type')
+            if not is_valid:
+                line = find_line_number(lines, item) or template_line
+                warnings.append(f"Line ~{line}: {item_prefix}: {error_msg}")
+        
+        if 'value_type' in item:
+            is_valid, error_msg = validate_enum_value(item['value_type'], VALUE_TYPES, 'value type')
+            if not is_valid:
+                line = find_line_number(lines, item) or template_line
+                warnings.append(f"Line ~{line}: {item_prefix}: {error_msg}")
+        
+        if 'status' in item:
+            is_valid, error_msg = validate_enum_value(item['status'], STATUS_VALUES, 'status')
+            if not is_valid:
+                line = find_line_number(lines, item) or template_line
+                warnings.append(f"Line ~{line}: {item_prefix}: {error_msg}")
+        
+        # Validate tags structure
+        if 'tags' in item:
+            if not isinstance(item['tags'], list):
+                line = find_line_number(lines, item) or template_line
+                errors.append(f"Line ~{line}: {item_prefix}: 'tags' must be a list")
+            else:
+                for tag_idx, tag in enumerate(item['tags']):
+                    if not isinstance(tag, dict):
+                        continue
+                    
+                    # Tags should only have 'tag' and 'value' fields
+                    valid_tag_fields = {'tag', 'value'}
+                    invalid_fields = set(tag.keys()) - valid_tag_fields
+                    
+                    if invalid_fields:
+                        line = find_line_number(lines, tag) or template_line
+                        errors.append(f"Line ~{line}: {item_prefix}.tags[{tag_idx}]: Invalid field(s) in tag: {', '.join(invalid_fields)}. "
+                                    f"Tags can only contain 'tag' and 'value' fields. "
+                                    f"Found trigger-like fields - did you mean to put this in 'triggers' section?")
+                    
+                    # Check required fields
+                    if 'tag' not in tag:
+                        line = find_line_number(lines, tag) or template_line
+                        errors.append(f"Line ~{line}: {item_prefix}.tags[{tag_idx}]: Missing required field 'tag'")
+                    if 'value' not in tag:
+                        line = find_line_number(lines, tag) or template_line
+                        errors.append(f"Line ~{line}: {item_prefix}.tags[{tag_idx}]: Missing required field 'value'")
+        
+        # Check for invalid *_prototypes under items
+        invalid_prototypes = {
+            'item_prototypes': 'items',
+            'graph_prototypes': 'graphs',
+            'host_prototypes': 'hosts'
+        }
+        
+        for proto_key, correct_key in invalid_prototypes.items():
+            if proto_key in item:
+                line = find_line_number(lines, item) or template_line
+                errors.append(f"Line ~{line}: {item_prefix}: Invalid tag '{proto_key}' - items can only have '{correct_key}', not '{proto_key}'. Prototypes (*_prototypes) are only valid inside discovery_rules.")
+
+def validate_graphs(graphs, prefix, lines, template_line, errors):
+    """Validate graphs section"""
+    if isinstance(graphs, dict):
+        graphs = [graphs]
+    elif not isinstance(graphs, list):
+        line = find_line_number(lines, graphs) or template_line
+        errors.append(f"Line ~{line}: {prefix}: Should be list/dict")
+        return
+    
+    for graph_idx, graph in enumerate(graphs):
+        graph_prefix = f"{prefix}[{graph_idx}]"
+        
+        # Check for invalid graph_prototypes under graphs
+        if 'graph_prototypes' in graph:
+            line = find_line_number(lines, graph) or template_line
+            errors.append(f"Line ~{line}: {graph_prefix}: Invalid tag 'graph_prototypes' - graphs section cannot contain 'graph_prototypes'. Graph prototypes are only valid inside discovery_rules.")
+
+def validate_triggers(triggers, prefix, lines, template_line, errors, warnings):
+    """Validate triggers section"""
+    if isinstance(triggers, dict):
+        triggers = [triggers]
+    elif not isinstance(triggers, list):
+        line = find_line_number(lines, triggers) or template_line
+        errors.append(f"Line ~{line}: {prefix}: Should be list/dict")
+        return
+    
+    for trigger_idx, trigger in enumerate(triggers):
+        trigger_prefix = f"{prefix}[{trigger_idx}]"
+        
+        if not isinstance(trigger, dict):
+            continue
+        
+        # Validate enum fields
+        if 'priority' in trigger:
+            is_valid, error_msg = validate_enum_value(trigger['priority'], TRIGGER_PRIORITIES, 'priority')
+            if not is_valid:
+                line = find_line_number(lines, trigger) or template_line
+                warnings.append(f"Line ~{line}: {trigger_prefix}: {error_msg}")
+        
+        if 'status' in trigger:
+            is_valid, error_msg = validate_enum_value(trigger['status'], STATUS_VALUES, 'status')
+            if not is_valid:
+                line = find_line_number(lines, trigger) or template_line
+                warnings.append(f"Line ~{line}: {trigger_prefix}: {error_msg}")
+        
+        if 'type' in trigger:
+            is_valid, error_msg = validate_enum_value(trigger['type'], TRIGGER_TYPES, 'type')
+            if not is_valid:
+                line = find_line_number(lines, trigger) or template_line
+                warnings.append(f"Line ~{line}: {trigger_prefix}: {error_msg}")
+        
+        if 'manual_close' in trigger:
+            is_valid, error_msg = validate_enum_value(trigger['manual_close'], MANUAL_CLOSE_VALUES, 'manual_close')
+            if not is_valid:
+                line = find_line_number(lines, trigger) or template_line
+                warnings.append(f"Line ~{line}: {trigger_prefix}: {error_msg}")
+        
+        if 'recovery_mode' in trigger:
+            is_valid, error_msg = validate_enum_value(trigger['recovery_mode'], RECOVERY_MODES, 'recovery_mode')
+            if not is_valid:
+                line = find_line_number(lines, trigger) or template_line
+                warnings.append(f"Line ~{line}: {trigger_prefix}: {error_msg}")
+        
+        # Check for invalid trigger_prototypes under triggers
+        if 'trigger_prototypes' in trigger:
+            line = find_line_number(lines, trigger) or template_line
+            errors.append(f"Line ~{line}: {trigger_prefix}: Invalid tag 'trigger_prototypes' - triggers section cannot contain 'trigger_prototypes'. Trigger prototypes are only valid inside discovery_rules.")
+
+def validate_discovery_rules(discovery_rules, prefix, lines, template_line, errors, warnings):
+    """Validate discovery rules section"""
+    if isinstance(discovery_rules, dict):
+        discovery_rules = [discovery_rules]
+    elif not isinstance(discovery_rules, list):
+        line = find_line_number(lines, discovery_rules) or template_line
+        errors.append(f"Line ~{line}: {prefix}: Should be list/dict")
+        return
+    
+    for rule_idx, rule in enumerate(discovery_rules):
+        rule_prefix = f"{prefix}[{rule_idx}]"
+        
+        if not isinstance(rule, dict):
+            continue
+        
+        # Handle different rule structures
+        rule_data = None
+        if 'discovery_rule' in rule and isinstance(rule['discovery_rule'], dict):
+            rule_data = rule['discovery_rule']
+        else:
+            rule_data = rule
+        
+        # Validate time units in discovery rule
+        for field in ['delay', 'lifetime']:
+            if field in rule_data:
+                is_valid, error_msg = validate_time_unit(rule_data[field])
+                if not is_valid:
+                    line = find_line_number(lines, rule_data) or template_line
+                    errors.append(f"Line ~{line}: {rule_prefix}: Invalid {field} value '{rule_data[field]}': {error_msg}")
+        
+        # Validate item prototypes
+        if rule_data and 'item_prototypes' in rule_data:
+            validate_items(rule_data['item_prototypes'], f"{rule_prefix}.item_prototypes", lines, template_line, errors, warnings)
+        
+        # Validate trigger prototypes
+        if rule_data and 'trigger_prototypes' in rule_data:
+            validate_triggers(rule_data['trigger_prototypes'], f"{rule_prefix}.trigger_prototypes", lines, template_line, errors, warnings)
 
 def validate_item_references(export_data, lines):
     """
     Validate that all item references in graphs and triggers point to items that exist in the template.
-    Checks:
-    - Graph items reference existing item keys
-    - Graph prototypes reference existing item prototype keys
-    - Trigger expressions reference existing item keys
-    - Trigger prototypes reference existing item prototype keys
+    Uses enhanced expression parser for complex trigger expressions.
     """
     errors = []
     
@@ -360,46 +774,64 @@ def validate_item_references(export_data, lines):
                                             line = find_line_number(lines, graph_proto) or 0
                                             errors.append(f"Line ~{line}: Discovery rule '{rule_name}', graph prototype '{gp_name}' references non-existent item prototype key '{ref_key}'")
                 
-                # Validate trigger prototypes
+                # Validate trigger prototypes using enhanced parser
                 if 'trigger_prototypes' in rule and isinstance(rule['trigger_prototypes'], list):
                     for tp_idx, trigger_proto in enumerate(rule['trigger_prototypes']):
                         if not isinstance(trigger_proto, dict):
                             continue
                         tp_name = trigger_proto.get('name', f'Trigger prototype {tp_idx}')
-                        expression = trigger_proto.get('expression', '')
-                        if expression:
-                            # Extract item keys from expression (simplified regex)
-                            # Matches patterns like: /template_name/item_key
-                            item_refs = re.findall(r'/([^/]+)/([^/\)\],\s]+)', expression)
-                            for ref_template, ref_key in item_refs:
-                                # Check if template matches
-                                if ref_template != template_name:
-                                    line = find_line_number(lines, trigger_proto) or 0
-                                    errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' references template '{ref_template}' but template name is '{template_name}'")
-                                # Check if item prototype key exists
-                                if ref_key not in item_proto_keys:
-                                    line = find_line_number(lines, trigger_proto) or 0
-                                    errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' references non-existent item prototype key '{ref_key}'")
+                        
+                        # Check both expression and recovery_expression
+                        for expr_field in ['expression', 'recovery_expression']:
+                            expression = trigger_proto.get(expr_field, '')
+                            if expression:
+                                item_refs = parse_trigger_expression(expression)
+                                for ref_template, ref_key in item_refs:
+                                    # Check if template matches
+                                    if ref_template != template_name:
+                                        line = find_line_number(lines, trigger_proto) or 0
+                                        errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' {expr_field} references template '{ref_template}' but template name is '{template_name}'")
+                                    # Check if item prototype key exists
+                                    if ref_key not in item_proto_keys:
+                                        line = find_line_number(lines, trigger_proto) or 0
+                                        errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' {expr_field} references non-existent item prototype key '{ref_key}'")
+                        
+                        # Check dependencies
+                        if 'dependencies' in trigger_proto and isinstance(trigger_proto['dependencies'], list):
+                            for dep in trigger_proto['dependencies']:
+                                if isinstance(dep, dict):
+                                    dep_expr = dep.get('expression', '')
+                                    if dep_expr:
+                                        item_refs = parse_trigger_expression(dep_expr)
+                                        for ref_template, ref_key in item_refs:
+                                            if ref_template != template_name:
+                                                line = find_line_number(lines, trigger_proto) or 0
+                                                errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' dependency references template '{ref_template}' but template name is '{template_name}'")
+                                            if ref_key not in item_proto_keys:
+                                                line = find_line_number(lines, trigger_proto) or 0
+                                                errors.append(f"Line ~{line}: Discovery rule '{rule_name}', trigger prototype '{tp_name}' dependency references non-existent item prototype key '{ref_key}'")
         
-        # Validate regular triggers
+        # Validate regular triggers using enhanced parser
         if 'triggers' in template and isinstance(template['triggers'], list):
             for trigger_idx, trigger in enumerate(template['triggers']):
                 if not isinstance(trigger, dict):
                     continue
                 trigger_name = trigger.get('name', f'Trigger {trigger_idx}')
-                expression = trigger.get('expression', '')
-                if expression:
-                    # Extract item keys from expression
-                    item_refs = re.findall(r'/([^/]+)/([^/\)\],\s]+)', expression)
-                    for ref_template, ref_key in item_refs:
-                        # Check if template matches
-                        if ref_template != template_name:
-                            line = find_line_number(lines, trigger) or 0
-                            errors.append(f"Line ~{line}: Trigger '{trigger_name}' references template '{ref_template}' but template name is '{template_name}'")
-                        # Check if item key exists
-                        if ref_key not in item_keys:
-                            line = find_line_number(lines, trigger) or 0
-                            errors.append(f"Line ~{line}: Trigger '{trigger_name}' references non-existent item key '{ref_key}'")
+                
+                # Check both expression and recovery_expression
+                for expr_field in ['expression', 'recovery_expression']:
+                    expression = trigger.get(expr_field, '')
+                    if expression:
+                        item_refs = parse_trigger_expression(expression)
+                        for ref_template, ref_key in item_refs:
+                            # Check if template matches
+                            if ref_template != template_name:
+                                line = find_line_number(lines, trigger) or 0
+                                errors.append(f"Line ~{line}: Trigger '{trigger_name}' {expr_field} references template '{ref_template}' but template name is '{template_name}'")
+                            # Check if item key exists
+                            if ref_key not in item_keys:
+                                line = find_line_number(lines, trigger) or 0
+                                errors.append(f"Line ~{line}: Trigger '{trigger_name}' {expr_field} references non-existent item key '{ref_key}'")
     
     return errors
 
@@ -446,26 +878,38 @@ def validate_yaml_file(file_path):
         yaml_data = yaml.safe_load(file_content)
             
         # Basic YAML syntax is valid, now check Zabbix schema
-        schema_errors, version = validate_zabbix_schema(yaml_data, file_content)
+        schema_errors, schema_warnings, version = validate_zabbix_schema(yaml_data, file_content)
         
-        if not schema_errors:
+        has_errors = len(schema_errors) > 0
+        has_warnings = len(schema_warnings) > 0
+        
+        if not has_errors and not has_warnings:
             if version in SUPPORTED_VERSIONS:
-                print(f"[PASS] Valid YAML ({SUPPORTED_VERSIONS[version]} schema)")
+                print(f"✅ [PASS] Valid YAML ({SUPPORTED_VERSIONS[version]} schema)")
             else:
-                print(f"[PASS] Valid YAML (version: {version if version else 'unknown'})")
+                print(f"✅ [PASS] Valid YAML (version: {version if version else 'unknown'})")
             return True
         else:
-            print(f"[FAIL] Found {len(schema_errors)} validation errors:")
-            for i, error in enumerate(schema_errors, 1):
-                # Format multi-line errors with proper indentation
-                if '\n' in error:
-                    parts = error.split('\n')
-                    print(f"{i:3d}. {parts[0]}")
-                    for part in parts[1:]:
-                        print(f"     {part}")
-                else:
-                    print(f"{i:3d}. {error}")
-            return False
+            if has_errors:
+                print(f"❌ [FAIL] Found {len(schema_errors)} validation error(s)")
+                print("\n=== ERRORS ===")
+                for i, error in enumerate(schema_errors, 1):
+                    # Format multi-line errors with proper indentation
+                    if '\n' in error:
+                        parts = error.split('\n')
+                        print(f"{i:3d}. {parts[0]}")
+                        for part in parts[1:]:
+                            print(f"     {part}")
+                    else:
+                        print(f"{i:3d}. {error}")
+            
+            if has_warnings:
+                print(f"\n⚠️  Found {len(schema_warnings)} warning(s)")
+                print("\n=== WARNINGS ===")
+                for i, warning in enumerate(schema_warnings, 1):
+                    print(f"{i:3d}. {warning}")
+            
+            return not has_errors  # Return True if only warnings, False if errors
             
     except YAMLError as e:
         print(f"❌ YAML syntax error: {e}")
@@ -479,12 +923,25 @@ def validate_yaml_file(file_path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python validate_zabbix_yaml.py <path_to_yaml_file>")
+        print("Usage: python validate_zabbix_template_enhanced.py <path_to_yaml_file>")
         print(f"Supports Zabbix export versions: {', '.join(SUPPORTED_VERSIONS.keys())}")
+        print("\nFeatures:")
+        print("  ✓ YAML syntax validation")
+        print("  ✓ Zabbix schema structure validation")
+        print("  ✓ UUIDv4 format validation")
+        print("  ✓ Item key syntax validation (bracket matching)")
+        print("  ✓ Time unit format validation (1m, 5h, etc.)")
+        print("  ✓ SNMP OID format validation")
+        print("  ✓ Enum value validation (types, statuses, priorities)")
+        print("  ✓ Item reference integrity (graphs and triggers)")
+        print("  ✓ Enhanced trigger expression parsing")
+        print("  ✓ Multi-line string validation")
         sys.exit(1)
     
     file_path = sys.argv[1]
     print(f"Validating {file_path}...")
+    print("=" * 80)
     success = validate_yaml_file(file_path)
+    print("=" * 80)
     
     sys.exit(0 if success else 1)
