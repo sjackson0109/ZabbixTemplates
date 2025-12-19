@@ -6,9 +6,10 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 ---
 
 ## Features
-- **Automated IOC Discovery:** Dynamically discovers IOCs (type and value) from OTX pulses within a configurable time window.
+- **Automated IOC Discovery:** Dynamically discovers IOCs (type, value, and metadata) from OTX pulses within a configurable time window.
 - **Severity Tracking:** Monitors and triggers on IOC severity/confidence levels.
 - **Pulse Count & Update Time:** Tracks the number of new pulses and the last update time.
+- **IOC Metadata Exposure:** Each discovered IOC now includes first seen, last seen, pulse name, tags, references, and threat type for richer context and filtering in Zabbix.
 - **Robust Error Handling:** All operations return Zabbix-friendly output, with clear error reporting and safe defaults.
 - **Macro/Env Flexibility:** Supports macros/environment variables for API endpoint, timeout, and debug logging.
 - **Performance Optimized:** Caches API results within a run to minimize redundant calls.
@@ -31,10 +32,16 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 
 ## Items & Triggers
 - **Items:**
-  - `otx.pulses` — Number of new OTX pulses in the last N hours
-  - `otx.lastupdate` — Last update time of OTX data
-  - `otx.ioc` — Details for each discovered IOC (type/value)
-  - `otx.severity` — Severity/confidence for each IOC
+   - `otx.pulses` — Number of new OTX pulses in the last N hours
+   - `otx.lastupdate` — Last update time of OTX data
+   - `otx.ioc` — Details for each discovered IOC (type, value, and metadata)
+   - `otx.severity` — Severity/confidence for each IOC
+   - `otx.ioc.first_seen` — First seen timestamp for each IOC
+   - `otx.ioc.last_seen` — Last seen timestamp for each IOC
+   - `otx.ioc.pulse_name` — Pulse name for each IOC
+   - `otx.ioc.tags` — Tags for each IOC
+   - `otx.ioc.references` — References for each IOC
+   - `otx.ioc.threat_type` — Threat type for each IOC
 - **Triggers:**
   - No new OTX indicators in the last N hours
   - OTX data not updated for over 2 hours

@@ -6,7 +6,15 @@ zabbix_export:
   templates:
     - name: 'Alien Vault OTX'
       description: |-
-        Monitors AlienVault OTX pulses and indicators via external script.
+        Automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence in Zabbix.
+        This template uses an external Python script to:
+        - Discover and track IOCs (Indicators of Compromise) from OTX pulses within a configurable time window
+        - Enrich each IOC with metadata: first seen, last seen, pulse name, tags, references, and threat type
+        - Monitor IOC severity/confidence and trigger alerts for high-severity threats
+        - Track pulse count and last update time for OTX data
+        - Provide robust error handling and Zabbix-friendly output (safe defaults, clear errors)
+        - Support flexible configuration via macros and environment variables (API key, endpoint, timeout, debug)
+        - Optimize performance with in-script caching to minimize redundant API calls
 
         Author: Simon Jackson / @sjackson0109
       groups:
@@ -58,6 +66,72 @@ zabbix_export:
               history: 30d
               trends: 365d
               value_type: UNSIGNED
+            - name: 'OTX IOC First Seen {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.first_seen[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#FIRST_SEEN}'
+            - name: 'OTX IOC Last Seen {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.last_seen[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#LAST_SEEN}'
+            - name: 'OTX IOC Pulse Name {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.pulse_name[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#PULSE_NAME}'
+            - name: 'OTX IOC Tags {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.tags[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#TAGS}'
+            - name: 'OTX IOC References {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.references[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#REFERENCES}'
+            - name: 'OTX IOC Threat Type {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.threat_type[{#TYPE},{#VALUE}]'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#THREAT_TYPE}'
           trigger_prototypes:
             - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'

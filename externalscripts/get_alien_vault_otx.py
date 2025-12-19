@@ -3,10 +3,19 @@
 Author: Simon Jackson (sjackson0109)
 Created: 2025/07/16
 Updated: 2025/12/19
-Version: 2.6
+Version: 2.7
 Description:
-     This script interacts with the AlienVault OTX API to fetch threat intelligence data.
-     Supports Zabbix external script format with positional parameters.
+    This script interacts with the AlienVault OTX API to fetch threat intelligence data.
+    Supports Zabbix external script format with positional parameters.
+
+Features:
+    Dynamically Discovery: Discovers IOCs (type, value, and metadata) from OTX pulses within a configurable time window.
+    Severity Tracking: Monitors and triggers on IOC severity/confidence levels.
+    Pulse Count & Update Time: Tracks the number of new pulses and the last update time.
+    IOC Metadata Exposure: Each discovered IOC now includes first seen, last seen, pulse name, tags, references, and threat type for richer context and filtering in Zabbix.
+    Robust Error Handling: All operations return Zabbix-friendly output, with clear error reporting and safe defaults.
+    Macro/Env Flexibility: Supports macros/environment variables for API endpoint, timeout, and debug logging.
+    Performance Optimized: Caches API results within a run to minimize redundant calls.
 
 Usage (Zabbix format):
     python get_alien_vault_otx.py discover <API_KEY> <HOURS>
@@ -142,20 +151,36 @@ def main():
             since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
             since_ts = since_dt.isoformat()
             try:
+                cache = {}
                 pulses = fetch_pulses(api_key, since_dt, cache)
                 seen = set()
                 data = []
                 for pulse in pulses:
                     pid = pulse.get('id')
+                    pulse_name = pulse.get('name', '')
+                    pulse_tags = pulse.get('tags', [])
+                    pulse_references = pulse.get('references', [])
                     indicators = fetch_indicators(pid, api_key, since_ts, cache)
                     for ind in indicators:
                         ioc_type = ind.get('indicator_type')
                         ioc_val = ind.get('indicator')
-                        if ioc_type and ioc_val:
-                            key = (ioc_type, ioc_val)
-                            if key not in seen:
-                                seen.add(key)
-                                data.append({'{#TYPE}': ioc_type, '{#VALUE}': ioc_val})
+                        first_seen = ind.get('created', '')
+                        last_seen = ind.get('modified', '')
+                        threat_type = ind.get('type', '')
+                        # Compose a unique key for deduplication
+                        key = (ioc_type, ioc_val)
+                        if ioc_type and ioc_val and key not in seen:
+                            seen.add(key)
+                            data.append({
+                                '{#TYPE}': ioc_type,
+                                '{#VALUE}': ioc_val,
+                                '{#FIRST_SEEN}': first_seen,
+                                '{#LAST_SEEN}': last_seen,
+                                '{#PULSE_NAME}': pulse_name,
+                                '{#TAGS}': ','.join(pulse_tags) if pulse_tags else '',
+                                '{#REFERENCES}': ','.join(pulse_references) if pulse_references else '',
+                                '{#THREAT_TYPE}': threat_type
+                            })
                 print(json.dumps({'data': data}))
             except Exception as e:
                 logger.error(f"Error in discover: {e}")
