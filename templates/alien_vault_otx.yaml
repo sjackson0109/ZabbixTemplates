@@ -5,6 +5,17 @@ zabbix_export:
     - name: Templates
   templates:
     - name: 'Alien Vault OTX'
+      value_maps:
+        - name: 'OTX IOC Severity Map'
+          mappings:
+            - value: '0'
+              newvalue: 'None'
+            - value: '1-3'
+              newvalue: 'Low'
+            - value: '4-6'
+              newvalue: 'Medium'
+            - value: '7-10'
+              newvalue: 'High'
       description: |-
         Automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence in Zabbix.
         This template uses an external Python script to:
@@ -37,6 +48,13 @@ zabbix_export:
         - name: 'OTX Last Update Time'
           type: EXTERNAL
           key: 'otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          trends: 365d
+          value_type: TEXT
+        - name: 'OTX API Health Status'
+          type: EXTERNAL
+          key: 'otx.health[{$OTX_API_KEY}]'
           delay: 1h
           history: 30d
           trends: 365d
@@ -136,6 +154,24 @@ zabbix_export:
             - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: WARNING
+            - name: 'High severity OTX IP IOC: {#VALUE}'
+              expression: 'last(/Alien Vault OTX/otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              priority: HIGH
+            - name: 'High severity OTX Domain IOC: {#VALUE}'
+              expression: 'last(/Alien Vault OTX/otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              priority: HIGH
+            - name: 'High severity OTX URL IOC: {#VALUE}'
+              expression: 'last(/Alien Vault OTX/otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              priority: HIGH
+            - name: 'High severity OTX Hash IOC: {#VALUE}'
+              expression: 'last(/Alien Vault OTX/otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+              priority: HIGH
+            - name: 'OTX IOC with Ransomware Tag: {#VALUE}'
+              expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],,"ransomware")=1'
+              priority: DISASTER
+            - name: 'OTX IOC with Phishing Tag: {#VALUE}'
+              expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],,"phishing")=1'
+              priority: HIGH
       triggers:
         - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
           expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'

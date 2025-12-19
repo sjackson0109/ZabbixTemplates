@@ -151,6 +151,21 @@ def main():
             since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
             since_ts = since_dt.isoformat()
             try:
+                # Load ignore list from macro or file
+                ignore_path = os.environ.get('OTX_IGNORE_FILE', 'otx_ignore.txt')
+                ignore_set = set()
+                if os.path.exists(ignore_path):
+                    with open(ignore_path, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith('#'):
+                                ignore_set.add(line)
+                ignore_macro = os.environ.get('OTX_IGNORE_LIST', '')
+                if ignore_macro:
+                    for entry in ignore_macro.split(','):
+                        entry = entry.strip()
+                        if entry:
+                            ignore_set.add(entry)
                 cache = {}
                 pulses = fetch_pulses(api_key, since_dt, cache)
                 seen = set()
@@ -170,6 +185,9 @@ def main():
                         # Compose a unique key for deduplication
                         key = (ioc_type, ioc_val)
                         if ioc_type and ioc_val and key not in seen:
+                            # Suppression: skip if in ignore list (type:value or just value)
+                            if ioc_val in ignore_set or f"{ioc_type}:{ioc_val}" in ignore_set:
+                                continue
                             seen.add(key)
                             data.append({
                                 '{#TYPE}': ioc_type,
