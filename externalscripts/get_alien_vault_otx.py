@@ -83,6 +83,35 @@ def validate_api_key(key):
         raise ValueError("Invalid API key format. Must be 64 hex characters.")
     return True
 
+# --- Input validation for CLI arguments (suggestion 5) ---
+def validate_type(ioc_type):
+    allowed_types = {"IPv4", "IPv6", "domain", "hostname", "email", "URL", "FileHash-MD5", "FileHash-SHA1", "FileHash-SHA256", "CIDR"}
+    if ioc_type not in allowed_types:
+        raise ValueError(f"Invalid IOC type: {ioc_type}. Allowed: {', '.join(sorted(allowed_types))}")
+    return True
+
+def validate_hours(hours):
+    try:
+        h = int(hours)
+        if h < 1 or h > 168:
+            raise ValueError("Hours must be between 1 and 168.")
+        return h
+    except Exception:
+        raise ValueError("Hours must be an integer between 1 and 168.")
+
+# --- Improved logging for auditability (suggestion 6) ---
+def audit_log(message, **kwargs):
+    # Log to file if OTX_AUDIT_LOG is set, else just use logger
+    log_path = os.environ.get('OTX_AUDIT_LOG')
+    log_entry = f"{datetime.now(timezone.utc).isoformat()} | {message} | {json.dumps(kwargs, default=str)}\n"
+    if log_path:
+        try:
+            with open(log_path, 'a', encoding='utf-8') as f:
+                f.write(log_entry)
+        except Exception as e:
+            logger.warning(f"Failed to write audit log: {e}")
+    logger.info(f"AUDIT: {message} | {kwargs}")
+
 def mask_api_key(key):
     if not key or len(key) < 8:
         return "***"
@@ -92,6 +121,14 @@ def otx_get(endpoint, api_key, params=None, retries=3):
     for attempt in range(retries):
         try:
             resp = requests.get(url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get('Retry-After', 2 ** attempt))
+                logger.warning(f"Rate limit hit (429) on attempt {attempt+1}/{retries}, retrying after {retry_after}s...")
+                if attempt < retries - 1:
+                    time.sleep(retry_after)
+                    continue
+                else:
+                    raise Exception("Rate limit exceeded (HTTP 429)")
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:
@@ -120,6 +157,11 @@ def fetch_pulses(api_key, since_dt, cache=None):
     while next_url:
         try:
             resp = requests.get(next_url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get('Retry-After', 2))
+                logger.warning(f"Rate limit hit (429) in fetch_pulses, retrying after {retry_after}s...")
+                time.sleep(retry_after)
+                continue
             resp.raise_for_status()
             data = resp.json()
             page = data.get('results', [])
@@ -155,6 +197,11 @@ def fetch_indicators(pulse_id, api_key, since_ts, cache=None):
     while next_url:
         try:
             resp = requests.get(next_url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get('Retry-After', 2))
+                logger.warning(f"Rate limit hit (429) in fetch_indicators, retrying after {retry_after}s...")
+                time.sleep(retry_after)
+                continue
             resp.raise_for_status()
             data = resp.json()
             indicators.extend(data.get('results', []))
@@ -178,6 +225,7 @@ def main():
 
     try:
         if operation == 'selftest':
+            audit_log('selftest invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # selftest <API_KEY>
             if len(sys.argv) < 3:
                 print(json.dumps({'status': 'error', 'msg': 'selftest requires API_KEY'}))
@@ -233,6 +281,7 @@ def main():
             print(json.dumps(result))
             return
         if operation == 'discover':
+            audit_log('discover invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # discover <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print(json.dumps({'error': 'discover requires API_KEY and HOURS'}))
@@ -243,7 +292,11 @@ def main():
             except Exception as e:
                 print(json.dumps({'error': f'API key validation failed: {e}'}))
                 sys.exit(1)
-            hours = int(sys.argv[3])
+            try:
+                hours = validate_hours(sys.argv[3])
+            except Exception as e:
+                print(json.dumps({'error': f'Invalid hours: {e}'}))
+                sys.exit(1)
 
             since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
             since_ts = since_dt.isoformat()
@@ -302,11 +355,17 @@ def main():
                 print(json.dumps({'error': f"Discover error: {type(e).__name__}: {e}"}))
             
         elif operation == 'ioc':
+            audit_log('ioc invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # ioc <TYPE> <VALUE> <API_KEY> <HOURS>
             if len(sys.argv) < 6:
                 print(json.dumps({'error': 'ioc requires TYPE, VALUE, API_KEY, and HOURS'}))
                 sys.exit(1)
             ioc_type = sys.argv[2]
+            try:
+                validate_type(ioc_type)
+            except Exception as e:
+                print(json.dumps({'error': f'Invalid IOC type: {e}'}))
+                sys.exit(1)
             ioc_val = sys.argv[3]
             api_key = sys.argv[4]
             try:
@@ -323,11 +382,17 @@ def main():
                 print(json.dumps({'error': f"IOC error: {type(e).__name__}: {e}"}))
             
         elif operation == 'severity':
+            audit_log('severity invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # severity <TYPE> <VALUE> <API_KEY> <HOURS>
             if len(sys.argv) < 6:
                 print(0)
                 sys.exit(1)
             ioc_type = sys.argv[2]
+            try:
+                validate_type(ioc_type)
+            except Exception as e:
+                print(f"0 # Invalid IOC type: {e}")
+                sys.exit(1)
             ioc_val = sys.argv[3]
             api_key = sys.argv[4]
             try:
@@ -347,6 +412,7 @@ def main():
                 print(f"0 # Severity error: {type(e).__name__}: {e}")
             
         elif operation == 'pulses':
+            audit_log('pulses invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # pulses <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print(0)
@@ -357,7 +423,11 @@ def main():
             except Exception as e:
                 print(f"0 # API key validation failed: {e}")
                 sys.exit(1)
-            hours = int(sys.argv[3])
+            try:
+                hours = validate_hours(sys.argv[3])
+            except Exception as e:
+                print(f"0 # Invalid hours: {e}")
+                sys.exit(1)
 
             try:
                 since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
@@ -368,6 +438,7 @@ def main():
                 print(f"0 # Pulses error: {type(e).__name__}: {e}")
             
         elif operation == 'lastupdate':
+            audit_log('lastupdate invoked', user=os.environ.get('USERNAME'), args=sys.argv)
             # lastupdate <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print('')
@@ -378,7 +449,11 @@ def main():
             except Exception as e:
                 print(f" # API key validation failed: {e}")
                 sys.exit(1)
-            hours = int(sys.argv[3])
+            try:
+                hours = validate_hours(sys.argv[3])
+            except Exception as e:
+                print(f" # Invalid hours: {e}")
+                sys.exit(1)
 
             try:
                 since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
