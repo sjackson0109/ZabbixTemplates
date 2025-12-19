@@ -89,6 +89,7 @@ def fetch_pulses(api_key, since_dt, cache=None):
         'date_published__gt': since_dt.isoformat()
     }
     next_url = f"{OTX_BASE}/pulses/subscribed"
+    page_count = 0
     while next_url:
         try:
             resp = requests.get(next_url, headers={'X-OTX-API-KEY': api_key}, params=params, timeout=HTTP_TIMEOUT)
@@ -96,6 +97,11 @@ def fetch_pulses(api_key, since_dt, cache=None):
             data = resp.json()
             page = data.get('results', [])
             pulses.extend(page)
+            page_count += 1
+            print(f"Fetched pulse page {page_count}, {len(page)} pulses")
+            # For self-test, only fetch the first page
+            if os.environ.get('OTX_SELFTEST', '0') == '1':
+                break
             next_url = data.get('next')
             params = None
         except requests.exceptions.RequestException as e:
@@ -136,10 +142,60 @@ def main():
     if len(sys.argv) < 2:
         print("Error: Operation required", file=sys.stderr)
         sys.exit(1)
-    
+
     operation = sys.argv[1].lower()
-    
+
     try:
+        if operation == 'selftest':
+            # selftest <API_KEY>
+            if len(sys.argv) < 3:
+                print(json.dumps({'status': 'error', 'msg': 'selftest requires API_KEY'}))
+                sys.exit(1)
+            api_key = sys.argv[2]
+            result = {'status': 'ok', 'api': None, 'pulses': 0, 'sample_ioc': None, 'error': None}
+            try:
+                # Use a shorter timeout for diagnostics
+                test_timeout = min(HTTP_TIMEOUT, 10)
+                resp = requests.get(f"{OTX_BASE}/user/me", headers={'X-OTX-API-KEY': api_key}, timeout=test_timeout)
+                result['api'] = resp.status_code
+                if resp.status_code != 200:
+                    result['status'] = 'fail'
+                    result['error'] = f'API status {resp.status_code}'
+                else:
+                    # Limit to pulses published today for faster diagnostics
+                    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+                    since_dt = today
+                    # Set env var to limit fetch_pulses to one page for self-test
+                    os.environ['OTX_SELFTEST'] = '1'
+                    pulses = fetch_pulses(api_key, since_dt)
+                    os.environ['OTX_SELFTEST'] = '0'
+                    if len(pulses) > 10:
+                        pulses = pulses[:10]
+                    result['pulses'] = len(pulses)
+                    if pulses:
+                        pid = pulses[0].get('id')
+                        try:
+                            indicators = fetch_indicators(pid, api_key, since_dt.isoformat())
+                            if indicators:
+                                ioc = indicators[0]
+                                result['sample_ioc'] = {
+                                    'type': ioc.get('indicator_type'),
+                                    'value': ioc.get('indicator')
+                                }
+                        except requests.exceptions.Timeout:
+                            result['status'] = 'fail'
+                            result['error'] = 'Indicator fetch timeout'
+            except requests.exceptions.Timeout:
+                result['status'] = 'fail'
+                result['error'] = 'API request timeout'
+            except KeyboardInterrupt:
+                result['status'] = 'fail'
+                result['error'] = 'Interrupted by user'
+            except Exception as e:
+                result['status'] = 'fail'
+                result['error'] = str(e)
+            print(json.dumps(result))
+            return
         if operation == 'discover':
             # discover <API_KEY> <HOURS>
             if len(sys.argv) < 4:
