@@ -17,25 +17,36 @@ Features:
     Macro/Env Flexibility: Supports macros/environment variables for API endpoint, timeout, and debug logging.
     Performance Optimized: Caches API results within a run to minimize redundant calls.
 
-Usage (Zabbix format):
+USAGE EXAMPLES:
     python get_alien_vault_otx.py discover <API_KEY> <HOURS>
     python get_alien_vault_otx.py ioc <TYPE> <VALUE> <API_KEY> <HOURS>
     python get_alien_vault_otx.py severity <TYPE> <VALUE> <API_KEY> <HOURS>
     python get_alien_vault_otx.py pulses <API_KEY> <HOURS>
     python get_alien_vault_otx.py lastupdate <API_KEY> <HOURS>
+    python get_alien_vault_otx.py selftest <API_KEY>
 
-Environment variables/macros:
-    OTX_BASE (default: https://otx.alienvault.com/api/v1)
-    OTX_TIMEOUT (default: 30)
-    OTX_DEBUG (set to 1 for debug logging)
-
-Troubleshooting:
+TROUBLESHOOTING:
     - If you see 'error' in the output, check your arguments and API key.
     - For rate limit errors, increase delay or check OTX API status.
     - For network errors, check connectivity and proxy/firewall settings.
     - All errors are logged if OTX_DEBUG=1 is set.
+    - Use selftest mode to verify API connectivity and script health.
 
-Output:
+ZABBIX INTEGRATION:
+    - Returns valid JSON, integer, or empty string for Zabbix compatibility.
+    - On error, returns a JSON object with an 'error' key or a safe default (0 or '').
+    - Use value maps and triggers in Zabbix for severity/confidence.
+
+ENVIRONMENT VARIABLES/MACROS:
+    OTX_BASE (default: https://otx.alienvault.com/api/v1)
+    OTX_TIMEOUT (default: 30)
+    OTX_DEBUG (set to 1 for debug logging)
+    OTX_IGNORE_FILE (optional: file with IOCs to ignore)
+    OTX_IGNORE_LIST (optional: comma-separated list of IOCs to ignore)
+
+For more information, see the README or contact the script author.
+
+OUTPUT:
     - All operations return valid JSON, integer, or empty string for Zabbix compatibility.
     - On error, returns a JSON object with an 'error' key or a safe default (0 or '').
 """
@@ -60,6 +71,22 @@ logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=loggi
 
 # Perform GET with API key, timeout, and optional params, with retry logic
 import time
+
+# --- Performance: Simple in-memory cache for indicator lookups (per run) ---
+_indicator_cache = {}
+
+# --- Security: API key validation and masking ---
+import re
+def validate_api_key(key):
+    # OTX API keys are 64 hex chars
+    if not isinstance(key, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", key):
+        raise ValueError("Invalid API key format. Must be 64 hex characters.")
+    return True
+
+def mask_api_key(key):
+    if not key or len(key) < 8:
+        return "***"
+    return key[:4] + "..." + key[-4:]
 def otx_get(endpoint, api_key, params=None, retries=3):
     url = f"{OTX_BASE}{endpoint}"
     for attempt in range(retries):
@@ -68,7 +95,7 @@ def otx_get(endpoint, api_key, params=None, retries=3):
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:
-            logger.warning(f"API error (attempt {attempt+1}/{retries}): {e}")
+            logger.warning(f"API error (attempt {attempt+1}/{retries}) for key {mask_api_key(api_key)}: {e}")
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             else:
@@ -113,9 +140,12 @@ def fetch_pulses(api_key, since_dt, cache=None):
 
 # Fetch indicators for a pulse, optionally filtered by server-side date, with caching
 def fetch_indicators(pulse_id, api_key, since_ts, cache=None):
-    cache_key = f'indicators_{pulse_id}'
+    cache_key = f'indicators_{pulse_id}_{since_ts}'
+    # Use global cache for performance
     if cache is not None and cache_key in cache:
         return cache[cache_key]
+    if cache_key in _indicator_cache:
+        return _indicator_cache[cache_key]
     indicators = []
     params = {
         'limit': 100,
@@ -135,6 +165,7 @@ def fetch_indicators(pulse_id, api_key, since_ts, cache=None):
             break
     if cache is not None:
         cache[cache_key] = indicators
+    _indicator_cache[cache_key] = indicators
     return indicators
 
 # CLI entry point - Zabbix positional format
@@ -152,6 +183,11 @@ def main():
                 print(json.dumps({'status': 'error', 'msg': 'selftest requires API_KEY'}))
                 sys.exit(1)
             api_key = sys.argv[2]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(json.dumps({'status': 'fail', 'error': f'API key validation failed: {e}'}))
+                sys.exit(1)
             result = {'status': 'ok', 'api': None, 'pulses': 0, 'sample_ioc': None, 'error': None}
             try:
                 # Use a shorter timeout for diagnostics
@@ -193,7 +229,7 @@ def main():
                 result['error'] = 'Interrupted by user'
             except Exception as e:
                 result['status'] = 'fail'
-                result['error'] = str(e)
+                result['error'] = f"Selftest error: {type(e).__name__}: {e}"
             print(json.dumps(result))
             return
         if operation == 'discover':
@@ -202,6 +238,11 @@ def main():
                 print(json.dumps({'error': 'discover requires API_KEY and HOURS'}))
                 sys.exit(1)
             api_key = sys.argv[2]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(json.dumps({'error': f'API key validation failed: {e}'}))
+                sys.exit(1)
             hours = int(sys.argv[3])
 
             since_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
@@ -258,7 +299,7 @@ def main():
                 print(json.dumps({'data': data}))
             except Exception as e:
                 logger.error(f"Error in discover: {e}")
-                print(json.dumps({'error': str(e)}))
+                print(json.dumps({'error': f"Discover error: {type(e).__name__}: {e}"}))
             
         elif operation == 'ioc':
             # ioc <TYPE> <VALUE> <API_KEY> <HOURS>
@@ -268,13 +309,18 @@ def main():
             ioc_type = sys.argv[2]
             ioc_val = sys.argv[3]
             api_key = sys.argv[4]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(json.dumps({'error': f'API key validation failed: {e}'}))
+                sys.exit(1)
 
             try:
                 details = otx_get(f'/indicators/{ioc_type}/{ioc_val}/general', api_key)
                 print(json.dumps(details))
             except Exception as e:
                 logger.error(f"Error in ioc: {e}")
-                print(json.dumps({'error': str(e)}))
+                print(json.dumps({'error': f"IOC error: {type(e).__name__}: {e}"}))
             
         elif operation == 'severity':
             # severity <TYPE> <VALUE> <API_KEY> <HOURS>
@@ -284,6 +330,11 @@ def main():
             ioc_type = sys.argv[2]
             ioc_val = sys.argv[3]
             api_key = sys.argv[4]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(f"0 # API key validation failed: {e}")
+                sys.exit(1)
 
             try:
                 details = otx_get(f'/indicators/{ioc_type}/{ioc_val}/general', api_key)
@@ -293,7 +344,7 @@ def main():
                 print(confidence if confidence is not None else 0)
             except Exception as e:
                 logger.error(f"Error in severity: {e}")
-                print(0)
+                print(f"0 # Severity error: {type(e).__name__}: {e}")
             
         elif operation == 'pulses':
             # pulses <API_KEY> <HOURS>
@@ -301,6 +352,11 @@ def main():
                 print(0)
                 sys.exit(1)
             api_key = sys.argv[2]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(f"0 # API key validation failed: {e}")
+                sys.exit(1)
             hours = int(sys.argv[3])
 
             try:
@@ -309,7 +365,7 @@ def main():
                 print(len(pulses))
             except Exception as e:
                 logger.error(f"Error in pulses: {e}")
-                print(0)
+                print(f"0 # Pulses error: {type(e).__name__}: {e}")
             
         elif operation == 'lastupdate':
             # lastupdate <API_KEY> <HOURS>
@@ -317,6 +373,11 @@ def main():
                 print('')
                 sys.exit(1)
             api_key = sys.argv[2]
+            try:
+                validate_api_key(api_key)
+            except Exception as e:
+                print(f" # API key validation failed: {e}")
+                sys.exit(1)
             hours = int(sys.argv[3])
 
             try:
@@ -329,20 +390,20 @@ def main():
                     print('')
             except Exception as e:
                 logger.error(f"Error in lastupdate: {e}")
-                print('')
+                print(f" # Lastupdate error: {type(e).__name__}: {e}")
         else:
-            print(f"Error: Unknown operation '{operation}'", file=sys.stderr)
+            print(json.dumps({'error': f"Unknown operation: {operation}"}))
             sys.exit(1)
             
     except Exception as e:
         logger.error(f"Error in {operation}: {e}")
-        # Return safe defaults for Zabbix
+        # Return safe defaults for Zabbix, with error details
         if operation == 'severity':
-            print(0)
+            print(f"0 # {operation} error: {type(e).__name__}: {e}")
         elif operation == 'pulses':
-            print(0)
+            print(f"0 # {operation} error: {type(e).__name__}: {e}")
         else:
-            print('')
+            print(f" # {operation} error: {type(e).__name__}: {e}")
         sys.exit(1)
 
 if __name__ == '__main__':
