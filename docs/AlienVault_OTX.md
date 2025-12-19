@@ -1,0 +1,73 @@
+# AlienVault OTX Zabbix Integration
+
+## Overview
+This integration provides automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence data in Zabbix. It includes a Zabbix template and an external script for discovering, tracking, and alerting on IOCs (Indicators of Compromise) from OTX pulses.
+
+---
+
+## Features
+- **Automated IOC Discovery:** Dynamically discovers IOCs (type and value) from OTX pulses within a configurable time window.
+- **Severity Tracking:** Monitors and triggers on IOC severity/confidence levels.
+- **Pulse Count & Update Time:** Tracks the number of new pulses and the last update time.
+- **Robust Error Handling:** All operations return Zabbix-friendly output, with clear error reporting and safe defaults.
+- **Macro/Env Flexibility:** Supports macros/environment variables for API endpoint, timeout, and debug logging.
+- **Performance Optimized:** Caches API results within a run to minimize redundant calls.
+
+---
+
+## Installation
+1. **Copy the Script**
+   - Place `get_alien_vault_otx.py` in your Zabbix `externalscripts` directory.
+2. **Import the Template**
+   - Import `alien_vault_otx.yaml` into Zabbix (Configuration → Templates).
+3. **Configure Macros**
+   - Set `{$OTX_API_KEY}` on the host or template.
+   - Optionally set `{$OTX_SINCE_HOURS}` (default: 24) and `{$SEVERITY_THRESHOLD}` (default: 7).
+   - For advanced use, set environment variables: `OTX_BASE`, `OTX_TIMEOUT`, `OTX_DEBUG`.
+4. **Assign Template**
+   - Link the template to any host (no SNMP required).
+
+---
+
+## Items & Triggers
+- **Items:**
+  - `otx.pulses` — Number of new OTX pulses in the last N hours
+  - `otx.lastupdate` — Last update time of OTX data
+  - `otx.ioc` — Details for each discovered IOC (type/value)
+  - `otx.severity` — Severity/confidence for each IOC
+- **Triggers:**
+  - No new OTX indicators in the last N hours
+  - OTX data not updated for over 2 hours
+  - High severity IOC detected (per IOC)
+
+---
+
+## Script Usage (Manual)
+```bash
+python get_alien_vault_otx.py discover <API_KEY> <HOURS>
+python get_alien_vault_otx.py ioc <TYPE> <VALUE> <API_KEY> <HOURS>
+python get_alien_vault_otx.py severity <TYPE> <VALUE> <API_KEY> <HOURS>
+python get_alien_vault_otx.py pulses <API_KEY> <HOURS>
+python get_alien_vault_otx.py lastupdate <API_KEY> <HOURS>
+```
+
+- Set `OTX_BASE`, `OTX_TIMEOUT`, or `OTX_DEBUG=1` as environment variables for advanced configuration.
+
+---
+
+## Troubleshooting
+- **No Data:** Check API key, endpoint, and network connectivity. Enable debug logging with `OTX_DEBUG=1`.
+- **Rate Limits:** Increase polling interval or check OTX API status.
+- **Script Errors:** All errors are logged and returned as JSON or safe defaults for Zabbix.
+- **Template Validation:** Use `validate_zabbix_template.py` to check YAML before import.
+
+---
+
+## References
+- [AlienVault OTX API Documentation](https://otx.alienvault.com/api/)
+- [Zabbix External Scripts](https://www.zabbix.com/documentation/current/en/manual/config/items/itemtypes/external)
+- [Zabbix Low-Level Discovery](https://www.zabbix.com/documentation/current/en/manual/discovery/low_level_discovery)
+
+---
+
+For further help, see the script docstring or contact the author.

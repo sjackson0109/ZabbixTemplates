@@ -42,7 +42,7 @@ All custom monitoring scripts reside under this repository. Below are the availa
  - **[get_unity_array.py](docs/Unity_Array.md)** - Dell EMC Unity storage array monitoring and auto-discovery via REST API. Collects inventory, health, capacity, and status metrics for LUNs, pools, disks, ports, and more. See full usage and template details in the linked documentation.
 - **[get_web_scenarios.py](docs/Agent_Checks.md)** - Web scenario monitoring for HTTP/HTTPS endpoints using Zabbix Agents for polling, offers a clear web application availabilty monitoring and alerting facility (cleaner than web-scenarios)
 - **get_php_fpm.py** - PHP-FPM monitoring for process manager performance and health.
-- **get_alien_vault_otx.py** - AlienVault OTX (Open Threat Exchange) integration for threat intelligence monitoring.
+- **[get_alien_vault_otx.py](docs/AlienVault_OTX.md)** - AlienVault OTX (Open Threat Exchange) integration for threat intelligence monitoring. Provides IOC discovery, severity tracking, and robust error handling. See full usage and template details in the linked documentation.
 
 Each script is documented individually, providing installation instructions, usage examples, and integration details.
 
@@ -55,7 +55,7 @@ Each script is documented individually, providing installation instructions, usa
   HTTP(S) endpoint monitoring via PowerShell executed by Zabbix Agent. Supports status, latency, and content validation. Highly configurable with macros.
 
 - **[AlienVault OTX](docs/AlienVault_OTX.md)**  
-  Monitors AlienVault OTX pulses and indicators via external script. Includes IOC discovery and severity thresholding.
+  Monitors AlienVault OTX pulses and indicators via the external script. Features automated IOC discovery, severity/confidence tracking, pulse count, robust error handling, macro/env flexibility, and performance optimization. See [AlienVault_OTX.md](docs/AlienVault_OTX.md) for full documentation and troubleshooting.
 
 - **[APC Netbotz](docs/APC_Netbotz.md)**  
   Comprehensive SNMP-based monitoring for APC NetBotz environmental devices. Supports multiple device families, sensor discovery, and value mapping.
