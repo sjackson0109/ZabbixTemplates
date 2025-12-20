@@ -108,6 +108,60 @@ logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=loggi
 
 # Perform GET with API key, timeout, and optional params, with retry logic
 import time
+import sqlite3
+
+# Persistent SQLite LRU cache for indicator lookups
+CACHE_DB_PATH = os.environ.get('OTX_CACHE_DB', 'otx_indicator_cache.sqlite3')
+CACHE_MAX_ENTRIES = int(os.environ.get('OTX_CACHE_MAX', '10000'))
+CACHE_TTL_SECONDS = int(os.environ.get('OTX_CACHE_TTL', str(30*24*3600)))  # 30 days default
+
+def cache_db_connect():
+    conn = sqlite3.connect(CACHE_DB_PATH)
+    conn.execute('''CREATE TABLE IF NOT EXISTS indicator_cache (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        timestamp INTEGER
+    )''')
+    return conn
+
+def cache_db_get(key):
+    conn = cache_db_connect()
+    try:
+        now = int(time.time())
+        cur = conn.execute('SELECT value, timestamp FROM indicator_cache WHERE key=?', (key,))
+        row = cur.fetchone()
+        if row:
+            value, ts = row
+            if now - ts < CACHE_TTL_SECONDS:
+                return value
+            else:
+                # Expired, delete
+                conn.execute('DELETE FROM indicator_cache WHERE key=?', (key,))
+                conn.commit()
+        return None
+    finally:
+        conn.close()
+
+def cache_db_set(key, value):
+    conn = cache_db_connect()
+    try:
+        now = int(time.time())
+        conn.execute('INSERT OR REPLACE INTO indicator_cache (key, value, timestamp) VALUES (?, ?, ?)', (key, value, now))
+        # Purge expired
+        conn.execute('DELETE FROM indicator_cache WHERE timestamp < ?', (now - CACHE_TTL_SECONDS,))
+        # Purge LRU if over max entries
+        cur = conn.execute('SELECT COUNT(*) FROM indicator_cache')
+        count = cur.fetchone()[0]
+        if count > CACHE_MAX_ENTRIES:
+            # Delete oldest
+            to_delete = count - CACHE_MAX_ENTRIES
+            conn.execute(
+                'DELETE FROM indicator_cache WHERE key IN (SELECT key FROM indicator_cache ORDER BY timestamp ASC LIMIT ?)',
+                (to_delete,)
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 # --- Performance: Simple in-memory cache for indicator lookups (per run) ---
 _indicator_cache = {}
@@ -221,8 +275,16 @@ def fetch_pulses(api_key, since_dt, cache=None):
 
 # Fetch indicators for a pulse, optionally filtered by server-side date, with caching
 def fetch_indicators(pulse_id, api_key, since_ts, cache=None):
+    import json as _json
     cache_key = f'indicators_{pulse_id}_{since_ts}'
-    # Use global cache for performance
+    # Try persistent cache first
+    cached = cache_db_get(cache_key)
+    if cached:
+        try:
+            return _json.loads(cached)
+        except Exception:
+            pass
+    # Use global cache for performance (in-memory)
     if cache is not None and cache_key in cache:
         return cache[cache_key]
     if cache_key in _indicator_cache:
@@ -252,6 +314,11 @@ def fetch_indicators(pulse_id, api_key, since_ts, cache=None):
     if cache is not None:
         cache[cache_key] = indicators
     _indicator_cache[cache_key] = indicators
+    # Save to persistent cache
+    try:
+        cache_db_set(cache_key, _json.dumps(indicators))
+    except Exception as e:
+        logger.warning(f"Failed to write to persistent cache: {e}")
     return indicators
 
 # CLI entry point - Zabbix positional format

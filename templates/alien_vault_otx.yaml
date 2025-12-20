@@ -19,50 +19,6 @@ zabbix_export:
         Author: Simon Jackson / @sjackson0109
       groups:
         - name: Templates
-      macros:
-        # API key for OTX. Store securely, do not log or expose in UI.
-        - macro: '{$OTX_API_KEY}'
-          value: ''
-          description: 'AlienVault OTX API key (keep secret). Use Zabbix secrets/vault if available.'
-        # API endpoint (default: https://otx.alienvault.com/api/v1)
-        - macro: '{$OTX_API_ENDPOINT}'
-          value: 'https://otx.alienvault.com/api/v1'
-          description: 'OTX API endpoint URL (advanced)'
-        # API timeout in seconds (default: 30)
-        - macro: '{$OTX_TIMEOUT}'
-          value: '30'
-          description: 'OTX API request timeout (seconds)'
-        # How many hours back to look for new IOCs (default: 24)
-        - macro: '{$OTX_SINCE_HOURS}'
-          value: '24'
-          description: 'Time window (hours) for IOC discovery'
-        # Minimum severity/confidence to trigger alerts (default: 7)
-        - macro: '{$SEVERITY_THRESHOLD}'
-          value: '7'
-          description: 'Minimum severity/confidence for alerting'
-        # Minimum severity for discovery (default: 1)
-        - macro: '{$OTX_MIN_SEVERITY}'
-          value: '1'
-          description: 'Minimum severity/confidence for IOC discovery'
-        # Comma-separated IOC types to include (e.g. IPv4,domain,URL). Leave blank for all.
-        - macro: '{$OTX_INCLUDE_TYPES}'
-          value: ''
-          description: 'IOC types to include in discovery (blank=all)'
-        # Comma-separated IOC types to exclude (e.g. email,hostname)
-        - macro: '{$OTX_EXCLUDE_TYPES}'
-          value: ''
-          description: 'IOC types to exclude from discovery'
-        # Comma-separated tags to exclude (e.g. test,benign)
-        - macro: '{$OTX_EXCLUDE_TAGS}'
-          value: ''
-          description: 'Tags to exclude from discovery'
-        # Tags for tag-based triggers (comma-separated, e.g. ransomware,phishing,malware)
-        - macro: '{$OTX_TAGS_CRITICAL}'
-          value: 'ransomware,phishing,malware,botnet,APT'
-          description: 'Tags that trigger critical alerts'
-        - macro: '{$OTX_TAGS_HIGH}'
-          value: 'exploit,ddos,spam'
-          description: 'Tags that trigger high alerts'
       items:
         - name: 'OTX Pulses Count (last {$OTX_SINCE_HOURS}h)'
           type: EXTERNAL
@@ -272,6 +228,40 @@ zabbix_export:
         - name: 'OTX data not updated for over 2 hours'
           expression: 'nodata(/Alien Vault OTX/otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
           priority: HIGH
+      macros:
+        - macro: '{$OTX_API_KEY}'
+          value: ''
+          description: 'AlienVault OTX API key (keep secret). Use Zabbix secrets/vault if available.'
+        - macro: '{$OTX_API_ENDPOINT}'
+          value: 'https://otx.alienvault.com/api/v1'
+          description: 'OTX API endpoint URL (default: https://otx.alienvault.com/api/v1)'
+        - macro: '{$OTX_TIMEOUT}'
+          value: '30'
+          description: 'OTX API request timeout in seconds (default: 30)'
+        - macro: '{$OTX_SINCE_HOURS}'
+          value: '24'
+          description: 'Time window (hours) for IOC discovery (default: 24)'
+        - macro: '{$SEVERITY_THRESHOLD}'
+          value: '7'
+          description: 'Minimum severity/confidence for alerting (default: 7)'
+        - macro: '{$OTX_MIN_SEVERITY}'
+          value: '1'
+          description: 'Minimum severity/confidence for IOC discovery  (default: 1)'
+        - macro: '{$OTX_INCLUDE_TYPES}'
+          value: ''
+          description: 'IOC types to include in discovery (e.g. IPv4,domain,URL), not blank=all'
+        - macro: '{$OTX_EXCLUDE_TYPES}'
+          value: ''
+          description: 'IOC types to exclude from discovery (e.g. email,hostname)'
+        - macro: '{$OTX_EXCLUDE_TAGS}'
+          value: ''
+          description: 'Tags to exclude from discovery (e.g. test,benign)'
+        - macro: '{$OTX_TAGS_CRITICAL}'
+          value: 'ransomware,phishing,malware,botnet,APT'
+          description: 'Tags that trigger critical alerts (e.g. ransomware,phishing,malware)'
+        - macro: '{$OTX_TAGS_HIGH}'
+          value: 'exploit,ddos,spam'
+          description: 'Tags that trigger high alerts'
       value_maps:
         - name: 'OTX IOC Severity Map'
           mappings:
