@@ -48,9 +48,11 @@ zabbix_export:
           delay: 1h
           filter:
             conditions:
+              # Only include IOCs with non-empty values
               - macro: '{#VALUE}'
                 operator: MATCHES_REGEX
                 value: '.+'
+              # Minimum severity filter
               - macro: '{#SEVERITY}'
                 operator: GREATER_OR_EQUAL
                 value: '{$OTX_MIN_SEVERITY}'
@@ -58,6 +60,7 @@ zabbix_export:
               - macro: '{#TYPE}'
                 operator: IN
                 value: '{$OTX_INCLUDE_TYPES}'
+              # Exclude IOC types if macros are set
               - macro: '{#TYPE}'
                 operator: NOT_IN
                 value: '{$OTX_EXCLUDE_TYPES}'
@@ -78,6 +81,7 @@ zabbix_export:
                 - type: JAVASCRIPT
                   parameters:
                     - 'return ("ip" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+            # Domain severity item prototype
             - name: 'OTX IOC Severity Domain: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
@@ -89,6 +93,7 @@ zabbix_export:
                 - type: JAVASCRIPT
                   parameters:
                     - 'return ("domain" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+            # URL severity item prototype
             - name: 'OTX IOC Severity URL: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
@@ -100,6 +105,7 @@ zabbix_export:
                 - type: JAVASCRIPT
                   parameters:
                     - 'return ("url" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+            # Hash severity item prototype
             - name: 'OTX IOC Severity Hash: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
@@ -111,6 +117,7 @@ zabbix_export:
                 - type: JAVASCRIPT
                   parameters:
                     - 'return ("file_hash" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+            # Generic IOC item prototypes
             - name: 'OTX IOC {#TYPE}: {#VALUE}'
               type: EXTERNAL
               key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
@@ -118,6 +125,7 @@ zabbix_export:
               history: 30d
               trends: 365d
               value_type: TEXT
+            # Generic severity item prototype
             - name: 'OTX IOC Severity {#TYPE}: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
@@ -125,6 +133,7 @@ zabbix_export:
               history: 30d
               trends: 365d
               value_type: UNSIGNED
+            # Metadata item prototypes
             - name: 'OTX IOC First Seen {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.first_seen[{#TYPE},{#VALUE}]'
@@ -136,6 +145,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$.{#FIRST_SEEN}'
+            # Last seen item prototype
             - name: 'OTX IOC Last Seen {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.last_seen[{#TYPE},{#VALUE}]'
@@ -147,6 +157,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$.{#LAST_SEEN}'
+            # Pulse name item prototype
             - name: 'OTX IOC Pulse Name {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.pulse_name[{#TYPE},{#VALUE}]'
@@ -158,6 +169,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$.{#PULSE_NAME}'
+            # Tags item prototype
             - name: 'OTX IOC Tags {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.tags[{#TYPE},{#VALUE}]'
@@ -169,6 +181,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$.{#TAGS}'
+            # References item prototype
             - name: 'OTX IOC References {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.references[{#TYPE},{#VALUE}]'
@@ -180,6 +193,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$.{#REFERENCES}'
+            # Threat type item prototype
             - name: 'OTX IOC Threat Type {#TYPE}: {#VALUE}'
               type: DEPENDENT
               key: 'otx.ioc.threat_type[{#TYPE},{#VALUE}]'
@@ -192,21 +206,27 @@ zabbix_export:
                   parameters:
                     - '$.{#THREAT_TYPE}'
           trigger_prototypes:
+            # General API health trigger
             - name: 'OTX API health check failed'
               expression: 'find(/Alien Vault OTX/otx.health[{$OTX_API_KEY}],,"fail")=1'
               priority: HIGH
+            # Severity-based triggers
             - name: 'High severity OTX IP IOC: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: HIGH
+            # Domain severity trigger
             - name: 'High severity OTX Domain IOC: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: HIGH
+            # URL severity trigger
             - name: 'High severity OTX URL IOC: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: HIGH
+            # Hash severity trigger
             - name: 'High severity OTX Hash IOC: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: HIGH
+            # Generic severity trigger
             - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: WARNING
@@ -222,9 +242,11 @@ zabbix_export:
         # Security: API key macro should be stored securely and never logged or exposed in UI or error messages.
         # WARNING: Do not expose API keys in logs, screens, or error messages. Use Zabbix secrets/vaults if available.
       triggers:
+        # Overall monitoring triggers
         - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
           expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
           priority: AVERAGE
+        # Data freshness trigger
         - name: 'OTX data not updated for over 2 hours'
           expression: 'nodata(/Alien Vault OTX/otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
           priority: HIGH
@@ -275,5 +297,3 @@ zabbix_export:
               newvalue: 'High'
             - value: ''
               newvalue: 'Unknown'
-            - value: 'error'
-              newvalue: 'Error'        

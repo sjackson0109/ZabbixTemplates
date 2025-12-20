@@ -11,8 +11,8 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 - **Pulse Count & Update Time:** Tracks the number of new pulses and the last update time.
 - **IOC Metadata Exposure:** Each discovered IOC now includes first seen, last seen, pulse name, tags, references, and threat type for richer context and filtering in Zabbix.
 - **Robust Error Handling:** All operations return Zabbix-friendly output, with clear error reporting and safe defaults.
-- **Macro/Env Flexibility:** Supports macros/environment variables for API endpoint, timeout, and debug logging.
-- **Performance Optimized:** Caches API results within a run to minimize redundant calls.
+- **Macro/Env Flexibility:** Supports macros/environment variables for API endpoint, timeout, thresholds, and debug logging.
+- **Performance Optimized:** Uses a persistent SQLite cache to minimize redundant API calls and improve performance, even across script runs.
 
 ---
 
@@ -23,8 +23,16 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
    - Import `alien_vault_otx.yaml` into Zabbix (Configuration → Templates).
 3. **Configure Macros**
    - Set `{$OTX_API_KEY}` on the host or template.
-   - Optionally set `{$OTX_SINCE_HOURS}` (default: 24) and `{$SEVERITY_THRESHOLD}` (default: 7).
-   - For advanced use, set environment variables: `OTX_BASE`, `OTX_TIMEOUT`, `OTX_DEBUG`.
+   - Optionally set:
+     - `{$OTX_SINCE_HOURS}` (default: 24)
+     - `{$SEVERITY_THRESHOLD}` (default: 7)
+     - `{$OTX_API_ENDPOINT}` (default: https://otx.alienvault.com/api/v1)
+     - `{$OTX_TIMEOUT}` (default: 30)
+     - `{$OTX_MIN_SEVERITY}` (default: 1)
+     - `{$OTX_CACHE_DB}` (default: otx_indicator_cache.sqlite3)
+     - `{$OTX_CACHE_MAX}` (default: 10000)
+     - `{$OTX_CACHE_TTL}` (default: 2592000, 30 days)
+   - For advanced use, set environment variables to override macros.
 4. **Assign Template**
    - Link the template to any host (no SNMP required).
 
@@ -51,14 +59,14 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 
 ## Script Usage (Manual)
 ```bash
-python get_alien_vault_otx.py discover <API_KEY> <HOURS>
-python get_alien_vault_otx.py ioc <TYPE> <VALUE> <API_KEY> <HOURS>
-python get_alien_vault_otx.py severity <TYPE> <VALUE> <API_KEY> <HOURS>
-python get_alien_vault_otx.py pulses <API_KEY> <HOURS>
+python get_alien_vault_otx.py discover <API_KEY> <HOURS> [--otx-endpoint URL] [--otx-timeout SECONDS][--otx-severity-threshold N] [--otx-min-severity N]
+python get_alien_vault_otx.py ioc <TYPE> <VALUE> <API_KEY> <HOURS> [--otx-endpoint URL] [--otx-timeout SECONDS]
+python get_alien_vault_otx.py severity <TYPE> <VALUE> <API_KEY> <HOURS> [--otx-severity-threshold N]
+python get_alien_vault_otx.py pulses <API_KEY> <HOURS> [--otx-timeout SECONDS]
 python get_alien_vault_otx.py lastupdate <API_KEY> <HOURS>
 ```
 
-- Set `OTX_BASE`, `OTX_TIMEOUT`, or `OTX_DEBUG=1` as environment variables for advanced configuration.
+- All configuration can be set via macros, environment variables, or CLI arguments (CLI takes precedence).
 
 ---
 
@@ -67,6 +75,7 @@ python get_alien_vault_otx.py lastupdate <API_KEY> <HOURS>
 - **Rate Limits:** Increase polling interval or check OTX API status.
 - **Script Errors:** All errors are logged and returned as JSON or safe defaults for Zabbix.
 - **Template Validation:** Use `validate_zabbix_template.py` to check YAML before import.
+- **Cache File:** The script uses a persistent SQLite cache (`otx_indicator_cache.sqlite3` by default) to speed up indicator lookups and reduce API calls. If the cache file is deleted or missing, the script will simply re-fetch data from the OTX API—no data is lost, and the cache will rebuild automatically. The cache is automatically purged of entries older than 30 days and will not exceed the configured maximum size.
 
 ---
 
