@@ -16,6 +16,10 @@ zabbix_export:
               newvalue: 'Medium'
             - value: '7-10'
               newvalue: 'High'
+            - value: ''
+              newvalue: 'Unknown'
+            - value: 'error'
+              newvalue: 'Error'
       description: |-
         Automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence in Zabbix.
         This template uses an external Python script to:
@@ -31,12 +35,29 @@ zabbix_export:
       groups:
         - name: Templates
       macros:
+        # API key for OTX. Store securely, do not log or expose in UI.
         - macro: '{$OTX_API_KEY}'
           value: ''
+          description: 'AlienVault OTX API key (keep secret)'
+        # How many hours back to look for new IOCs (default: 24)
         - macro: '{$OTX_SINCE_HOURS}'
           value: '24'
+          description: 'Time window (hours) for IOC discovery'
+        # Minimum severity/confidence to trigger alerts (default: 7)
         - macro: '{$SEVERITY_THRESHOLD}'
           value: '7'
+          description: 'Minimum severity/confidence for alerting'
+        # Minimum severity for discovery (default: 1)
+        - macro: '{$OTX_MIN_SEVERITY}'
+          value: '1'
+          description: 'Minimum severity/confidence for IOC discovery'
+        # Tags for tag-based triggers (comma-separated, e.g. ransomware,phishing,malware)
+        - macro: '{$OTX_TAGS_CRITICAL}'
+          value: 'ransomware,phishing,malware,botnet,APT'
+          description: 'Tags that trigger critical alerts'
+        - macro: '{$OTX_TAGS_HIGH}'
+          value: 'exploit,ddos,spam'
+          description: 'Tags that trigger high alerts'
       items:
         - name: 'OTX Pulses Count (last {$OTX_SINCE_HOURS}h)'
           type: EXTERNAL
@@ -69,6 +90,9 @@ zabbix_export:
               - macro: '{#VALUE}'
                 operator: MATCHES_REGEX
                 value: '.+'
+              - macro: '{#SEVERITY}'
+                operator: GREATER_OR_EQUAL
+                value: '{$OTX_MIN_SEVERITY}'
           item_prototypes:
             # Type-specific severity item prototypes for granular triggers
             - name: 'OTX IOC Severity IP: {#VALUE}'
@@ -211,12 +235,16 @@ zabbix_export:
             - name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: WARNING
-            - name: 'OTX IOC with Ransomware Tag: {#VALUE}'
-              expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],,"ransomware")=1'
+            # Macro-driven tag triggers for critical tags
+            - name: 'OTX IOC with Critical Tag: {#VALUE}'
+              expression: 'regexp(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],"({$OTX_TAGS_CRITICAL})")=1'
               priority: DISASTER
-            - name: 'OTX IOC with Phishing Tag: {#VALUE}'
-              expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],,"phishing")=1'
+            # Macro-driven tag triggers for high tags
+            - name: 'OTX IOC with High Tag: {#VALUE}'
+              expression: 'regexp(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],"({$OTX_TAGS_HIGH})")=1'
               priority: HIGH
+            # Example: add more tag triggers as needed
+        # Security: API key macro should be stored securely and never logged or exposed in UI or error messages.
       triggers:
         - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
           expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
