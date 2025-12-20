@@ -5,21 +5,6 @@ zabbix_export:
     - name: Templates
   templates:
     - name: 'Alien Vault OTX'
-      value_maps:
-        - name: 'OTX IOC Severity Map'
-          mappings:
-            - value: '0'
-              newvalue: 'None'
-            - value: '1-3'
-              newvalue: 'Low'
-            - value: '4-6'
-              newvalue: 'Medium'
-            - value: '7-10'
-              newvalue: 'High'
-            - value: ''
-              newvalue: 'Unknown'
-            - value: 'error'
-              newvalue: 'Error'
       description: |-
         Automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence in Zabbix.
         This template uses an external Python script to:
@@ -38,7 +23,15 @@ zabbix_export:
         # API key for OTX. Store securely, do not log or expose in UI.
         - macro: '{$OTX_API_KEY}'
           value: ''
-          description: 'AlienVault OTX API key (keep secret)'
+          description: 'AlienVault OTX API key (keep secret). Use Zabbix secrets/vault if available.'
+        # API endpoint (default: https://otx.alienvault.com/api/v1)
+        - macro: '{$OTX_API_ENDPOINT}'
+          value: 'https://otx.alienvault.com/api/v1'
+          description: 'OTX API endpoint URL (advanced)'
+        # API timeout in seconds (default: 30)
+        - macro: '{$OTX_TIMEOUT}'
+          value: '30'
+          description: 'OTX API request timeout (seconds)'
         # How many hours back to look for new IOCs (default: 24)
         - macro: '{$OTX_SINCE_HOURS}'
           value: '24'
@@ -51,6 +44,18 @@ zabbix_export:
         - macro: '{$OTX_MIN_SEVERITY}'
           value: '1'
           description: 'Minimum severity/confidence for IOC discovery'
+        # Comma-separated IOC types to include (e.g. IPv4,domain,URL). Leave blank for all.
+        - macro: '{$OTX_INCLUDE_TYPES}'
+          value: ''
+          description: 'IOC types to include in discovery (blank=all)'
+        # Comma-separated IOC types to exclude (e.g. email,hostname)
+        - macro: '{$OTX_EXCLUDE_TYPES}'
+          value: ''
+          description: 'IOC types to exclude from discovery'
+        # Comma-separated tags to exclude (e.g. test,benign)
+        - macro: '{$OTX_EXCLUDE_TAGS}'
+          value: ''
+          description: 'Tags to exclude from discovery'
         # Tags for tag-based triggers (comma-separated, e.g. ransomware,phishing,malware)
         - macro: '{$OTX_TAGS_CRITICAL}'
           value: 'ransomware,phishing,malware,botnet,APT'
@@ -93,6 +98,17 @@ zabbix_export:
               - macro: '{#SEVERITY}'
                 operator: GREATER_OR_EQUAL
                 value: '{$OTX_MIN_SEVERITY}'
+              # Include/exclude IOC types if macros are set
+              - macro: '{#TYPE}'
+                operator: IN
+                value: '{$OTX_INCLUDE_TYPES}'
+              - macro: '{#TYPE}'
+                operator: NOT_IN
+                value: '{$OTX_EXCLUDE_TYPES}'
+              # Exclude IOCs with certain tags
+              - macro: '{#TAGS}'
+                operator: NOT_MATCHES_REGEX
+                value: '{$OTX_EXCLUDE_TAGS}'
           item_prototypes:
             # Type-specific severity item prototypes for granular triggers
             - name: 'OTX IOC Severity IP: {#VALUE}'
@@ -220,6 +236,9 @@ zabbix_export:
                   parameters:
                     - '$.{#THREAT_TYPE}'
           trigger_prototypes:
+            - name: 'OTX API health check failed'
+              expression: 'find(/Alien Vault OTX/otx.health[{$OTX_API_KEY}],,"fail")=1'
+              priority: HIGH
             - name: 'High severity OTX IP IOC: {#VALUE}'
               expression: 'last(/Alien Vault OTX/otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
               priority: HIGH
@@ -245,6 +264,7 @@ zabbix_export:
               priority: HIGH
             # Example: add more tag triggers as needed
         # Security: API key macro should be stored securely and never logged or exposed in UI or error messages.
+        # WARNING: Do not expose API keys in logs, screens, or error messages. Use Zabbix secrets/vaults if available.
       triggers:
         - name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
           expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
@@ -252,3 +272,18 @@ zabbix_export:
         - name: 'OTX data not updated for over 2 hours'
           expression: 'nodata(/Alien Vault OTX/otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
           priority: HIGH
+      value_maps:
+        - name: 'OTX IOC Severity Map'
+          mappings:
+            - value: '0'
+              newvalue: 'None'
+            - value: '1-3'
+              newvalue: 'Low'
+            - value: '4-6'
+              newvalue: 'Medium'
+            - value: '7-10'
+              newvalue: 'High'
+            - value: ''
+              newvalue: 'Unknown'
+            - value: 'error'
+              newvalue: 'Error'        

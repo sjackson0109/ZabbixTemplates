@@ -58,13 +58,50 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-# Macro/env support
-OTX_BASE = os.environ.get('OTX_BASE', 'https://otx.alienvault.com/api/v1')
-try:
-    HTTP_TIMEOUT = int(os.environ.get('OTX_TIMEOUT', '30'))
-except Exception:
-    HTTP_TIMEOUT = 30
-DEBUG = os.environ.get('OTX_DEBUG', '0') == '1'
+
+# Macro/env/CLI support for config
+import argparse
+
+def get_config():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--otx-endpoint', dest='otx_endpoint', default=None)
+    parser.add_argument('--otx-timeout', dest='otx_timeout', type=int, default=None)
+    parser.add_argument('--otx-severity-threshold', dest='severity_threshold', type=int, default=None)
+    parser.add_argument('--otx-min-severity', dest='min_severity', type=int, default=None)
+    args, _ = parser.parse_known_args()
+
+    # CLI > env > macro > default
+    otx_base = (
+        args.otx_endpoint or
+        os.environ.get('OTX_API_ENDPOINT') or
+        os.environ.get('OTX_BASE') or
+        'https://otx.alienvault.com/api/v1'
+    )
+    try:
+        http_timeout = (
+            args.otx_timeout or
+            int(os.environ.get('OTX_TIMEOUT', os.environ.get('{$OTX_TIMEOUT}', '30')))
+        )
+    except Exception:
+        http_timeout = 30
+    try:
+        severity_threshold = (
+            args.severity_threshold or
+            int(os.environ.get('SEVERITY_THRESHOLD', os.environ.get('{$SEVERITY_THRESHOLD}', '7')))
+        )
+    except Exception:
+        severity_threshold = 7
+    try:
+        min_severity = (
+            args.min_severity or
+            int(os.environ.get('OTX_MIN_SEVERITY', os.environ.get('{$OTX_MIN_SEVERITY}', '1')))
+        )
+    except Exception:
+        min_severity = 1
+    debug = os.environ.get('OTX_DEBUG', '0') == '1'
+    return otx_base, http_timeout, severity_threshold, min_severity, debug
+
+OTX_BASE, HTTP_TIMEOUT, SEVERITY_THRESHOLD, MIN_SEVERITY, DEBUG = get_config()
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG if DEBUG else logging.WARNING)
@@ -113,6 +150,7 @@ def audit_log(message, **kwargs):
     logger.info(f"AUDIT: {message} | {kwargs}")
 
 def mask_api_key(key):
+    # Always return masked, never log the full key
     if not key or len(key) < 8:
         return "***"
     return key[:4] + "..." + key[-4:]
@@ -132,7 +170,8 @@ def otx_get(endpoint, api_key, params=None, retries=3):
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:
-            logger.warning(f"API error (attempt {attempt+1}/{retries}) for key {mask_api_key(api_key)}: {e}")
+            # Never log or print the API key
+            logger.warning(f"API error (attempt {attempt+1}/{retries}): {e}")
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             else:
@@ -224,8 +263,10 @@ def main():
     operation = sys.argv[1].lower()
 
     try:
+        # Remove API key from sys.argv for logging
+        safe_argv = [arg if (i == 0 or 'key' not in arg.lower()) else '***' for i, arg in enumerate(sys.argv)]
         if operation == 'selftest':
-            audit_log('selftest invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('selftest invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # selftest <API_KEY>
             if len(sys.argv) < 3:
                 print(json.dumps({'status': 'error', 'msg': 'selftest requires API_KEY'}))
@@ -281,7 +322,7 @@ def main():
             print(json.dumps(result))
             return
         if operation == 'discover':
-            audit_log('discover invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('discover invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # discover <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print(json.dumps({'error': 'discover requires API_KEY and HOURS'}))
@@ -355,7 +396,7 @@ def main():
                 print(json.dumps({'error': f"Discover error: {type(e).__name__}: {e}"}))
             
         elif operation == 'ioc':
-            audit_log('ioc invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('ioc invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # ioc <TYPE> <VALUE> <API_KEY> <HOURS>
             if len(sys.argv) < 6:
                 print(json.dumps({'error': 'ioc requires TYPE, VALUE, API_KEY, and HOURS'}))
@@ -382,7 +423,7 @@ def main():
                 print(json.dumps({'error': f"IOC error: {type(e).__name__}: {e}"}))
             
         elif operation == 'severity':
-            audit_log('severity invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('severity invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # severity <TYPE> <VALUE> <API_KEY> <HOURS>
             if len(sys.argv) < 6:
                 print(0)
@@ -412,7 +453,7 @@ def main():
                 print(f"0 # Severity error: {type(e).__name__}: {e}")
             
         elif operation == 'pulses':
-            audit_log('pulses invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('pulses invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # pulses <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print(0)
@@ -438,7 +479,7 @@ def main():
                 print(f"0 # Pulses error: {type(e).__name__}: {e}")
             
         elif operation == 'lastupdate':
-            audit_log('lastupdate invoked', user=os.environ.get('USERNAME'), args=sys.argv)
+            audit_log('lastupdate invoked', user=os.environ.get('USERNAME'), args=safe_argv)
             # lastupdate <API_KEY> <HOURS>
             if len(sys.argv) < 4:
                 print('')
