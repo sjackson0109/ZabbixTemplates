@@ -1,8 +1,8 @@
 zabbix_export:
   version: '7.0'
-  date: '2025-07-16T12:00:00Z'
-  groups:
-    - name: Templates
+  template_groups:
+    - uuid: 4e2a1b2c3d4e4f5a84b8a2b3c4d5e6f1
+      name: Intelligence
   templates:
     - name: 'Alien Vault OTX'
       description: |-
@@ -14,7 +14,7 @@ zabbix_export:
         - Track pulse count and last update time for OTX data
         - Provide robust error handling and Zabbix-friendly output (safe defaults, clear errors)
         - Support flexible configuration via macros and environment variables (API key, endpoint, timeout, debug)
-        - Optimize performance with in-script caching to minimize redundant API calls
+        - Optimize performance with in-script caching to minimise redundant API calls
 
         Author: Simon Jackson / @sjackson0109
       groups:

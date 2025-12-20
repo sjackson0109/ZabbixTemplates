@@ -319,6 +319,33 @@ def validate_yaml_multiline_strings(file_content):
     
     return errors
 
+def validate_yaml_unquoted_strings(file_content):
+    """
+    Check for unquoted string values in YAML (e.g., name: value instead of name: 'value')
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    pattern = re.compile(r'^(\s*[\w\-]+:)\s+([^\'\"\[\{\d\s][^#]*)$')
+    lines = file_content.splitlines()
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        # Skip comments, empty lines, and block indicators
+        if not stripped or stripped.startswith('#') or stripped.endswith('|') or stripped.endswith('>'):
+            continue
+        # Only check lines with a colon (key: value)
+        if ':' in line:
+            # Find the value part
+            match = re.match(r'^(\s*[\w\-]+:)\s+(.+)$', line)
+            if match:
+                key, value = match.groups()
+                value = value.strip()
+                # Ignore if value starts with a quote, bracket, brace, digit, or is empty
+                if value and not (value[0] in "'\"[{0123456789" or value.startswith('null') or value.startswith('true') or value.startswith('false')):
+                    # Only warn if value contains spaces (likely a string needing quotes)
+                    if ' ' in value:
+                        errors.append((i, f"Unquoted string value for {key} on line {i}: {value}"))
+    return errors
+
 def validate_zabbix_uuid(value):
     """
     Validate UUID in Zabbix format - must be a valid UUIDv4 as 32-character hex string without hyphens
@@ -364,7 +391,12 @@ def validate_zabbix_schema(yaml_data, file_content):
     string_errors = validate_yaml_multiline_strings(file_content)
     for line_num, msg in string_errors:
         warnings.append(f"Line {line_num}: {msg}")
-    
+
+    # Check for unquoted string values
+    unquoted_errors = validate_yaml_unquoted_strings(file_content)
+    for line_num, msg in unquoted_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
     # Check required top-level structure
     if 'zabbix_export' not in yaml_data:
         errors.append("Missing required top-level 'zabbix_export' key")
