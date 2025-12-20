@@ -450,6 +450,7 @@ zabbix_export:
               newvalue: 'High'
             - value: ''
               newvalue: 'Unknown'
+
       dashboards:
         - uuid: b1e2c3d44a2b4c4d94b8a2b3c4d5e6f1
           name: AlienVault OTX - Threat Overview
@@ -528,10 +529,170 @@ zabbix_export:
                     host: "{HOST.NAME}"
                     trigger_tags:
                       - alienvault_otx
-              newvalue: 'Low'
-            - value: '4-6'
-              newvalue: 'Medium'
-            - value: '7-10'
-              newvalue: 'High'
-            - value: ''
-              newvalue: 'Unknown'
+
+            - name: Threat Timeline
+              widgets:
+                - type: GRAPH
+                  name: Threat First/Last Seen Timeline
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX IOC First Seen
+                    - type: item
+                      name: OTX IOC Last Seen
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: Threat Geo Map
+              widgets:
+                - type: MAP
+                  name: Threat Origin Map
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 6
+                  fields:
+                    - type: item
+                      name: OTX Threat Geolocation
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: IOC Type Distribution
+              widgets:
+                - type: PIE
+                  name: IOC Type Breakdown
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX IOC Type
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: Pulse Activity
+              widgets:
+                - type: GRAPH
+                  name: OTX Pulse Count Over Time
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX Pulses Count
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: DATA_TABLE
+                  name: Recent OTX Pulses
+                  x: 0
+                  y: 4
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX Pulse Name
+                    - type: item
+                      name: OTX Pulse Severity
+                    - type: item
+                      name: OTX Pulse Tags
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: Response Actions
+              widgets:
+                - type: DATA_TABLE
+                  name: Threat Response Actions
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX Threat Name
+                    - type: item
+                      name: Response Action
+                    - type: item
+                      name: Response Status
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: API Health & Performance
+              widgets:
+                - type: SINGLE_VALUE
+                  name: API Health Status
+                  x: 0
+                  y: 0
+                  width: 6
+                  height: 3
+                  fields:
+                    - type: item
+                      name: OTX API Health Status
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: GRAPH
+                  name: API Latency Over Time
+                  x: 6
+                  y: 0
+                  width: 6
+                  height: 3
+                  fields:
+                    - type: item
+                      name: OTX API Latency
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: Tag/Category Heatmap
+              widgets:
+                - type: HEATMAP
+                  name: Threat Tag Frequency
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX IOC Tags
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+            - name: Trigger History
+              widgets:
+                - type: GRAPH
+                  name: Trigger Activations Over Time
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  fields:
+                    - type: trigger
+                      name: OTX Trigger Activations
+                  filter:
+                    host: "{HOST.NAME}"
+                    trigger_tags:
+                      - alienvault_otx
+            - name: Custom Playbook Panel
+              widgets:
+                - type: TEXT
+                  name: Incident Response Playbooks
+                  x: 0
+                  y: 0
+                  width: 12
+                  height: 4
+                  text: |
+                    Refer to your organisation's incident response playbooks for actionable steps when threats are detected. Link: [Playbooks](https://your-org-playbooks.example.com)

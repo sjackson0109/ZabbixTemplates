@@ -38,6 +38,60 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 
 ---
 
+
+## Intended Use Case
+
+This Zabbix template is designed to be applied to a single dedicated host (e.g., named `AlienVaultOTX`) in your Zabbix environment. The host acts as a logical integration point for AlienVault OTX threat intelligence, not as a physical or network device. All OTX data is retrieved via the API using your own OTX account and API key.
+
+**Typical workflow:**
+- Register for a free account at [https://otx.alienvault.com](https://otx.alienvault.com).
+- After logging in, visit [https://otx.alienvault.com/api](https://otx.alienvault.com/api) to view your personal API key (it is visible at the top of the page).
+- Create a new host in Zabbix (e.g., `AlienVaultOTX`) and link this template to it.
+- Set the `{$OTX_API_KEY}` macro on the host to your OTX API key.
+- The template will then automatically retrieve, monitor, and visualize threat intelligence from OTX, including IOCs, pulse activity, and risk trends.
+
+**Note:**
+- Your OTX API key is personal and should be kept secure. It is required for all API requests and is visible only to you on the OTX API page.
+- This template is not intended for use on multiple hosts or for monitoring network devices directly. It is a logical integration for threat intelligence enrichment and situational awareness.
+
+---
+## Host Dashboards
+
+The AlienVault OTX template includes a comprehensive Zabbix host dashboard to help IT administrators visualize and respond to real-world threat intelligence. The dashboard is automatically available on any host linked to the template and provides the following pages:
+
+### Threat Intelligence (Overview)
+- Table of top threats, risk level gauge, threats over time, threat type breakdown, and active threat triggers.
+
+### Threat Timeline
+- Visualizes when threats were first and last seen, helping track the lifecycle of IOCs.
+
+### Threat Geo Map
+- (If geolocation data is available) Maps the origin or affected region of threats for geographic risk awareness.
+
+### IOC Type Distribution
+- Pie chart showing the breakdown of IOC types (IP, domain, URL, hash, etc.).
+
+### Pulse Activity
+- Graph of new OTX pulses over time and a table of recent pulses with severity and tags.
+
+### Response Actions
+- Table of recommended or taken response actions for each threat (customize as needed for your workflow).
+
+### API Health & Performance
+- Single value and graph widgets for API health status and latency, helping monitor integration reliability.
+
+### Tag/Category Heatmap
+- Heatmap showing the frequency of different threat tags or categories for quick pattern recognition.
+
+### Trigger History
+- Graph of trigger activations over time, showing alerting trends and historical context.
+
+### Custom Playbook Panel
+- Text panel with links to incident response playbooks or documentation for rapid response guidance.
+
+All dashboard widgets are filterable by host and leverage the template’s discovered items, triggers, and tags for maximum context and usability.
+
+---
 ## Items & Triggers
 - **Items:**
    - `otx.pulses` — Number of new OTX pulses in the last N hours
