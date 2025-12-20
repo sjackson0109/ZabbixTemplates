@@ -450,3 +450,88 @@ zabbix_export:
               newvalue: 'High'
             - value: ''
               newvalue: 'Unknown'
+      dashboards:
+        - uuid: b1e2c3d44a2b4c4d94b8a2b3c4d5e6f1
+          name: AlienVault OTX - Threat Overview
+          display_period: 3600
+          auto_start: true
+          pages:
+            - name: Threat Intelligence
+              widgets:
+                - type: DATA_TABLE
+                  name: Top Threats
+                  x: 0
+                  y: 0
+                  width: 8
+                  height: 6
+                  fields:
+                    - type: item
+                      name: OTX Threat Name
+                    - type: item
+                      name: OTX Indicator
+                    - type: item
+                      name: OTX Risk Score
+                    - type: item
+                      name: OTX First Seen
+                    - type: item
+                      name: OTX Last Seen
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: SINGLE_VALUE
+                  name: Current Risk Level
+                  x: 8
+                  y: 0
+                  width: 4
+                  height: 3
+                  fields:
+                    - type: item
+                      name: OTX Risk Score
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: GRAPH
+                  name: Threats Over Time
+                  x: 0
+                  y: 6
+                  width: 8
+                  height: 4
+                  fields:
+                    - type: item
+                      name: OTX Threat Count
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: PIE
+                  name: Threat Type Breakdown
+                  x: 8
+                  y: 3
+                  width: 4
+                  height: 3
+                  fields:
+                    - type: item
+                      name: OTX Threat Type
+                  filter:
+                    host: "{HOST.NAME}"
+                    item_tags:
+                      - alienvault_otx
+                - type: TRIGGER_OVERVIEW
+                  name: Active Threat Triggers
+                  x: 8
+                  y: 6
+                  width: 4
+                  height: 4
+                  filter:
+                    host: "{HOST.NAME}"
+                    trigger_tags:
+                      - alienvault_otx
+              newvalue: 'Low'
+            - value: '4-6'
+              newvalue: 'Medium'
+            - value: '7-10'
+              newvalue: 'High'
+            - value: ''
+              newvalue: 'Unknown'
