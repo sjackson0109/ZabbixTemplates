@@ -1,8 +1,77 @@
-import yaml
-from yaml import YAMLError
 import sys
 import re
 import io
+
+# --- Custom YAML Loader (no PyYAML) ---
+class SimpleYAMLLoader:
+    def __init__(self, text):
+        self.lines = text.splitlines()
+        self.pos = 0
+        self.length = len(self.lines)
+
+    def load(self):
+        # Only supports top-level mapping and lists (sufficient for Zabbix template structure)
+        result = {}
+        stack = [(result, -1)]  # (current_dict_or_list, indent_level)
+        for idx, line in enumerate(self.lines):
+            if not line.strip() or line.strip().startswith('#'):
+                continue
+            indent = len(line) - len(line.lstrip(' '))
+            content = line.lstrip(' ')
+            # Pop stack to correct parent for current indent
+            while stack and indent <= stack[-1][1]:
+                stack.pop()
+            parent = stack[-1][0]
+            # Key-value pair
+            if ':' in content and not content.startswith('- '):
+                key, val = content.split(':', 1)
+                key = key.strip()
+                val = val.strip()
+                # If value is empty, treat as nested mapping or list
+                if not val:
+                    # Look ahead: if next non-empty line is more indented and starts with '-', treat as list
+                    new_obj = {}
+                    lookahead = idx + 1
+                    while lookahead < self.length:
+                        next_line = self.lines[lookahead]
+                        if not next_line.strip() or next_line.strip().startswith('#'):
+                            lookahead += 1
+                            continue
+                        next_indent = len(next_line) - len(next_line.lstrip(' '))
+                        if next_indent > indent and next_line.lstrip(' ').startswith('- '):
+                            new_obj = []
+                        break
+                    if isinstance(parent, dict):
+                        parent[key] = new_obj
+                        stack.append((new_obj, indent))
+                else:
+                    # Scalar value
+                    # Remove all leading/trailing single or double quotes (including doubled)
+                    while (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
+                        val = val[1:-1]
+                    if isinstance(parent, dict):
+                        parent[key] = val
+            elif content.startswith('- '):
+                # List item
+                val = content[2:].strip()
+                if isinstance(parent, list):
+                    # If it's a mapping, parse as dict
+                    if ':' in val:
+                        k, v = val.split(':', 1)
+                        k = k.strip()
+                        v = v.strip()
+                        item = {k: v}
+                        parent.append(item)
+                        stack.append((item, indent))
+                    else:
+                        parent.append(val)
+        return result
+
+def load_yaml(text):
+    loader = SimpleYAMLLoader(text)
+    return loader.load()
+
+# --- End Custom YAML Loader ---
 
 # Configure stdout to use UTF-8 encoding to support Unicode emojis
 if sys.platform == "win32":
@@ -83,7 +152,7 @@ RECOVERY_MODES = {
 def validate_item_key(key):
     """
     Validate Zabbix item key format: key[param1,param2,...]
-    Returns: (is_valid, error_message)
+    Returns: '(is_valid, error_message)'
     """
     if not isinstance(key, str):
         return False, "Item key must be a string"
@@ -117,7 +186,7 @@ def validate_item_key(key):
 def validate_time_unit(value):
     """
     Validate Zabbix time unit format: number + suffix (s/m/h/d/w) or user macro
-    Returns: (is_valid, error_message)
+    Returns: '(is_valid, error_message)'
     """
     if not isinstance(value, str):
         return False, "Time unit must be a string"
@@ -139,7 +208,7 @@ def validate_time_unit(value):
 def validate_snmp_oid(oid):
     """
     Validate SNMP OID format: numeric (1.3.6.1...) or symbolic (IF-MIB::ifInOctets.{#SNMPINDEX})
-    Returns: (is_valid, error_message)
+    Returns: '(is_valid, error_message)'
     """
     if not isinstance(oid, str):
         return False, "SNMP OID must be a string"
@@ -167,7 +236,7 @@ def validate_snmp_oid(oid):
 def validate_enum_value(value, enum_dict, field_name):
     """
     Validate enum value against allowed values
-    Returns: (is_valid, error_message)
+    Returns: '(is_valid, error_message)'
     """
     if value is None:
         return True, None  # Optional fields
@@ -263,7 +332,7 @@ def parse_trigger_expression(expression):
 def validate_yaml_multiline_strings(file_content):
     """
     Check for improperly terminated multi-line strings in YAML
-    Returns: list of (line_number, error_message) tuples
+    Returns: 'list of (line_number, error_message) tuples'
     """
     errors = []
     lines = file_content.splitlines()
@@ -322,7 +391,7 @@ def validate_yaml_multiline_strings(file_content):
 def validate_yaml_unquoted_strings(file_content):
     """
     Check for unquoted string values in YAML (e.g., name: value instead of name: 'value')
-    Returns: list of (line_number, error_message) tuples
+    Returns: 'list of (line_number, error_message) tuples'
     """
     errors = []
     pattern = re.compile(r'^(\s*[\w\-]+:)\s+([^\'\"\[\{\d\s][^#]*)$')
@@ -386,6 +455,78 @@ def validate_zabbix_schema(yaml_data, file_content):
     warnings = []
     version = None
     lines = file_content.splitlines()
+
+    # Validate dashboard widget fields: only type, name, value allowed
+    def check_widget_fields_and_filter(dashboards, parent_path):
+        if not isinstance(dashboards, list):
+            return
+        for d_idx, dashboard in enumerate(dashboards):
+            if not isinstance(dashboard, dict):
+                continue
+            pages = dashboard.get('pages')
+            if not isinstance(pages, list):
+                continue
+            for p_idx, page in enumerate(pages):
+                if not isinstance(page, dict):
+                    continue
+                widgets = page.get('widgets')
+                if not isinstance(widgets, list):
+                    continue
+                for w_idx, widget in enumerate(widgets):
+                    if not isinstance(widget, dict):
+                        continue
+                    # Check for invalid 'filter' attribute
+                    if 'filter' in widget:
+                        errors.append(f"{parent_path}[{d_idx}].pages[{p_idx}].widgets[{w_idx}]: Invalid attribute 'filter' in widget. Widgets do not support a 'filter' attribute.")
+                    fields = widget.get('fields')
+                    if isinstance(fields, list):
+                        for f_idx, field in enumerate(fields):
+                            if isinstance(field, dict):
+                                invalid = [k for k in field.keys() if k not in ('type', 'name', 'value')]
+                                if invalid:
+                                    errors.append(f"{parent_path}[{d_idx}].pages[{p_idx}].widgets[{w_idx}].fields[{f_idx}]: Invalid field attribute(s): {', '.join(invalid)}. Only 'type', 'name', and 'value' are allowed.")
+
+    # Helper to check attribute order and presence for uuid/name
+    def check_uuid_name_order(section, section_name, parent_path):
+        if not isinstance(section, list):
+            return
+        for idx, obj in enumerate(section):
+            if not isinstance(obj, dict):
+                continue
+            keys = list(obj.keys())
+            path = f"{parent_path}[{idx}]"
+            if len(keys) < 2:
+                errors.append(f"{section_name} {path}: Must have at least 'uuid' and 'name' attributes as the first two keys.")
+                continue
+            if keys[0] != 'uuid' or keys[1] != 'name':
+                errors.append(f"{section_name} {path}: The first attribute must be 'uuid' and the second must be 'name'. Found: {keys[:2]}")
+
+    # Only run this check if dashboards exist
+    dashboards = None
+    export_data = yaml_data.get('zabbix_export') if 'zabbix_export' in yaml_data else None
+    if export_data and 'dashboards' in export_data:
+        dashboards = export_data['dashboards']
+    if dashboards:
+        check_uuid_name_order(dashboards, 'dashboard', 'dashboards')
+        if isinstance(dashboards, list):
+            for d_idx, dashboard in enumerate(dashboards):
+                if not isinstance(dashboard, dict):
+                    continue
+                # Pages
+                pages = dashboard.get('pages')
+                if pages:
+                    check_uuid_name_order(pages, 'page', f'dashboards[{d_idx}].pages')
+                    if isinstance(pages, list):
+                        for p_idx, page in enumerate(pages):
+                            if not isinstance(page, dict):
+                                continue
+                            # Widgets
+                            widgets = page.get('widgets')
+                            if widgets:
+                                check_uuid_name_order(widgets, 'widget', f'dashboards[{d_idx}].pages[{p_idx}].widgets')
+
+        # Validate widget fields for all dashboards
+        check_widget_fields_and_filter(dashboards, 'dashboards')
     
     # Check for multi-line string issues
     string_errors = validate_yaml_multiline_strings(file_content)
@@ -399,7 +540,9 @@ def validate_zabbix_schema(yaml_data, file_content):
 
     # Check required top-level structure
     if 'zabbix_export' not in yaml_data:
-        errors.append("Missing required top-level 'zabbix_export' key")
+        # Only error if the file looks like YAML (not Python or other source)
+        if not file_content.lstrip().startswith('import') and not file_content.lstrip().startswith('#!'):
+            errors.append("Missing required top-level 'zabbix_export' key")
         return errors, warnings, None
     
     export_data = yaml_data['zabbix_export']
@@ -907,7 +1050,8 @@ def validate_yaml_file(file_path):
         if used_encoding != 'utf-8':
             print(f"⚠️  Warning: File decoded using {used_encoding} encoding (not UTF-8)")
             
-        yaml_data = yaml.safe_load(file_content)
+        #yaml_data = yaml.safe_load(file_content)
+        yaml_data = load_yaml(file_content)
             
         # Basic YAML syntax is valid, now check Zabbix schema
         schema_errors, schema_warnings, version = validate_zabbix_schema(yaml_data, file_content)
@@ -943,11 +1087,8 @@ def validate_yaml_file(file_path):
             
             return not has_errors  # Return True if only warnings, False if errors
             
-    except YAMLError as e:
-        print(f"❌ YAML syntax error: {e}")
-        if hasattr(e, 'problem_mark'):
-            mark = e.problem_mark
-            print(f"Error position: line {mark.line + 1}, column {mark.column + 1}")
+    except Exception as e:
+        print(f"❌ YAML or parsing error: {e}")
         return False
     except Exception as e:
         print(f"❌ Error reading file: {e}")
