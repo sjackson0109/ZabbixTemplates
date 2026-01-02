@@ -277,6 +277,76 @@ def validate_dkim(txt_records, selector, domain):
         return {'valid': False, 'error': 'Invalid DKIM record (missing public key p=)', 'records': txt_records}
     return {'valid': True, 'error': None, 'records': txt_records}
 
+# --- RFC 5732-5735: Special-Use/Reserved Domain Detection ---
+
+def validate_special_use_domain(domain):
+    """Validate domain against special-use and reserved domain names (RFC 5732-5735)."""
+    domain_lower = domain.lower()
+    
+    # RFC 6761 Special Use Top Level Domains
+    special_use_tlds = {
+        'localhost',     # RFC 6761 - localhost
+        'local',         # RFC 6762 - mDNS
+        'example',       # RFC 6761 - documentation
+        'invalid',       # RFC 6761 - invalid domain
+        'test',          # RFC 6761 - testing
+        'onion',         # RFC 7686 - Tor hidden services
+    }
+    
+    # RFC 2606 Reserved Example Domains
+    reserved_examples = {
+        'example.com',
+        'example.net',
+        'example.org',
+        'test.example',
+    }
+    
+    # RFC 1918 Private Use Domains (common patterns)
+    private_patterns = [
+        r'.*\.internal$',
+        r'.*\.corp$',
+        r'.*\.home$',
+        r'.*\.lan$',
+        r'.*\.local$',
+    ]
+    
+    result = {
+        'is_special_use': False,
+        'is_reserved': False,
+        'is_private': False,
+        'category': None,
+        'warning': None,
+        'rfc_reference': None
+    }
+    
+    # Check TLD against special use list
+    parts = domain_lower.split('.')
+    if len(parts) > 1:
+        tld = parts[-1]
+        if tld in special_use_tlds:
+            result['is_special_use'] = True
+            result['category'] = 'special_use_tld'
+            result['warning'] = f'Domain uses special-use TLD: .{tld}'
+            result['rfc_reference'] = 'RFC6761'
+    
+    # Check against reserved examples
+    if domain_lower in reserved_examples:
+        result['is_reserved'] = True
+        result['category'] = 'reserved_example'
+        result['warning'] = f'Domain is reserved for documentation/examples'
+        result['rfc_reference'] = 'RFC2606'
+    
+    # Check private use patterns
+    for pattern in private_patterns:
+        if re.match(pattern, domain_lower):
+            result['is_private'] = True
+            result['category'] = 'private_use'
+            result['warning'] = f'Domain appears to be for private/internal use'
+            result['rfc_reference'] = 'RFC6761'
+            break
+    
+    return result
+
 def validate_caa(caa_records):
     """Validate CAA record presence and syntax (RFC 6844)."""
     if not caa_records:
@@ -529,12 +599,20 @@ def calculate_health_score(checks):
     passed = 0
     weights = {
         'soa': 10, 'ns': 10, 'mx': 10, 'a': 10, 'aaaa': 5, 'caa': 5,
-        'spf': 15, 'dmarc': 15, 'dkim': 10, 'dnssec': 10
+        'spf': 15, 'dmarc': 15, 'dkim': 10, 'dnssec': 10, 'special_domain': 5
     }
     for key, weight in weights.items():
         if key in checks:
             total += weight
-            if checks[key].get('valid'):
+            if key == 'special_domain':
+                # For special domains, valid means NOT special/reserved/private
+                special_check = checks[key]
+                is_problematic = (special_check.get('is_special_use') or 
+                                special_check.get('is_reserved') or 
+                                special_check.get('is_private'))
+                if not is_problematic:
+                    passed += weight
+            elif checks[key].get('valid'):
                 passed += weight
     return int(100 * passed / total) if total else 0
 
@@ -2326,6 +2404,10 @@ def ns_check(domain, ns_server):
 def get_health(domain):
     """Get overall health and compliance status for a domain."""
     checks = {}
+    
+    # Special/Reserved Domain Check (RFC 5732-5735)
+    checks['special_domain'] = validate_special_use_domain(domain)
+    
     # SOA
     soa_answers = dns_query(domain, 'SOA', DNS_NAMESERVER, DNS_TIMEOUT)
     soa_records = [format_rdata(r['rtype'], r['rdata']) for r in soa_answers]
@@ -2461,6 +2543,12 @@ def main():
             print(json.dumps({'error': 'Usage: get_domain_health.py caa <DOMAIN>'}))
             sys.exit(1)
         print(get_caa(sys.argv[2]))
+    elif cmd == 'special':
+        if len(sys.argv) < 3:
+            print(json.dumps({'error': 'Usage: get_domain_health.py special <DOMAIN>'}))
+            sys.exit(1)
+        result = validate_special_use_domain(sys.argv[2])
+        print(json.dumps(result))
     elif cmd == 'whois':
         if len(sys.argv) < 3:
             print(json.dumps({'error': 'Usage: get_domain_health.py whois <DOMAIN>'}))

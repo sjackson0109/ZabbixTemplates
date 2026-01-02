@@ -28,8 +28,11 @@ zabbix_export:
         - RFC 1034, 1035: Core DNS protocol and record types
         - RFC 1912: Common DNS operational errors
         - RFC 2181: DNS specification clarifications
+        - RFC 2606: Reserved Example Domains
         - RFC 4033-4035: DNSSEC
+        - RFC 5732-5735: Special-Use and Reserved Domain Names
         - RFC 6698: DANE/TLSA
+        - RFC 6761: Special-Use Top Level Domains
         - RFC 7208: SPF
         - RFC 7489: DMARC
         - RFC 6844: CAA
@@ -93,6 +96,123 @@ zabbix_export:
               value: aaaa
             - tag: rfc
               value: RFC3596
+        - uuid: a8f2d3e5b9c04f1e856d7a2c9b4e1f35
+          name: 'Domain Special Use Status'
+          type: DEPENDENT
+          key: 'dns.domain.special_use[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if domain uses special-use TLD (RFC 6761) - 1=Special Use, 0=Normal'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.special_domain.is_special_use
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: special_domain
+            - tag: rfc
+              value: RFC6761
+          triggers:
+            - uuid: f7e8a9b2c3d14e5f967a8b1c2d3e4f56
+              expression: 'last(/Domain Health/dns.domain.special_use[{$DNS_DOMAIN}])=1'
+              name: 'Domain uses Special-Use TLD on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'Domain uses a special-use top-level domain (.localhost, .local, .test, .invalid, .example, .onion) which may cause resolution issues'
+              tags:
+                - tag: dns_check
+                  value: special_domain
+                - tag: rfc
+                  value: RFC6761
+        - uuid: b9c1d4e6f2a05b3e748c9d1e2f3a4b57
+          name: 'Domain Reserved Status'
+          type: DEPENDENT
+          key: 'dns.domain.reserved[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if domain is reserved for documentation (RFC 2606) - 1=Reserved, 0=Normal'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.special_domain.is_reserved
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: special_domain
+            - tag: rfc
+              value: RFC2606
+          triggers:
+            - uuid: c8d2e5f7a4b16c9e058f1a2b3c4d5e68
+              expression: 'last(/Domain Health/dns.domain.reserved[{$DNS_DOMAIN}])=1'
+              name: 'Domain is Reserved for Documentation on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'Domain is reserved for documentation/examples (example.com, example.net, example.org, test.example) and should not be used in production'
+              tags:
+                - tag: dns_check
+                  value: special_domain
+                - tag: rfc
+                  value: RFC2606
+        - uuid: d3e4f8a7b2c15d6e927b4c5d6e7f8a92
+          name: 'Domain Private Use Status'
+          type: DEPENDENT
+          key: 'dns.domain.private_use[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if domain appears to be for private/internal use - 1=Private, 0=Public'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.special_domain.is_private
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: special_domain
+            - tag: rfc
+              value: RFC6761
+          triggers:
+            - uuid: e4f5a9b8c3d26e7f138e2b3c4d5e6f79
+              expression: 'last(/Domain Health/dns.domain.private_use[{$DNS_DOMAIN}])=1'
+              name: 'Domain appears to be for Private/Internal Use on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Domain uses patterns suggesting private/internal use (.internal, .corp, .home, .lan, .local) which may cause public DNS resolution issues'
+              tags:
+                - tag: dns_check
+                  value: special_domain
+                - tag: rfc
+                  value: RFC6761
+        - uuid: f5a6b9c8d4e37f8a249d3e4f5a6b7c85
+          name: 'Domain Special Use Warning'
+          type: DEPENDENT
+          key: 'dns.domain.special_warning[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          description: 'Warning message for special-use, reserved, or private domains'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.special_domain.warning
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'No special domain warnings'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: special_domain
+            - tag: rfc
+              value: RFC5735
         - uuid: b07cc3a4c9cd4b6a802c8b9f7dffd0fa
           name: 'ASN Count'
           type: DEPENDENT
