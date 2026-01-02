@@ -128,7 +128,7 @@ zabbix_export:
                   value: special_domain
                 - tag: rfc
                   value: RFC6761
-        - uuid: b9c1d4e6f2a05b3e748c9d1e2f3a4b57
+        - uuid: b9c1d4e6f2a04b3e8c8c9d1e2f3a4b57
           name: 'Domain Reserved Status'
           type: DEPENDENT
           key: 'dns.domain.reserved[{$DNS_DOMAIN}]'
@@ -150,7 +150,7 @@ zabbix_export:
             - tag: rfc
               value: RFC2606
           triggers:
-            - uuid: c8d2e5f7a4b16c9e058f1a2b3c4d5e68
+            - uuid: c8d2e5f7a4b14c9e958f1a2b3c4d5e68
               expression: 'last(/Domain Health/dns.domain.reserved[{$DNS_DOMAIN}])=1'
               name: 'Domain is Reserved for Documentation on {$DNS_DOMAIN}'
               priority: INFO
@@ -160,7 +160,7 @@ zabbix_export:
                   value: special_domain
                 - tag: rfc
                   value: RFC2606
-        - uuid: d3e4f8a7b2c15d6e927b4c5d6e7f8a92
+        - uuid: d3e4f8a7b2c14d6e827b4c5d6e7f8a92
           name: 'Domain Private Use Status'
           type: DEPENDENT
           key: 'dns.domain.private_use[{$DNS_DOMAIN}]'
@@ -182,7 +182,7 @@ zabbix_export:
             - tag: rfc
               value: RFC6761
           triggers:
-            - uuid: e4f5a9b8c3d26e7f138e2b3c4d5e6f79
+            - uuid: e4f5a9b8c3d24e7f938e2b3c4d5e6f79
               expression: 'last(/Domain Health/dns.domain.private_use[{$DNS_DOMAIN}])=1'
               name: 'Domain appears to be for Private/Internal Use on {$DNS_DOMAIN}'
               priority: WARNING
@@ -192,7 +192,7 @@ zabbix_export:
                   value: special_domain
                 - tag: rfc
                   value: RFC6761
-        - uuid: f5a6b9c8d4e37f8a249d3e4f5a6b7c85
+        - uuid: f5a6b9c8d4e34f8a949d3e4f5a6b7c85
           name: 'Domain Special Use Warning'
           type: DEPENDENT
           key: 'dns.domain.special_warning[{$DNS_DOMAIN}]'
