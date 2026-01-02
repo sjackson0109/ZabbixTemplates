@@ -1,12 +1,13 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
-    - uuid: 4e2a1b2c3d4e4f5a84b8a2b3c4d5e6f1
-      name: 'Intelligence'
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
   templates:
     - uuid: 7e2b4c8e4b2e4e4b9a8b4c8e4b2e4e4b
+      template: 'Alien Vault OTX'
       name: 'Alien Vault OTX'
-      description: |-
+      description: |
         Automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence in Zabbix.
         This template uses an external Python script to:
         - Discover and track IOCs (Indicators of Compromise) from OTX pulses within a configurable time window
@@ -15,51 +16,129 @@ zabbix_export:
         - Track pulse count and last update time for OTX data
         - Provide robust error handling and Zabbix-friendly output (safe defaults, clear errors)
         - Support flexible configuration via macros and environment variables (API key, endpoint, timeout, debug)
-        - Optimize performance with in-script caching to minimise redundant API calls
-
+        - Optimise performance with in-script caching to minimise redundant API calls
+        
         Author: 'Simon Jackson / @sjackson0109'
+      vendor:
+        name: AlienVault
+        version: '2.0'
       groups:
-        - name: 'Templates'
+        - name: Templates
       items:
+        - uuid: ee887d7f9fca43b5911f909c374a6788
+          name: 'Threat Geo Map'
+          type: EXTERNAL
+          key: 'otx.geomap[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Geographic distribution of threats from OTX.'
+          tags:
+            - tag: integration
+              value: alienvault_otx
+            - tag: otx_type
+              value: threat_intel
+        - uuid: 990ea57087194d338b7829d22f58652a
+          name: 'IOC Type Distribution'
+          type: EXTERNAL
+          key: 'otx.ioctypes[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Distribution of IOC types (IP, domain, hash, etc.) from OTX.'
+          tags:
+            - tag: integration
+              value: alienvault_otx
+            - tag: otx_type
+              value: threat_intel
+        - uuid: b7e2c4e14a2b4c4d94b8a2b3c4d5e6f2
+          name: 'OTX Last Update Time'
+          type: EXTERNAL
+          key: 'otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Last update timestamp from AlienVault OTX API.'
+          tags:
+            - tag: integration
+              value: alienvault_otx
+            - tag: otx_type
+              value: api_health
+          triggers:
+            - uuid: d7e8f9a44b5c41bea4b8a2b3c4d5e6fa
+              expression: 'nodata(/Alien Vault OTX/otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
+              name: 'OTX data not updated for over 2 hours'
+              priority: HIGH
+              tags:
+                - tag: event
+                  value: data_stale
+                - tag: integration
+                  value: alienvault_otx
+        - uuid: 262cc010241445fd95d490bbeb76b7fc
+          name: 'Pulse Activity'
+          type: EXTERNAL
+          key: 'otx.pulseactivity[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Recent pulse activity from AlienVault OTX.'
+          tags:
+            - tag: integration
+              value: alienvault_otx
+            - tag: otx_type
+              value: threat_intel
         - uuid: b3b6e2e24c2d4e3a94b8a2b3c4d5e6f1
           name: 'OTX Pulses Count (last {$OTX_SINCE_HOURS}h)'
           type: EXTERNAL
           key: 'otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
           delay: 1h
           history: 90d
-          trends: 365d
-          value_type: UNSIGNED
           tags:
-            - tag: otx_type
-              value: 'api_health'
             - tag: integration
-              value: 'alienvault_otx'
-        - uuid: b7e2c4e14a2b4c4d94b8a2b3c4d5e6f2
-          name: 'OTX Last Update Time'
-          type: EXTERNAL
-          key: 'otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-            ...
-          history: 30d
-          name: 'Threat Timeline'
-          value_type: TEXT
-          name: 'Threat Geo Map'
+              value: alienvault_otx
             - tag: otx_type
-          name: 'IOC Type Distribution'
-            - tag: integration
-          name: 'Pulse Activity'
+              value: api_health
+          triggers:
+            - uuid: c6d7e8f94a8b41be84b8a2b3c4d5e6f9
+              expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
+              name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
+              priority: AVERAGE
+              tags:
+                - tag: event
+                  value: no_new_iocs
+                - tag: integration
+                  value: alienvault_otx
         - uuid: e6f1a2b34c5d4e3194b8a2b3c4d5e6f3
           name: 'Response Actions'
           type: EXTERNAL
           key: 'otx.response[{$OTX_API_KEY}]'
           delay: 1h
           history: 30d
-          trends: 365d
           value_type: TEXT
+          trends: '0'
           tags:
-            - tag: otx_type
-              value: 'response_action'
             - tag: integration
-              value: 'alienvault_otx'
+              value: alienvault_otx
+            - tag: otx_type
+              value: response_action
+        - uuid: 0b3058b1e7c84ccbaba8bf15c1fcf296
+          name: 'Threat Timeline'
+          type: EXTERNAL
+          key: 'otx.timeline[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Timeline of threat activity from OTX pulses.'
+          tags:
+            - tag: integration
+              value: alienvault_otx
+            - tag: otx_type
+              value: threat_intel
       discovery_rules:
         - uuid: f1a2b3c44d5e4fa294b8a2b3c4d5e6f4
           name: 'AlienVault OTX IOC Discovery'
@@ -68,40 +147,148 @@ zabbix_export:
           delay: 1h
           filter:
             conditions:
-              # Only include IOCs with non-empty values
-              - macro: '{#VALUE}'
-                operator: MATCHES_REGEX
-                value: '.+'
-              # Minimum severity filter
-              - macro: '{#SEVERITY}'
-                operator: GREATER_OR_EQUAL
-                value: '{$OTX_MIN_SEVERITY}'
-              # Include/exclude IOC types if macros are set
-              - macro: '{#TYPE}'
-                operator: IN
-                value: '{$OTX_INCLUDE_TYPES}'
-              # Exclude IOC types if macros are set
-              - macro: '{#TYPE}'
-                operator: NOT_IN
-                value: '{$OTX_EXCLUDE_TYPES}'
-              # Exclude IOCs with certain tags
               - macro: '{#TAGS}'
-                operator: NOT_MATCHES_REGEX
                 value: '{$OTX_EXCLUDE_TAGS}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: A
+              - macro: '{#TYPE}'
+                value: '{$OTX_INCLUDE_TYPES}'
+                formulaid: B
+              - macro: '{#TYPE}'
+                value: '{$OTX_EXCLUDE_TYPES}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: C
+              - macro: '{#VALUE}'
+                value: .+
+                formulaid: D
           item_prototypes:
-            # Type-specific severity item prototypes for granular triggers
-            - uuid: a1b2c3d44e5641b294b8a2b3c4d5e6f5
-              name: 'OTX IOC Severity IP: {#VALUE}'
+            - uuid: a2b3c4d54e6f41b894b8a2b3c4d5e6fb
+              name: 'OTX IOC First Seen {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.first_seen[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#FIRST_SEEN}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+            - uuid: b3c4d5e64f1a41b994b8a2b3c4d5e6fc
+              name: 'OTX IOC Last Seen {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.last_seen[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#LAST_SEEN}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+            - uuid: c4d5e6f14a2b41ba94b8a2b3c4d5e6fd
+              name: 'OTX IOC Pulse Name {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.pulse_name[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#PULSE_NAME}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+            - uuid: e6f1a2b34c5d41bab4b8a2b3c4d5e6ff
+              name: 'OTX IOC References {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.references[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#REFERENCES}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+            - uuid: d5e6f1a24b3c41baa4b8a2b3c4d5e6fe
+              name: 'OTX IOC Tags {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.tags[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#TAGS}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+              trigger_prototypes:
+                - uuid: a4b5c6d74e8f41bd84b8a2b3c4d5e6f7
+                  expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],#1,"regexp","{$OTX_TAGS_CRITICAL}")=1'
+                  name: 'OTX IOC with Critical Tag: {#VALUE}'
+                  priority: DISASTER
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: otx_tag
+                      value: '{#TAGS}'
+                    - tag: severity
+                      value: disaster
+                - uuid: b5c6d7e84f9a41bd94b8a2b3c4d5e6f8
+                  expression: 'find(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],#1,"regexp","{$OTX_TAGS_HIGH}")=1'
+                  name: 'OTX IOC with High Tag: {#VALUE}'
+                  priority: HIGH
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: otx_tag
+                      value: '{#TAGS}'
+                    - tag: severity
+                      value: high
+            - uuid: f1a2b3c44d5e41bbb4b8a2b3c4d5e6f0
+              name: 'OTX IOC Threat Type {#TYPE}: {#VALUE}'
+              type: DEPENDENT
+              key: 'otx.ioc.threat_type[{#TYPE},{#VALUE}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.{#THREAT_TYPE}'
+              master_item:
+                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+            - uuid: e5f6a1b24c3d41b694b8a2b3c4d5e6f9
+              name: 'OTX IOC {#TYPE}: {#VALUE}'
               type: EXTERNAL
-              key: 'otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
-              trends: 365d
-              value_type: UNSIGNED
-              preprocessing:
-                - type: JAVASCRIPT
-                  parameters:
-                    - 'return ("ip" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+              value_type: TEXT
+              trends: '0'
               tags:
                 - tag: ioc_type
                   value: '{#TYPE}'
@@ -109,15 +296,12 @@ zabbix_export:
                   value: '{#TAGS}'
                 - tag: threat_type
                   value: '{#THREAT_TYPE}'
-            # Domain severity item prototype
             - uuid: b2c3d4e54a6a41b394b8a2b3c4d5e6f6
               name: 'OTX IOC Severity Domain: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
-              trends: 365d
-              value_type: UNSIGNED
               preprocessing:
                 - type: JAVASCRIPT
                   parameters:
@@ -129,35 +313,22 @@ zabbix_export:
                   value: '{#TAGS}'
                 - tag: threat_type
                   value: '{#THREAT_TYPE}'
-            # URL severity item prototype
-            - uuid: c3d4e5f64a1b41b494b8a2b3c4d5e6f7
-              name: 'OTX IOC Severity URL: {#VALUE}'
-              type: EXTERNAL
-              key: 'otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: 1h
-              history: 30d
-              trends: 365d
-              value_type: UNSIGNED
-              preprocessing:
-                - type: JAVASCRIPT
-                  parameters:
-                    - 'return ("url" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-                - tag: otx_tag
-                  value: '{#TAGS}'
-                - tag: threat_type
-                  value: '{#THREAT_TYPE}'
-            # Hash severity item prototype
+              trigger_prototypes:
+                - uuid: c5d6e7f84a3b41bc84b8a2b3c4d5e6f3
+                  expression: 'last(/Alien Vault OTX/otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+                  name: 'High severity OTX Domain IOC: {#VALUE}'
+                  priority: HIGH
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: severity
+                      value: high
             - uuid: d4e5f6a14b2c41b594b8a2b3c4d5e6f8
               name: 'OTX IOC Severity Hash: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
-              trends: 365d
-              value_type: UNSIGNED
               preprocessing:
                 - type: JAVASCRIPT
                   parameters:
@@ -169,15 +340,26 @@ zabbix_export:
                   value: '{#TAGS}'
                 - tag: threat_type
                   value: '{#THREAT_TYPE}'
-            # Generic IOC item prototypes
-            - uuid: e5f6a1b24c3d41b694b8a2b3c4d5e6f9
-              name: 'OTX IOC {#TYPE}: {#VALUE}'
+              trigger_prototypes:
+                - uuid: e7f8a3b44c5d41bc84b8a2b3c4d5e6f5
+                  expression: 'last(/Alien Vault OTX/otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+                  name: 'High severity OTX Hash IOC: {#VALUE}'
+                  priority: HIGH
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: severity
+                      value: high
+            - uuid: a1b2c3d44e5641b294b8a2b3c4d5e6f5
+              name: 'OTX IOC Severity IP: {#VALUE}'
               type: EXTERNAL
-              key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              key: 'otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
-              trends: 365d
-              value_type: TEXT
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - 'return ("ip" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
               tags:
                 - tag: ioc_type
                   value: '{#TYPE}'
@@ -185,15 +367,49 @@ zabbix_export:
                   value: '{#TAGS}'
                 - tag: threat_type
                   value: '{#THREAT_TYPE}'
-            # Generic severity item prototype
+              trigger_prototypes:
+                - uuid: b4c5d6e74f8a41bcb4b8a2b3c4d5e6f2
+                  expression: 'last(/Alien Vault OTX/otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+                  name: 'High severity OTX IP IOC: {#VALUE}'
+                  priority: HIGH
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: severity
+                      value: high
+            - uuid: c3d4e5f64a1b41b494b8a2b3c4d5e6f7
+              name: 'OTX IOC Severity URL: {#VALUE}'
+              type: EXTERNAL
+              key: 'otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+              delay: 1h
+              history: 30d
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - 'return ("url" === value["{#TYPE}"]) ? value["{#SEVERITY}"] : null;'
+              tags:
+                - tag: ioc_type
+                  value: '{#TYPE}'
+                - tag: otx_tag
+                  value: '{#TAGS}'
+                - tag: threat_type
+                  value: '{#THREAT_TYPE}'
+              trigger_prototypes:
+                - uuid: d6e7f8a34b5c41bc84b8a2b3c4d5e6f4
+                  expression: 'last(/Alien Vault OTX/otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+                  name: 'High severity OTX URL IOC: {#VALUE}'
+                  priority: HIGH
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: severity
+                      value: high
             - uuid: f6a1b2c34d5f41b794b8a2b3c4d5e6fa
               name: 'OTX IOC Severity {#TYPE}: {#VALUE}'
               type: EXTERNAL
               key: 'otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
               delay: 1h
               history: 30d
-              trends: 365d
-              value_type: UNSIGNED
               tags:
                 - tag: ioc_type
                   value: '{#TYPE}'
@@ -201,544 +417,177 @@ zabbix_export:
                   value: '{#TAGS}'
                 - tag: threat_type
                   value: '{#THREAT_TYPE}'
-            # Metadata item prototypes
-            - uuid: a2b3c4d54e6f41b894b8a2b3c4d5e6fb
-              name: 'OTX IOC First Seen {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.first_seen[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#FIRST_SEEN}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Last seen item prototype
-            - uuid: b3c4d5e64f1a41b994b8a2b3c4d5e6fc
-              name: 'OTX IOC Last Seen {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.last_seen[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#LAST_SEEN}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Pulse name item prototype
-            - uuid: c4d5e6f14a2b41ba94b8a2b3c4d5e6fd
-              name: 'OTX IOC Pulse Name {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.pulse_name[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#PULSE_NAME}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Tags item prototype
-            - uuid: d5e6f1a24b3c41baa4b8a2b3c4d5e6fe
-              name: 'OTX IOC Tags {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.tags[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#TAGS}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # References item prototype
-            - uuid: e6f1a2b34c5d41bab4b8a2b3c4d5e6ff
-              name: 'OTX IOC References {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.references[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#REFERENCES}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Threat type item prototype
-            - uuid: f1a2b3c44d5e41bbb4b8a2b3c4d5e6f0
-              name: 'OTX IOC Threat Type {#TYPE}: {#VALUE}'
-              type: DEPENDENT
-              key: 'otx.ioc.threat_type[{#TYPE},{#VALUE}]'
-              master_item:
-                key: 'otx.ioc[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
-              delay: '0'
-              value_type: TEXT
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$.{#THREAT_TYPE}'
-              tags:
-                - tag: ioc_type
-                  value: '{#TYPE}'
-          trigger_prototypes:
-            # General API health trigger
-            - uuid: a3b4c5d64e7f41bca4b8a2b3c4d5e6f1
-              name: 'OTX API health check failed'
-              expression: 'find(/Alien Vault OTX/otx.health[{$OTX_API_KEY}],,"fail")=1'
-              priority: HIGH
-              tags:
-                - tag: event
-                  value: 'api_health_fail'
-            # Severity-based triggers
-            - uuid: b4c5d6e74f8a41bcb4b8a2b3c4d5e6f2
-              name: 'High severity OTX IP IOC: {#VALUE}'
-              expression: 'last(/Alien Vault OTX/otx.severity[ip,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
-              priority: HIGH
-              tags:
-                - tag: severity
-                  value: 'high'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Domain severity trigger
-            - uuid: c5d6e7f84a3b41bc84b8a2b3c4d5e6f3
-              name: 'High severity OTX Domain IOC: {#VALUE}'
-              expression: 'last(/Alien Vault OTX/otx.severity[domain,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
-              priority: HIGH
-              tags:
-                - tag: severity
-                  value: 'high'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # URL severity trigger
-            - uuid: d6e7f8a34b5c41bc84b8a2b3c4d5e6f4
-              name: 'High severity OTX URL IOC: {#VALUE}'
-              expression: 'last(/Alien Vault OTX/otx.severity[url,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
-              priority: HIGH
-              tags:
-                - tag: severity
-                  value: 'high'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Hash severity trigger
-            - uuid: e7f8a3b44c5d41bc84b8a2b3c4d5e6f5
-              name: 'High severity OTX Hash IOC: {#VALUE}'
-              expression: 'last(/Alien Vault OTX/otx.severity[file_hash,{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
-              priority: HIGH
-              tags:
-                - tag: severity
-                  value: 'high'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Generic severity trigger
-            - uuid: f8a3b4c54d6e41bc84b8a2b3c4d5e6f6
-              name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
-              expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
-              priority: WARNING
-              tags:
-                - tag: severity
-                  value: 'warning'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-            # Macro-driven tag triggers for critical tags
-            - uuid: a4b5c6d74e8f41bd84b8a2b3c4d5e6f7
-              name: 'OTX IOC with Critical Tag: {#VALUE}'
-              expression: 'regexp(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],"({$OTX_TAGS_CRITICAL})")=1'
-              priority: DISASTER
-              tags:
-                - tag: severity
-                  value: 'disaster'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-                - tag: otx_tag
-                  value: '{#TAGS}'
-            # Macro-driven tag triggers for high tags
-            - uuid: b5c6d7e84f9a41bd94b8a2b3c4d5e6f8
-              name: 'OTX IOC with High Tag: {#VALUE}'
-              expression: 'regexp(/Alien Vault OTX/otx.ioc.tags[{#TYPE},{#VALUE}],"({$OTX_TAGS_HIGH})")=1'
-              priority: HIGH
-              tags:
-                - tag: severity
-                  value: 'high'
-                - tag: ioc_type
-                  value: '{#TYPE}'
-                - tag: otx_tag
-                  value: '{#TAGS}'
-            # Example: add more tag triggers as needed
-        # Security: API key macro should be stored securely and never logged or exposed in UI or error messages.
-        # WARNING: Do not expose API keys in logs, screens, or error messages. Use Zabbix secrets/vaults if available.
-      triggers:
-        # Overall monitoring triggers
-        - uuid: c6d7e8f94a8b41be84b8a2b3c4d5e6f9
-          name: 'No new OTX indicators in last {$OTX_SINCE_HOURS} hours'
-          expression: 'last(/Alien Vault OTX/otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}])=0'
-          priority: AVERAGE
-          tags:
-            - tag: event
-              value: 'no_new_iocs'
-            - tag: integration
-              value: 'alienvault_otx'
-        # Data freshness trigger
-        - uuid: d7e8f9a44b5c41bea4b8a2b3c4d5e6fa
-          name: 'OTX data not updated for over 2 hours'
-          expression: 'nodata(/Alien Vault OTX/otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}],2h)=1'
-          priority: HIGH
-          tags:
-            - tag: event
-              value: 'data_stale'
-            - tag: integration
-              value: 'alienvault_otx'
+              trigger_prototypes:
+                - uuid: f8a3b4c54d6e41bc84b8a2b3c4d5e6f6
+                  expression: 'last(/Alien Vault OTX/otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}])>{$SEVERITY_THRESHOLD}'
+                  name: 'High severity OTX IOC {#TYPE}: {#VALUE}'
+                  priority: WARNING
+                  tags:
+                    - tag: ioc_type
+                      value: '{#TYPE}'
+                    - tag: severity
+                      value: warning
+          graph_prototypes:
+            - uuid: 2e7c1b2a4b2c4d4e84a1b2c3d4e5f6a7
+              name: 'IOC Severity: {#TYPE} {#VALUE}'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alien Vault OTX'
+                    key: 'otx.severity[{#TYPE},{#VALUE},{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
       macros:
-        - macro: '{$OTX_API_KEY}'
-          value: ''
-          description: 'AlienVault OTX API key (keep secret). Use Zabbix secrets/vault if available.'
         - macro: '{$OTX_API_ENDPOINT}'
           value: 'https://otx.alienvault.com/api/v1'
           description: 'OTX API endpoint URL (default: https://otx.alienvault.com/api/v1)'
-        - macro: '{$OTX_TIMEOUT}'
-          value: '30'
-          description: 'OTX API request timeout in seconds (default: 30)'
+        - macro: '{$OTX_API_KEY}'
+          description: 'AlienVault OTX API key (keep secret). Use Zabbix secrets/vault if available.'
+        - macro: '{$OTX_EXCLUDE_TAGS}'
+          value: ^$
+          description: 'Regex pattern for tags to exclude (e.g. test|benign). Use ^$ to exclude none.'
+        - macro: '{$OTX_EXCLUDE_TYPES}'
+          value: ^$
+          description: 'Regex pattern for IOC types to exclude (e.g. ^(email|hostname)$). Use ^$ to exclude none.'
+        - macro: '{$OTX_INCLUDE_TYPES}'
+          value: '.*'
+          description: 'Regex pattern for IOC types to include (e.g. ^(IPv4|domain|URL)$). Use .* to include all.'
         - macro: '{$OTX_SINCE_HOURS}'
           value: '24'
           description: 'Time window (hours) for IOC discovery (default: 24)'
-        - macro: '{$SEVERITY_THRESHOLD}'
-          value: '7'
-          description: 'Minimum severity/confidence for alerting (default: 7)'
-        - macro: '{$OTX_MIN_SEVERITY}'
-          value: '1'
-          description: 'Minimum severity/confidence for IOC discovery  (default: 1)'
-        - macro: '{$OTX_INCLUDE_TYPES}'
-          value: ''
-          description: 'IOC types to include in discovery (e.g. IPv4,domain,URL), not blank=all'
-        - macro: '{$OTX_EXCLUDE_TYPES}'
-          value: ''
-          description: 'IOC types to exclude from discovery (e.g. email,hostname)'
-        - macro: '{$OTX_EXCLUDE_TAGS}'
-          value: ''
-          description: 'Tags to exclude from discovery (e.g. test,benign)'
         - macro: '{$OTX_TAGS_CRITICAL}'
           value: 'ransomware,phishing,malware,botnet,APT'
           description: 'Tags that trigger critical alerts (e.g. ransomware,phishing,malware)'
         - macro: '{$OTX_TAGS_HIGH}'
           value: 'exploit,ddos,spam'
           description: 'Tags that trigger high alerts'
-      value_maps:
-        - name: 'OTX IOC Severity Map'
-          mappings:
-            - value: '0'
-              newvalue: 'None'
-            - value: '1-3'
-              newvalue: 'Low'
-            - value: '4-6'
-              newvalue: 'Medium'
-            - value: '7-10'
-              newvalue: 'High'
-            - value: ''
-              newvalue: 'Unknown'
-
+        - macro: '{$OTX_TIMEOUT}'
+          value: '30'
+          description: 'OTX API request timeout in seconds (default: 30)'
+        - macro: '{$SEVERITY_THRESHOLD}'
+          value: '7'
+          description: 'Minimum severity/confidence for alerting (default: 7)'
       dashboards:
         - uuid: b1e2c3d44a2b4c4d94b8a2b3c4d5e6f1
           name: 'AlienVault OTX - Threat Overview'
-          display_period: 3600
-          auto_start: true
+          display_period: '3600'
           pages:
-            - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f4
-              name: 'Threat Intelligence'
+            - name: 'Threat Intelligence'
               widgets:
-                - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f5
-                  name: 'Top Threats'
-                  type: DATA_TABLE
-                  x: 0
-                  y: 0
-                  width: 8
-                  height: 6
+                - type: ITEM
+                  name: 'Pulse Count'
+                  width: '4'
+                  height: '3'
                   fields:
-                    - type: item
-                      name: 'OTX Threat Name'
-                      value: ''
-                    - type: item
-                      name: 'OTX Indicator'
-                      value: ''
-                    - type: item
-                      name: 'OTX Risk Score'
-                      value: ''
-                    - type: item
-                      name: 'OTX First Seen'
-                      value: ''
-                    - type: item
-                      name: 'OTX Last Seen'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f6
-                  name: 'Current Risk Level'
-                  type: SINGLE_VALUE
-                  x: 8
-                  y: 0
-                  width: 4
-                  height: 3
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.pulses[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+                - type: ITEM
+                  name: 'Threat Timeline'
+                  'y': '3'
+                  width: '6'
+                  height: '3'
                   fields:
-                    - type: item
-                      name: 'OTX Risk Score'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f7
-                  name: 'Threats Over Time'
-                  type: GRAPH
-                  x: 0
-                  y: 6
-                  width: 8
-                  height: 4
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.timeline[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+                - type: ITEM
+                  name: 'Geo Map'
+                  'y': '6'
+                  width: '6'
+                  height: '4'
                   fields:
-                    - type: item
-                      name: 'OTX Threat Count'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f8
-                  name: 'Threat Type Breakdown'
-                  type: PIE
-                  x: 8
-                  y: 3
-                  width: 4
-                  height: 3
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.geomap[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+                - type: ITEM
+                  name: 'Last Update Time'
+                  x: '4'
+                  width: '4'
+                  height: '3'
                   fields:
-                    - type: item
-                      name: 'OTX Threat Type'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: 6e2b4c8e4b2e4e4b94b8a2b3c4d5e6f9
-                  name: 'Active Threat Triggers'
-                  type: TRIGGER_OVERVIEW
-                  x: 8
-                  y: 6
-                  width: 4
-                  height: 4
-                  filter:
-                    host: "{HOST.NAME}"
-                    trigger_tags:
-                      - alienvault_otx
-
-            - uuid: 7e2b4c8e4b2e4e4b94b8a2b3c4d5e6fa
-              name: 'Threat Timeline'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.lastupdate[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+                - type: ITEM
+                  name: 'Pulse Activity'
+                  x: '6'
+                  'y': '3'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.pulseactivity[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+                - type: ITEM
+                  name: 'Response Actions'
+                  x: '6'
+                  'y': '6'
+                  width: '6'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.response[{$OTX_API_KEY}]'
+                - type: ITEM
+                  name: 'IOC Type Distribution'
+                  x: '8'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.ioctypes[{$OTX_API_KEY},{$OTX_SINCE_HOURS}]'
+            - name: 'Graph Prototypes'
               widgets:
-                - uuid: 7e2b4c8e4b2e4e4b94b8a2b3c4d5e6fb
-                  name: 'Threat First/Last Seen Timeline'
-                  type: GRAPH
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
+                - type: GRAPH_PROTOTYPE
+                  name: 'IOC Severity (Dynamic)'
+                  width: '12'
+                  height: '5'
                   fields:
-                    - type: item
-                      name: 'OTX IOC First Seen'
-                      value: ''
-                    - type: item
-                      name: 'OTX IOC Last Seen'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: 8e2b4c8e4b2e4e4b94b8a2b3c4d5e6fc
-              name: 'Threat Geo Map'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        name: 'IOC Severity: {#TYPE} {#VALUE}'
+            - name: 'Custom Playbook Panel'
               widgets:
-                - uuid: 8e2b4c8e4b2e4e4b94b8a2b3c4d5e6fd
-                  name: 'Threat Origin Map'
-                  type: MAP
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 6
-                  fields:
-                    - type: item
-                      name: 'OTX Threat Geolocation'
-                      value: ''
-            - uuid: 9e2b4c8e4b2e4e4b94b8a2b3c4d5e6fe
-              name: 'IOC Type Distribution'
-              widgets:
-                - uuid: 9e2b4c8e4b2e4e4b94b8a2b3c4d5e6ff
-                  name: 'IOC Type Breakdown'
-                  type: PIE
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: item
-                      name: 'OTX IOC Type'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: ae2b4c8e4b2e4e4b94b8a2b3c4d5e600
-              name: 'Pulse Activity'
-              widgets:
-                - uuid: ae2b4c8e4b2e4e4b94b8a2b3c4d5e601
-                  name: 'OTX Pulse Count Over Time'
-                  type: GRAPH
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: item
-                      name: 'OTX Pulses Count'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: ae2b4c8e4b2e4e4b94b8a2b3c4d5e602
-                  name: 'Recent OTX Pulses'
-                  type: DATA_TABLE
-                  x: 0
-                  y: 4
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: item
-                      name: 'OTX Pulse Name'
-                      value: ''
-                    - type: item
-                      name: 'OTX Pulse Severity'
-                      value: ''
-                    - type: item
-                      name: 'OTX Pulse Tags'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: be2b4c8e4b2e4e4b94b8a2b3c4d5e603
-              name: 'Response Actions'
-              widgets:
-                - uuid: be2b4c8e4b2e4e4b94b8a2b3c4d5e604
-                  name: 'Threat Response Actions'
-                  type: DATA_TABLE
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: item
-                      name: 'OTX Threat Name'
-                      value: ''
-                    - type: item
-                      name: 'Response Action'
-                      value: ''
-                    - type: item
-                      name: 'Response Status'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: ce2b4c8e4b2e4e4b94b8a2b3c4d5e605
-              name: 'API Health & Performance'
-              widgets:
-                - uuid: ce2b4c8e4b2e4e4b94b8a2b3c4d5e606
-                  name: 'API Health Status'
-                  type: SINGLE_VALUE
-                  x: 0
-                  y: 0
-                  width: 6
-                  height: 3
-                  fields:
-                    - type: item
-                      name: 'OTX API Health Status'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-                - uuid: ce2b4c8e4b2e4e4b94b8a2b3c4d5e607
-                  name: 'API Latency Over Time'
-                  type: GRAPH
-                  x: 6
-                  y: 0
-                  width: 6
-                  height: 3
-                  fields:
-                    - type: item
-                      name: 'OTX API Latency'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: de2b4c8e4b2e4e4b94b8a2b3c4d5e608
-              name: 'Tag/Category Heatmap'
-              widgets:
-                - uuid: de2b4c8e4b2e4e4b94b8a2b3c4d5e609
-                  name: 'Threat Tag Frequency'
-                  type: HEATMAP
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: item
-                      name: 'OTX IOC Tags'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    item_tags:
-                      - alienvault_otx
-            - uuid: ee2b4c8e4b2e4e4b94b8a2b3c4d5e60a
-              name: 'Trigger History'
-              widgets:
-                - uuid: ee2b4c8e4b2e4e4b94b8a2b3c4d5e60b
-                  name: 'Trigger Activations Over Time'
-                  type: GRAPH
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  fields:
-                    - type: trigger
-                      name: 'OTX Trigger Activations'
-                      value: ''
-                  filter:
-                    host: "{HOST.NAME}"
-                    trigger_tags:
-                      - alienvault_otx
-            - uuid: fe2b4c8e4b2e4e4b94b8a2b3c4d5e60c
-              name: 'Custom Playbook Panel'
-              widgets:
-                - uuid: fe2b4c8e4b2e4e4b94b8a2b3c4d5e60d
+                - type: PLAIN_TEXT
                   name: 'Incident Response Playbooks'
-                  type: TEXT
-                  x: 0
-                  y: 0
-                  width: 12
-                  height: 4
-                  text: |
-                    Refer to your organisation's incident response playbooks for actionable steps when threats are detected. Link: [Playbooks](https://your-org-playbooks.example.com)
+                  width: '12'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alien Vault OTX'
+                        key: 'otx.response[{$OTX_API_KEY}]'
+      valuemaps:
+        - uuid: a2b3c4d54e6f4a1b94b8a2b3c4d5e6f0
+          name: 'OTX IOC Severity Map'
+          mappings:
+            - value: '0'
+              newvalue: None
+            - value: 1-3
+              newvalue: Low
+            - value: 4-6
+              newvalue: Medium
+            - value: 7-10
+              newvalue: High
+            - newvalue: Unknown

@@ -1,5 +1,5 @@
-zabbix_export:
-  version: '7.4'
+﻿zabbix_export:
+  version: '7.0'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
       name: Firewall
@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: fb23d8d3752b4d4e8d19afe70b430993
       template: 'Sonicwall Firewall'
       name: 'Sonicwall Firewall'
+      vendor:
+        name: 'SonicWall'
+        version: '6.x-7.x'
       description: |
         Overview
         Complete template for monitoring SonicWALL firewalls.
@@ -666,7 +669,7 @@ zabbix_export:
           snmp_oid: 'SNMPv2-MIB::sysUpTime.0'
           key: uptime
           units: uptime
-          description: 'The time since the network management portion of the system was last re-initialized.'
+          description: 'The time since the network management portion of the system was last re-initialised.'
           preprocessing:
             - type: MULTIPLIER
               parameters:
@@ -3236,7 +3239,7 @@ zabbix_export:
           value: Threshold
         - tag: Symptoms
           value: 'HA Anomoly'
-    - uuid: 0187ded2173647a7a1910004f02ea9e1
+    - uuid: 9de34748c95a4e1eaf95eab935486a43
       expression: |
         avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) > 1000000 or
               avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > 1000000

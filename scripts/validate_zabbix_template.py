@@ -1,8 +1,30 @@
 import sys
 import re
 import io
+import yaml  # PyYAML for proper YAML parsing
 
-# --- Custom YAML Loader (no PyYAML) ---
+
+def load_yaml(content):
+    """
+    Load YAML content with proper error handling.
+    Returns parsed YAML data or raises appropriate exceptions.
+    """
+    try:
+        return yaml.safe_load(content)
+    except yaml.YAMLError as e:
+        # Provide more helpful error messages for common YAML issues
+        error_msg = str(e)
+        if "found character '\\t'" in error_msg:
+            raise ValueError("YAML syntax error: Found tab character. Use spaces for indentation, not tabs.")
+        elif "could not find expected" in error_msg:
+            raise ValueError(f"YAML syntax error: Malformed structure. {error_msg}")
+        elif "mapping values are not allowed here" in error_msg:
+            raise ValueError("YAML syntax error: Incorrect indentation or structure. Check colon placement and spacing.")
+        else:
+            raise ValueError(f"YAML parsing error: {error_msg}")
+
+
+# --- Custom YAML Loader (fallback if PyYAML unavailable) ---
 class SimpleYAMLLoader:
     def __init__(self, text):
         self.lines = text.splitlines()
@@ -68,8 +90,13 @@ class SimpleYAMLLoader:
         return result
 
 def load_yaml(text):
-    loader = SimpleYAMLLoader(text)
-    return loader.load()
+    """Load YAML using PyYAML (preferred) or fallback to simple loader."""
+    try:
+        return yaml.safe_load(text)
+    except Exception:
+        # Fallback to simple loader if PyYAML fails
+        loader = SimpleYAMLLoader(text)
+        return loader.load()
 
 # --- End Custom YAML Loader ---
 
@@ -80,11 +107,16 @@ if sys.platform == "win32":
 
 # Supported Zabbix versions and their schema formats
 SUPPORTED_VERSIONS = {
-    '4.0': 'Zabbix 6.0',
-    '5.0': 'Zabbix 6.4+ (including 6.7)',
-    '6.0': 'Zabbix 7.0+',
-    '7.0': 'Zabbix 7.0+ (direct)',
+    '4.0': 'Zabbix 4.0',
+    '4.5': 'Zabbix 4.5',
+    '5.0': 'Zabbix 5.0',
+    '5.2': 'Zabbix 5.2',
+    '5.4': 'Zabbix 5.4',
+    '6.0': 'Zabbix 6.0',
+    '7.0': 'Zabbix 7.0',
+    '7.1': 'Zabbix 7.1',
     '7.2': 'Zabbix 7.2',
+    '7.3': 'Zabbix 7.3',
     '7.4': 'Zabbix 7.4'
 }
 
@@ -147,6 +179,71 @@ RECOVERY_MODES = {
     '0': 'EXPRESSION', 'EXPRESSION': '0',
     '1': 'RECOVERY_EXPRESSION', 'RECOVERY_EXPRESSION': '1',
     '2': 'NONE', 'NONE': '2'
+}
+
+# LLD filter condition operators
+# These are the valid operators for discovery rule filter conditions
+LLD_FILTER_CONDITION_OPERATORS = {
+    '8': 'MATCHES_REGEX', 'MATCHES_REGEX': '8',
+    '9': 'NOT_MATCHES_REGEX', 'NOT_MATCHES_REGEX': '9',
+    '12': 'EXISTS', 'EXISTS': '12',
+    '13': 'NOT_EXISTS', 'NOT_EXISTS': '13',
+}
+
+# Graph item draw types (for graph_items.drawtype)
+GRAPH_DRAW_TYPES = {
+    '0': 'SINGLE_LINE', 'SINGLE_LINE': '0',
+    '1': 'FILLED_REGION', 'FILLED_REGION': '1',
+    '2': 'BOLD_LINE', 'BOLD_LINE': '2',
+    '3': 'DOTTED_LINE', 'DOTTED_LINE': '3',
+    '4': 'DASHED_LINE', 'DASHED_LINE': '4',
+    '5': 'GRADIENT_LINE', 'GRADIENT_LINE': '5'
+}
+
+# Graph item Y-axis side
+GRAPH_YAXIS_SIDES = {
+    '0': 'LEFT', 'LEFT': '0',
+    '1': 'RIGHT', 'RIGHT': '1'
+}
+
+# Graph item calculation function
+GRAPH_CALC_FNC = {
+    '1': 'MIN', 'MIN': '1',
+    '2': 'AVG', 'AVG': '2',
+    '4': 'MAX', 'MAX': '4',
+    '7': 'ALL', 'ALL': '7',
+    '9': 'LAST', 'LAST': '9'
+}
+
+# Graph item type
+GRAPH_ITEM_TYPES = {
+    '0': 'SIMPLE', 'SIMPLE': '0',
+    '2': 'GRAPH_SUM', 'GRAPH_SUM': '2'
+}
+
+# Graph types
+GRAPH_TYPES = {
+    '0': 'NORMAL', 'NORMAL': '0',
+    '1': 'STACKED', 'STACKED': '1',
+    '2': 'PIE', 'PIE': '2',
+    '3': 'EXPLODED', 'EXPLODED': '3'
+}
+
+# Map field names to their allowed enum dictionaries
+ZABBIX_ENUM_FIELDS = {
+    # Graph item fields
+    'drawtype': GRAPH_DRAW_TYPES,
+    'yaxisside': GRAPH_YAXIS_SIDES,
+    'calc_fnc': GRAPH_CALC_FNC,
+    # Trigger fields
+    'priority': TRIGGER_PRIORITIES,
+    'manual_close': MANUAL_CLOSE_VALUES,
+    'recovery_mode': RECOVERY_MODES,
+    # Common fields
+    'status': STATUS_VALUES,
+    # Item fields
+    # 'type': ITEM_TYPES,  # Conflicts with graph_item type, handle separately
+    'value_type': VALUE_TYPES,
 }
 
 def validate_item_key(key):
@@ -217,11 +314,13 @@ def validate_snmp_oid(oid):
     if oid.startswith('get[') or oid.startswith('walk[') or oid.startswith('discovery['):
         return True, None
 
-    # Remove LLD macros for validation
-    oid_clean = re.sub(r'\{#[^}]+\}', '', oid).rstrip('.')
+    # Remove LLD macros for validation and clean up resulting double dots
+    oid_clean = re.sub(r'\{#[^}]+\}', '', oid)
+    oid_clean = re.sub(r'\.+', '.', oid_clean)  # Replace multiple dots with single dot
+    oid_clean = oid_clean.strip('.')  # Remove leading/trailing dots
 
     # Accept numeric OIDs
-    if re.match(r'^\.?[0-9]+(\.[0-9]+)*$', oid_clean):
+    if re.match(r'^[0-9]+(\.[0-9]+)*$', oid_clean):
         return True, None
 
     # Accept symbolic OIDs in various formats
@@ -390,17 +489,51 @@ def validate_yaml_multiline_strings(file_content):
 
 def validate_yaml_unquoted_strings(file_content):
     """
-    Check for unquoted string values in YAML (e.g., name: value instead of name: 'value')
+    Check for unquoted string values in YAML that may cause parsing issues.
     Returns: 'list of (line_number, error_message) tuples'
+    
+    Only flags values that contain YAML-special characters that REQUIRE quoting:
+    - Colon followed by space ': ' in value
+    - Hash '#' that could be interpreted as comment
+    - Special characters at start: & * ! | > [ ] { } @ `
+    
+    Does NOT flag simple unquoted strings like 'name: Some Value' which are valid YAML.
     """
     errors = []
-    pattern = re.compile(r'^(\s*[\w\-]+:)\s+([^\'\"\[\{\d\s][^#]*)$')
     lines = file_content.splitlines()
+    
+    in_block_scalar = False
+    block_scalar_indent = 0
+    
+    # Characters that require quoting if at start of value
+    SPECIAL_START_CHARS = set('&*!|>[]{}@`')
+    
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
-        # Skip comments, empty lines, and block indicators
-        if not stripped or stripped.startswith('#') or stripped.endswith('|') or stripped.endswith('>'):
+        
+        # Calculate current line's indentation
+        current_indent = len(line) - len(line.lstrip()) if line.strip() else 0
+        
+        # Check if we're exiting a block scalar (line has lower or equal indentation)
+        if in_block_scalar:
+            if stripped and current_indent <= block_scalar_indent:
+                in_block_scalar = False
+            else:
+                # Still inside block scalar, skip this line
+                continue
+        
+        # Skip comments and empty lines
+        if not stripped or stripped.startswith('#'):
             continue
+            
+        # Check if this line starts a block scalar
+        if stripped.endswith('|') or stripped.endswith('>') or \
+           stripped.endswith('|-') or stripped.endswith('>-') or \
+           stripped.endswith('|+') or stripped.endswith('>+'):
+            in_block_scalar = True
+            block_scalar_indent = current_indent
+            continue
+        
         # Only check lines with a colon (key: value)
         if ':' in line:
             # Find the value part
@@ -408,11 +541,167 @@ def validate_yaml_unquoted_strings(file_content):
             if match:
                 key, value = match.groups()
                 value = value.strip()
-                # Ignore if value starts with a quote, bracket, brace, digit, or is empty
-                if value and not (value[0] in "'\"[{0123456789" or value.startswith('null') or value.startswith('true') or value.startswith('false')):
-                    # Only warn if value contains spaces (likely a string needing quotes)
-                    if ' ' in value:
-                        errors.append((i, f"Unquoted string value for {key} on line {i}: {value}"))
+                # Skip if value is quoted, a bracket/brace, digit, null, true, false
+                if value and not (value[0] in "'\"[{0123456789" or value in ('null', 'true', 'false')):
+                    # Only flag if value has YAML-special issues:
+                    # 1. Starts with special character
+                    if value[0] in SPECIAL_START_CHARS:
+                        errors.append((i, f"Unquoted value starting with special char '{value[0]}' for {key} on line {i}: {value}"))
+                    # 2. Contains unquoted colon-space ': ' which may confuse YAML parser
+                    elif ': ' in value:
+                        errors.append((i, f"Unquoted value contains ': ' for {key} on line {i}: {value}"))
+                    # 3. Contains '#' which may be interpreted as comment
+                    # EXCEPT: Zabbix LLD macros like {#VARNAME} are valid
+                    elif '#' in value:
+                        # Check if all '#' are part of LLD macros {#...}
+                        value_without_lld = re.sub(r'\{#[A-Z0-9_.]+\}', '', value)
+                        if '#' in value_without_lld:
+                            errors.append((i, f"Unquoted value contains '#' for {key} on line {i}: {value}"))
+    return errors
+
+# Fields that Zabbix expects as quoted strings, not bare integers
+# These fields will cause import errors if passed as integers
+ZABBIX_STRING_REQUIRED_FIELDS = {
+    'width', 'height',           # Graph and widget dimensions
+    'x', 'y',                    # Widget positions
+    'delay',                     # Item/discovery check intervals
+    'history', 'trends',         # Data retention periods
+    'timeout',                   # Operation timeouts
+    'port',                      # SNMP/network ports
+    'lifetime', 'enabled_lifetime',  # LLD keep periods
+    'snmp_oid',                  # SNMP OIDs must be strings
+    'display_period',            # Dashboard slideshow period
+    'auto_start',                # Dashboard slideshow auto-start (YES/NO)
+}
+
+def validate_string_required_fields(file_content):
+    """
+    Check for fields that Zabbix expects as strings but are written as bare integers or booleans.
+    These cause "a character string is expected" import errors.
+    
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Pattern: key: followed by bare integer (not quoted)
+    # Matches: "  width: 900" but not "  width: '900'" or "  width: 1h"
+    int_pattern = re.compile(r'^(\s*)([\w_]+):\s+(\d+)\s*$')
+    
+    # Pattern: key: followed by bare boolean (not quoted)
+    # Matches: "  auto_start: true" but not "  auto_start: 'YES'"
+    bool_pattern = re.compile(r'^(\s*)([\w_]+):\s+(true|false)\s*$', re.IGNORECASE)
+    
+    for line_num, line in enumerate(lines, 1):
+        # Check for bare integers
+        match = int_pattern.match(line)
+        if match:
+            indent, field_name, value = match.groups()
+            if field_name in ZABBIX_STRING_REQUIRED_FIELDS:
+                errors.append((
+                    line_num,
+                    f"Field '{field_name}' on line {line_num} has integer value {value} but Zabbix expects a quoted string. "
+                    f"Change to: {field_name}: '{value}'"
+                ))
+        
+        # Check for bare booleans
+        match = bool_pattern.match(line)
+        if match:
+            indent, field_name, value = match.groups()
+            if field_name in ZABBIX_STRING_REQUIRED_FIELDS:
+                zabbix_value = 'YES' if value.lower() == 'true' else 'NO'
+                errors.append((
+                    line_num,
+                    f"Field '{field_name}' on line {line_num} has boolean value {value} but Zabbix expects a quoted string. "
+                    f"Change to: {field_name}: '{zabbix_value}'"
+                ))
+    
+    return errors
+
+def validate_enum_fields(file_content):
+    """
+    Check for fields that have a restricted set of allowed values (enums).
+    Provides human-readable error messages when invalid values are found.
+    
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Pattern: key: followed by an unquoted value (letters, numbers, underscores)
+    # Matches: "  drawtype: LINE" or "  - drawtype: SINGLE_LINE" (with optional list marker)
+    pattern = re.compile(r'^(\s*-?\s*)([\w_]+):\s+([A-Za-z_][A-Za-z0-9_]*)\s*$')
+    
+    for line_num, line in enumerate(lines, 1):
+        match = pattern.match(line)
+        if match:
+            indent, field_name, value = match.groups()
+            
+            # Check if this field has an enum constraint
+            if field_name in ZABBIX_ENUM_FIELDS:
+                enum_dict = ZABBIX_ENUM_FIELDS[field_name]
+                
+                # Check if value is valid (either as key or as numeric value)
+                if value not in enum_dict:
+                    # Get the allowed string values (exclude numeric keys)
+                    allowed_values = sorted([k for k in enum_dict.keys() if not k.isdigit()])
+                    allowed_str = ', '.join(allowed_values)
+                    
+                    errors.append((
+                        line_num,
+                        f"Invalid {field_name} value '{value}'. "
+                        f"Allowed values: {allowed_str}"
+                    ))
+    
+    return errors
+
+def validate_unexpected_tags(file_content):
+    """
+    Check for tags that are not allowed in certain contexts.
+    For example, dashboard pages do not support 'uuid' tags.
+    
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Track context - are we inside pages:?
+    in_pages = False
+    in_widgets = False
+    pages_indent = 0
+    widgets_indent = 0
+    
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.lstrip()
+        current_indent = len(line) - len(stripped)
+        
+        # Detect entering pages: section
+        if stripped.startswith('pages:'):
+            in_pages = True
+            pages_indent = current_indent
+            in_widgets = False
+            continue
+        
+        # Detect entering widgets: section (nested in pages)
+        if in_pages and stripped.startswith('widgets:'):
+            in_widgets = True
+            widgets_indent = current_indent
+            continue
+        
+        # Detect leaving pages context (less indented than pages:)
+        if in_pages and current_indent <= pages_indent and stripped and not stripped.startswith('#'):
+            in_pages = False
+            in_widgets = False
+        
+        # Check for uuid inside pages but not inside widgets
+        if in_pages and not in_widgets:
+            if stripped.startswith('- uuid:') or (stripped.startswith('uuid:') and current_indent > pages_indent):
+                # Check we're at page level (more indented than pages: but not in widgets)
+                errors.append((
+                    line_num,
+                    f"Dashboard pages do not support 'uuid' tag. Remove the uuid from this page definition."
+                ))
+    
     return errors
 
 def validate_zabbix_uuid(value):
@@ -449,6 +738,1387 @@ def validate_zabbix_uuid(value):
         return False
     
     return True
+
+
+# Common Zabbix YAML tag misspellings and their correct forms
+# Note: 'valuemap' (singular) is VALID inside items as a reference to a value map
+# Only 'valuemaps' (plural) is used at template level to define value maps
+ZABBIX_TAG_MISSPELLINGS = {
+    'value_maps': 'valuemaps',
+    'value_map': 'valuemaps',
+    'template_group': 'template_groups',
+    'templategroups': 'template_groups',
+    'templategroup': 'template_groups',
+    'discovery_rule': 'discovery_rules',
+    'discoveryrules': 'discovery_rules',
+    'discoveryrule': 'discovery_rules',
+    'item_prototype': 'item_prototypes',
+    'itemprototypes': 'item_prototypes',
+    'itemprototype': 'item_prototypes',
+    'trigger_prototype': 'trigger_prototypes',
+    'triggerprototypes': 'trigger_prototypes',
+    'triggerprototype': 'trigger_prototypes',
+    'graph_prototype': 'graph_prototypes',
+    'graphprototypes': 'graph_prototypes',
+    'graphprototype': 'graph_prototypes',
+    'host_prototype': 'host_prototypes',
+    'hostprototypes': 'host_prototypes',
+    'hostprototype': 'host_prototypes',
+}
+
+def validate_tag_spelling(file_content):
+    """
+    Check for common misspellings of Zabbix YAML tags.
+    Returns a list of (line_num, error_message) tuples for any misspellings found.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Pattern to match YAML keys (with optional leading dash for list items)
+    key_pattern = re.compile(r'^(\s*-?\s*)([a-zA-Z_][a-zA-Z0-9_]*):\s*')
+    
+    for line_num, line in enumerate(lines, 1):
+        match = key_pattern.match(line)
+        if match:
+            key = match.group(2)
+            if key in ZABBIX_TAG_MISSPELLINGS:
+                correct = ZABBIX_TAG_MISSPELLINGS[key]
+                errors.append((
+                    line_num,
+                    f"Misspelled tag '{key}' - should be '{correct}'. "
+                    f"This will cause import error: 'unexpected tag \"{key}\"'"
+                ))
+    
+    return errors
+
+
+def validate_lld_filter_operators(yaml_data, file_content):
+    """
+    Validate LLD filter condition operators.
+    Returns a list of (line_num, error_message) tuples for invalid operators.
+    
+    Valid operators for LLD filter conditions are:
+    - MATCHES_REGEX (8)
+    - NOT_MATCHES_REGEX (9)
+    - EXISTS (12)
+    - NOT_EXISTS (13)
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    valid_operators = {'MATCHES_REGEX', 'NOT_MATCHES_REGEX', 'EXISTS', 'NOT_EXISTS', '8', '9', '12', '13'}
+    
+    def find_line_for_value(search_value, start_line=0):
+        """Find the line number where a value appears."""
+        for i, line in enumerate(lines[start_line:], start_line + 1):
+            if search_value in line:
+                return i
+        return None
+    
+    def check_discovery_rules(discovery_rules, path):
+        """Recursively check discovery rules for invalid filter operators."""
+        if not isinstance(discovery_rules, list):
+            return
+        
+        for rule_idx, rule in enumerate(discovery_rules):
+            if not isinstance(rule, dict):
+                continue
+            
+            rule_path = f"{path}[{rule_idx}]"
+            
+            # Check filter conditions
+            if 'filter' in rule and isinstance(rule['filter'], dict):
+                conditions = rule['filter'].get('conditions', [])
+                if isinstance(conditions, list):
+                    for cond_idx, condition in enumerate(conditions):
+                        if isinstance(condition, dict) and 'operator' in condition:
+                            operator = str(condition['operator'])
+                            if operator not in valid_operators:
+                                line_num = find_line_for_value(f"operator: {operator}")
+                                if not line_num:
+                                    line_num = find_line_for_value(operator)
+                                errors.append((
+                                    line_num or 0,
+                                    f"Invalid LLD filter condition operator '{operator}' at {rule_path}.filter.conditions[{cond_idx}]. "
+                                    f"Valid operators: MATCHES_REGEX, NOT_MATCHES_REGEX, EXISTS, NOT_EXISTS"
+                                ))
+    
+    # Process templates
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if isinstance(template, dict) and 'discovery_rules' in template:
+                check_discovery_rules(template['discovery_rules'], f"templates[{t_idx}].discovery_rules")
+    
+    return errors
+
+
+def validate_dashboard_widget_filter(yaml_data, file_content):
+    """
+    Validate that 'filter' tag is not used inside dashboard widgets.
+    The 'filter' tag is only valid in LLD discovery_rules, not in dashboard widgets.
+    Returns a list of (line_num, error_message) tuples for invalid filter usage.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_widget_filter(widget_name, start_line=0):
+        """Find the line number where filter appears after a widget definition."""
+        in_widget = False
+        widget_indent = 0
+        for i, line in enumerate(lines[start_line:], start_line + 1):
+            stripped = line.lstrip()
+            current_indent = len(line) - len(stripped)
+            
+            # Check if we found the widget name
+            if f"name: '{widget_name}'" in line or f'name: "{widget_name}"' in line:
+                in_widget = True
+                widget_indent = current_indent
+                continue
+            
+            if in_widget:
+                # If we hit a line with less or equal indent, we've left the widget
+                if stripped and current_indent <= widget_indent and not stripped.startswith('-'):
+                    in_widget = False
+                    continue
+                # Check for filter at this level
+                if stripped.startswith('filter:'):
+                    return i
+        return None
+    
+    def check_widgets(widgets, path, dashboard_name, page_name):
+        """Check widgets for invalid filter usage."""
+        if not isinstance(widgets, list):
+            return
+        
+        for w_idx, widget in enumerate(widgets):
+            if not isinstance(widget, dict):
+                continue
+            
+            widget_name = widget.get('name', f'widget[{w_idx}]')
+            widget_path = f"{path}/widgets/widget({w_idx + 1})"
+            
+            if 'filter' in widget:
+                # Find the line number
+                line_num = find_line_for_widget_filter(widget_name)
+                errors.append((
+                    line_num or 0,
+                    f"Invalid tag 'filter' in dashboard widget '{widget_name}' at {widget_path}. "
+                    f"The 'filter' tag is not valid inside dashboard widgets in Zabbix 7.0"
+                ))
+    
+    # Process templates -> dashboards -> pages -> widgets
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            dashboards = template.get('dashboards', [])
+            if not isinstance(dashboards, list):
+                continue
+            
+            for d_idx, dashboard in enumerate(dashboards):
+                if not isinstance(dashboard, dict):
+                    continue
+                
+                dashboard_name = dashboard.get('name', f'dashboard({d_idx + 1})')
+                dashboard_path = f"/zabbix_export/templates/{template_name}/dashboards/dashboard({d_idx + 1})"
+                pages = dashboard.get('pages', [])
+                if not isinstance(pages, list):
+                    continue
+                
+                for p_idx, page in enumerate(pages):
+                    if not isinstance(page, dict):
+                        continue
+                    
+                    page_name = page.get('name', f'page({p_idx + 1})')
+                    page_path = f"{dashboard_path}/pages/page({p_idx + 1})"
+                    widgets = page.get('widgets', [])
+                    check_widgets(widgets, page_path, dashboard_name, page_name)
+    
+    return errors
+
+
+def validate_item_prototype_filter(yaml_data, file_content):
+    """
+    Validate that 'filter' tag is not used inside item_prototypes.
+    The 'filter' tag is only valid at the discovery_rule level, not in item_prototypes.
+    Returns a list of (line_num, error_message) tuples for invalid filter usage.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_filter_in_item(item_name, discovery_rule_name):
+        """Find the line number where filter appears inside an item_prototype."""
+        in_discovery = False
+        in_item_prototypes = False
+        in_item = False
+        item_indent = 0
+        
+        for i, line in enumerate(lines, 1):
+            stripped = line.lstrip()
+            current_indent = len(line) - len(stripped)
+            
+            # Track if we're in a discovery_rule
+            if 'discovery_rules:' in line:
+                in_discovery = True
+                continue
+            
+            if in_discovery and 'item_prototypes:' in line:
+                in_item_prototypes = True
+                continue
+            
+            if in_item_prototypes:
+                # Check if we found the item name
+                if f"name: {item_name}" in line or f"name: '{item_name}'" in line or f'name: "{item_name}"' in line:
+                    in_item = True
+                    item_indent = current_indent
+                    continue
+                
+                if in_item:
+                    # If we hit a line with less or equal indent that's a new item, we've left the item
+                    if stripped and current_indent <= item_indent and stripped.startswith('- '):
+                        in_item = False
+                        continue
+                    # Check for filter at this level
+                    if stripped == 'filter:' or stripped.startswith('filter:'):
+                        return i
+        return None
+    
+    def check_item_prototypes(item_prototypes, path, discovery_rule_name):
+        """Check item_prototypes for invalid filter usage."""
+        if not isinstance(item_prototypes, list):
+            return
+        
+        for ip_idx, item_prototype in enumerate(item_prototypes):
+            if not isinstance(item_prototype, dict):
+                continue
+            
+            item_name = item_prototype.get('name', f'item_prototype[{ip_idx}]')
+            item_path = f"{path}/item_prototypes/item_prototype({ip_idx + 1})"
+            
+            if 'filter' in item_prototype:
+                # Find the line number
+                line_num = find_line_for_filter_in_item(item_name, discovery_rule_name)
+                errors.append((
+                    line_num or 0,
+                    f"Invalid tag 'filter' in item_prototype '{item_name}' at {item_path}. "
+                    f"The 'filter' tag is only valid at the discovery_rule level, not inside item_prototypes."
+                ))
+    
+    # Process templates -> discovery_rules -> item_prototypes
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            discovery_rules = template.get('discovery_rules', [])
+            if not isinstance(discovery_rules, list):
+                continue
+            
+            for dr_idx, discovery_rule in enumerate(discovery_rules):
+                if not isinstance(discovery_rule, dict):
+                    continue
+                
+                dr_name = discovery_rule.get('name', f'discovery_rule({dr_idx + 1})')
+                dr_path = f"/zabbix_export/templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})"
+                
+                item_prototypes = discovery_rule.get('item_prototypes', [])
+                check_item_prototypes(item_prototypes, dr_path, dr_name)
+    
+    return errors
+
+
+def validate_graph_item_types(yaml_data, file_content):
+    """
+    Validate that graph prototypes only reference numeric items (FLOAT, UNSIGNED, etc.).
+    TEXT and LOG items cannot be used in graphs.
+    Returns a list of (line_num, error_message) tuples for invalid graph item references.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Numeric value types that can be used in graphs
+    NUMERIC_VALUE_TYPES = {'FLOAT', 'UNSIGNED', None}  # None = default (UNSIGNED)
+    NON_NUMERIC_VALUE_TYPES = {'TEXT', 'LOG', 'CHAR'}
+    
+    def find_line_for_graph(graph_name):
+        """Find the line number for a graph prototype by name."""
+        for i, line in enumerate(lines, 1):
+            if f"name: '{graph_name}'" in line or f'name: "{graph_name}"' in line or f"name: {graph_name}" in line:
+                return i
+        return 0
+    
+    def build_item_key_to_value_type_map(template):
+        """Build a map of item keys to their value_types within a template."""
+        key_to_type = {}
+        
+        # Check regular items
+        items = template.get('items', [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    key = item.get('key')
+                    value_type = item.get('value_type')
+                    if key:
+                        key_to_type[key] = value_type
+        
+        # Check item prototypes in discovery rules
+        discovery_rules = template.get('discovery_rules', [])
+        if isinstance(discovery_rules, list):
+            for dr in discovery_rules:
+                if isinstance(dr, dict):
+                    item_prototypes = dr.get('item_prototypes', [])
+                    if isinstance(item_prototypes, list):
+                        for ip in item_prototypes:
+                            if isinstance(ip, dict):
+                                key = ip.get('key')
+                                value_type = ip.get('value_type')
+                                if key:
+                                    key_to_type[key] = value_type
+        
+        return key_to_type
+    
+    def check_graph_prototypes(graph_prototypes, path, key_to_type, template_name):
+        """Check graph prototypes for non-numeric item references."""
+        if not isinstance(graph_prototypes, list):
+            return
+        
+        for gp_idx, graph_proto in enumerate(graph_prototypes):
+            if not isinstance(graph_proto, dict):
+                continue
+            
+            graph_name = graph_proto.get('name', f'graph_prototype({gp_idx + 1})')
+            graph_path = f"{path}/graph_prototypes/graph_prototype({gp_idx + 1})"
+            
+            graph_items = graph_proto.get('graph_items', [])
+            if not isinstance(graph_items, list):
+                continue
+            
+            for gi_idx, graph_item in enumerate(graph_items):
+                if not isinstance(graph_item, dict):
+                    continue
+                
+                item_ref = graph_item.get('item', {})
+                if isinstance(item_ref, dict):
+                    item_key = item_ref.get('key')
+                    if item_key:
+                        value_type = key_to_type.get(item_key)
+                        if value_type in NON_NUMERIC_VALUE_TYPES:
+                            line_num = find_line_for_graph(graph_name)
+                            errors.append((
+                                line_num,
+                                f"Graph prototype '{graph_name}' at {graph_path} references non-numeric item "
+                                f"'{item_key}' with value_type '{value_type}'. Graphs can only use numeric items "
+                                f"(FLOAT, UNSIGNED)."
+                            ))
+    
+    # Process templates -> discovery_rules -> graph_prototypes
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            
+            # Build item key to value_type map for this template
+            key_to_type = build_item_key_to_value_type_map(template)
+            
+            # Check discovery rules for graph_prototypes
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, discovery_rule in enumerate(discovery_rules):
+                    if not isinstance(discovery_rule, dict):
+                        continue
+                    
+                    dr_name = discovery_rule.get('name', f'discovery_rule({dr_idx + 1})')
+                    dr_path = f"/zabbix_export/templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})"
+                    
+                    graph_prototypes = discovery_rule.get('graph_prototypes', [])
+                    check_graph_prototypes(graph_prototypes, dr_path, key_to_type, template_name)
+    
+    return errors
+
+
+def validate_invalid_export_tags(yaml_data, file_content):
+    """
+    Validate that zabbix_export doesn't contain invalid tags like 'date' or 'groups'.
+    The 'date' tag is not valid in Zabbix 7.0 template imports.
+    The 'groups' tag was replaced with 'template_groups' in Zabbix 6.0+.
+    Returns a list of (line_num, error_message) tuples for invalid tags.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Tags that are not valid in zabbix_export for import
+    INVALID_EXPORT_TAGS = {'date', 'export_date'}
+    
+    # Tags that have been replaced with different names in Zabbix 7.0
+    REPLACED_EXPORT_TAGS = {
+        'groups': 'template_groups'  # 'groups' at zabbix_export level is now 'template_groups'
+    }
+    
+    export_data = yaml_data.get('zabbix_export', {})
+    
+    for tag in INVALID_EXPORT_TAGS:
+        if tag in export_data:
+            # Find line number
+            line_num = 0
+            for i, line in enumerate(lines, 1):
+                stripped = line.strip()
+                if stripped.startswith(f'{tag}:'):
+                    line_num = i
+                    break
+            errors.append((
+                line_num,
+                f"Invalid tag '{tag}' in zabbix_export. "
+                f"The '{tag}' tag is not valid for Zabbix 7.0 template imports and should be removed."
+            ))
+    
+    # Check for tags that have been replaced
+    for old_tag, new_tag in REPLACED_EXPORT_TAGS.items():
+        if old_tag in export_data:
+            # Find line number - look for exact match at zabbix_export level (2 spaces)
+            line_num = 0
+            for i, line in enumerate(lines, 1):
+                # Only match 'groups:' at the zabbix_export level (2 spaces indent)
+                if line.startswith('  ' + old_tag + ':') and not line.startswith('    '):
+                    line_num = i
+                    break
+            errors.append((
+                line_num,
+                f"Invalid tag '{old_tag}' in zabbix_export. "
+                f"In Zabbix 7.0, '{old_tag}' at the zabbix_export level should be renamed to '{new_tag}'."
+            ))
+    
+    return errors
+
+
+def validate_lld_macro_in_prototypes(yaml_data, file_content):
+    """
+    Validate that item_prototypes contain at least one LLD macro ({#...}) in their key.
+    Item prototypes must use LLD macros from the discovery rule, not user macros ({$...}).
+    Returns a list of (line_num, error_message) tuples for missing LLD macros.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    import re
+    # LLD macros can contain letters, numbers, underscores, and dots (e.g., {#CLIENT.MAC.ADDR})
+    LLD_MACRO_PATTERN = re.compile(r'\{#[A-Z0-9_.]+\}')
+    USER_MACRO_PATTERN = re.compile(r'\{\$[A-Z0-9_]+\}')
+    
+    def find_line_for_item_key(item_key):
+        """Find line number for an item by its key."""
+        for i, line in enumerate(lines, 1):
+            if f"key: {item_key}" in line or f"key: '{item_key}'" in line or f'key: "{item_key}"' in line:
+                return i
+        return 0
+    
+    def check_item_prototypes(item_prototypes, path, dr_name):
+        """Check item prototypes for LLD macro usage."""
+        if not isinstance(item_prototypes, list):
+            return
+        
+        for ip_idx, item_proto in enumerate(item_prototypes):
+            if not isinstance(item_proto, dict):
+                continue
+            
+            item_name = item_proto.get('name', f'item_prototype({ip_idx + 1})')
+            item_key = item_proto.get('key', '')
+            ip_path = f"{path}/item_prototypes/item_prototype({ip_idx + 1})"
+            
+            # Check if key contains at least one LLD macro
+            if item_key and not LLD_MACRO_PATTERN.search(item_key):
+                line_num = find_line_for_item_key(item_key)
+                # Check if it incorrectly uses user macro instead
+                if USER_MACRO_PATTERN.search(item_key):
+                    user_macros = USER_MACRO_PATTERN.findall(item_key)
+                    errors.append((
+                        line_num,
+                        f"Item prototype '{item_name}' at {ip_path} uses user macro(s) {user_macros} "
+                        f"instead of LLD macro(s). Item prototype keys must contain at least one "
+                        f"LLD macro (e.g., {{#PORT}}) from the discovery rule, not user macros ({{$...}})."
+                    ))
+                else:
+                    errors.append((
+                        line_num,
+                        f"Item prototype '{item_name}' at {ip_path} key '{item_key}' does not contain "
+                        f"any LLD macro. Item prototype keys must contain at least one LLD macro "
+                        f"(e.g., {{#IFNAME}}, {{#PORT}}) from the discovery rule."
+                    ))
+    
+    # Process templates -> discovery_rules -> item_prototypes
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            discovery_rules = template.get('discovery_rules', [])
+            if not isinstance(discovery_rules, list):
+                continue
+            
+            for dr_idx, dr in enumerate(discovery_rules):
+                if not isinstance(dr, dict):
+                    continue
+                
+                dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                dr_path = f"/zabbix_export/templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})"
+                
+                item_prototypes = dr.get('item_prototypes', [])
+                check_item_prototypes(item_prototypes, dr_path, dr_name)
+    
+    return errors
+
+
+def validate_numeric_constants(yaml_data, file_content):
+    """
+    Validate that fields requiring string constants in Zabbix 7.0 don't use numeric values.
+    Zabbix 7.0 requires string constants like 'ZABBIX_PASSIVE', 'FLOAT', 'ENABLED' etc.
+    instead of numeric values like 0, 3, 1.
+    Returns a list of (line_num, error_message) tuples for invalid numeric constants.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Fields that require string constants in Zabbix 7.0, mapped to their valid values
+    # Item type constants
+    ITEM_TYPE_VALUES = {
+        '0': 'ZABBIX_PASSIVE', '1': 'SNMPv1', '2': 'TRAP', '3': 'SIMPLE', '4': 'SNMPv2',
+        '5': 'INTERNAL', '6': 'SNMPv3', '7': 'ZABBIX_ACTIVE', '8': 'AGGREGATE',
+        '9': 'HTTP_AGENT', '10': 'EXTERNAL', '11': 'ODBC', '12': 'IPMI', '13': 'SSH',
+        '14': 'TELNET', '15': 'CALCULATED', '16': 'JMX', '17': 'SNMP_TRAP',
+        '18': 'DEPENDENT', '19': 'SCRIPT', '20': 'BROWSER'
+    }
+    
+    # Value type constants
+    VALUE_TYPE_VALUES = {
+        '0': 'FLOAT', '1': 'CHAR', '2': 'LOG', '3': 'UNSIGNED', '4': 'TEXT', '5': 'BINARY'
+    }
+    
+    # Preprocessing type constants
+    PREPROCESSING_TYPE_VALUES = {
+        '1': 'MULTIPLIER', '2': 'RTRIM', '3': 'LTRIM', '4': 'TRIM', '5': 'REGEX',
+        '6': 'BOOL_TO_DECIMAL', '7': 'OCTAL_TO_DECIMAL', '8': 'HEX_TO_DECIMAL',
+        '9': 'SIMPLE_CHANGE', '10': 'CHANGE_PER_SECOND', '11': 'XMLPATH',
+        '12': 'JSONPATH', '13': 'IN_RANGE', '14': 'MATCHES_REGEX', '15': 'NOT_MATCHES_REGEX',
+        '16': 'CHECK_JSON_ERROR', '17': 'CHECK_XML_ERROR', '18': 'CHECK_REGEX_ERROR',
+        '19': 'DISCARD_UNCHANGED', '20': 'DISCARD_UNCHANGED_HEARTBEAT',
+        '21': 'JAVASCRIPT', '22': 'PROMETHEUS_PATTERN', '23': 'PROMETHEUS_TO_JSON',
+        '24': 'CSV_TO_JSON', '25': 'STR_REPLACE', '26': 'CHECK_NOT_SUPPORTED',
+        '27': 'XML_TO_JSON', '28': 'SNMP_WALK_VALUE', '29': 'SNMP_WALK_TO_JSON'
+    }
+    
+    def find_line_number(search_pattern, start_line=0):
+        """Find line number containing the pattern."""
+        for i, line in enumerate(lines[start_line:], start_line + 1):
+            if search_pattern in line:
+                return i
+        return 0
+    
+    # Valid status values
+    STATUS_VALUES = {'0': 'ENABLED', '1': 'DISABLED'}
+    
+    # Valid inventory_link values (0 = NONE, other numbers map to inventory fields)
+    # Common values: 0=NONE, 1=TYPE, 2=TYPE_FULL, 3=NAME, 4=ALIAS, 5=OS, 6=OS_FULL, etc.
+    # See https://www.zabbix.com/documentation/7.0/en/manual/api/reference/item/object
+    INVENTORY_LINK_VALUES = {
+        '0': 'NONE', '1': 'TYPE', '2': 'TYPE_FULL', '3': 'NAME', '4': 'ALIAS',
+        '5': 'OS', '6': 'OS_FULL', '7': 'OS_SHORT', '8': 'SERIALNO_A', '9': 'SERIALNO_B',
+        '10': 'TAG', '11': 'ASSET_TAG', '12': 'MACADDRESS_A', '13': 'MACADDRESS_B',
+        '14': 'HARDWARE', '15': 'HARDWARE_FULL', '16': 'SOFTWARE', '17': 'SOFTWARE_FULL',
+        '18': 'SOFTWARE_APP_A', '19': 'SOFTWARE_APP_B', '20': 'SOFTWARE_APP_C',
+        '21': 'SOFTWARE_APP_D', '22': 'SOFTWARE_APP_E', '23': 'CONTACT', '24': 'LOCATION',
+        '25': 'LOCATION_LAT', '26': 'LOCATION_LON', '27': 'NOTES', '28': 'CHASSIS',
+        '29': 'MODEL', '30': 'HW_ARCH', '31': 'VENDOR', '32': 'CONTRACT_NUMBER',
+        '33': 'INSTALLER_NAME', '34': 'DEPLOYMENT_STATUS', '35': 'URL_A', '36': 'URL_B',
+        '37': 'URL_C', '38': 'HOST_NETWORKS', '39': 'HOST_NETMASK', '40': 'HOST_ROUTER',
+        '41': 'OOB_IP', '42': 'OOB_NETMASK', '43': 'OOB_ROUTER', '44': 'DATE_HW_PURCHASE',
+        '45': 'DATE_HW_INSTALL', '46': 'DATE_HW_EXPIRY', '47': 'DATE_HW_DECOMM',
+        '48': 'SITE_ADDRESS_A', '49': 'SITE_ADDRESS_B', '50': 'SITE_ADDRESS_C',
+        '51': 'SITE_CITY', '52': 'SITE_STATE', '53': 'SITE_COUNTRY', '54': 'SITE_ZIP',
+        '55': 'SITE_RACK', '56': 'SITE_NOTES', '57': 'POC_1_NAME', '58': 'POC_1_EMAIL',
+        '59': 'POC_1_PHONE_A', '60': 'POC_1_PHONE_B', '61': 'POC_1_CELL', '62': 'POC_1_SCREEN',
+        '63': 'POC_1_NOTES', '64': 'POC_2_NAME', '65': 'POC_2_EMAIL', '66': 'POC_2_PHONE_A',
+        '67': 'POC_2_PHONE_B', '68': 'POC_2_CELL', '69': 'POC_2_SCREEN', '70': 'POC_2_NOTES'
+    }
+    
+    def check_item_for_numeric_constants(item, path, item_name):
+        """Check an item for numeric constants that should be strings."""
+        # Check status
+        status = item.get('status')
+        if status is not None:
+            status_str = str(status).strip('"\'')
+            if status_str in STATUS_VALUES:
+                line_num = find_line_number(f"status: {status}")
+                errors.append((
+                    line_num,
+                    f"Invalid numeric constant '{status}' for 'status' in item '{item_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{STATUS_VALUES[status_str]}' instead."
+                ))
+        
+        # Check item type
+        item_type = item.get('type')
+        if item_type is not None:
+            type_str = str(item_type).strip('"\'')
+            if type_str in ITEM_TYPE_VALUES:
+                line_num = find_line_number(f"type: {item_type}") or find_line_number(f'type: "{item_type}"')
+                errors.append((
+                    line_num,
+                    f"Invalid numeric constant '{item_type}' for 'type' in item '{item_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{ITEM_TYPE_VALUES[type_str]}' instead."
+                ))
+        
+        # Check value_type
+        value_type = item.get('value_type')
+        if value_type is not None:
+            vt_str = str(value_type).strip('"\'')
+            if vt_str in VALUE_TYPE_VALUES:
+                line_num = find_line_number(f"value_type: {value_type}")
+                errors.append((
+                    line_num,
+                    f"Invalid numeric constant '{value_type}' for 'value_type' in item '{item_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{VALUE_TYPE_VALUES[vt_str]}' instead."
+                ))
+        
+        # Check inventory_link
+        inventory_link = item.get('inventory_link')
+        if inventory_link is not None:
+            il_str = str(inventory_link).strip('"\'')
+            if il_str in INVENTORY_LINK_VALUES:
+                line_num = find_line_number(f"inventory_link: {inventory_link}")
+                errors.append((
+                    line_num,
+                    f"Invalid numeric constant '{inventory_link}' for 'inventory_link' in item '{item_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{INVENTORY_LINK_VALUES[il_str]}' instead."
+                ))
+        
+        # Check preprocessing steps
+        preprocessing = item.get('preprocessing', [])
+        if isinstance(preprocessing, dict):
+            # Handle old format: preprocessing: {step: [...]}
+            preprocessing = preprocessing.get('step', [])
+        if isinstance(preprocessing, list):
+            for pp_idx, pp in enumerate(preprocessing):
+                if isinstance(pp, dict):
+                    pp_type = pp.get('type')
+                    if pp_type is not None:
+                        pt_str = str(pp_type).strip('"\'')
+                        if pt_str in PREPROCESSING_TYPE_VALUES:
+                            errors.append((
+                                0,
+                                f"Invalid numeric constant '{pp_type}' for preprocessing 'type' in item '{item_name}' at {path}. "
+                                f"Zabbix 7.0 requires string constant '{PREPROCESSING_TYPE_VALUES[pt_str]}' instead."
+                            ))
+    
+    def check_discovery_rule_for_numeric_constants(dr, path, dr_name):
+        """Check a discovery rule for numeric constants."""
+        # Check status
+        status = dr.get('status')
+        if status is not None:
+            status_str = str(status).strip('"\'')
+            if status_str in STATUS_VALUES:
+                errors.append((
+                    0,
+                    f"Invalid numeric constant '{status}' for 'status' in discovery rule '{dr_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{STATUS_VALUES[status_str]}' instead."
+                ))
+        
+        # Check discovery rule type
+        dr_type = dr.get('type')
+        if dr_type is not None:
+            type_str = str(dr_type).strip('"\'')
+            if type_str in ITEM_TYPE_VALUES:
+                errors.append((
+                    0,
+                    f"Invalid numeric constant '{dr_type}' for 'type' in discovery rule '{dr_name}' at {path}. "
+                    f"Zabbix 7.0 requires string constant '{ITEM_TYPE_VALUES[type_str]}' instead."
+                ))
+        
+        # Check item prototypes
+        item_prototypes = dr.get('item_prototypes', [])
+        if isinstance(item_prototypes, list):
+            for ip_idx, ip in enumerate(item_prototypes):
+                if isinstance(ip, dict):
+                    ip_name = ip.get('name', f'item_prototype({ip_idx + 1})')
+                    ip_path = f"{path}/item_prototypes/item_prototype({ip_idx + 1})"
+                    check_item_for_numeric_constants(ip, ip_path, ip_name)
+    
+    # Process templates
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            
+            # Check regular items
+            items = template.get('items', [])
+            if isinstance(items, list):
+                for i_idx, item in enumerate(items):
+                    if isinstance(item, dict):
+                        item_name = item.get('name', f'item({i_idx + 1})')
+                        item_path = f"/zabbix_export/templates/{template_name}/items/item({i_idx + 1})"
+                        check_item_for_numeric_constants(item, item_path, item_name)
+            
+            # Check discovery rules
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if isinstance(dr, dict):
+                        dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                        dr_path = f"/zabbix_export/templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})"
+                        check_discovery_rule_for_numeric_constants(dr, dr_path, dr_name)
+    
+    return errors
+
+
+# Invalid/deprecated trigger functions in Zabbix 7.0
+# These functions don't exist or have been replaced
+INVALID_TRIGGER_FUNCTIONS = {
+    'regexp': 'Use find(item,#num,,"regexp","pattern") instead',
+    'iregexp': 'Use find(item,#num,,"iregexp","pattern") instead',
+    'str': 'Use find(item,#num,,"like","string") instead',
+    'strlen': 'Use length(last(item)) instead',
+    'regexp_substring': 'Use function with preprocessing instead',
+    'logeventid': 'Use find() with appropriate operator instead',
+    'logsource': 'Use find() with appropriate operator instead',
+    'logseverity': 'Function deprecated in Zabbix 7.0',
+}
+
+# Valid Zabbix 7.0 trigger functions (partial list of commonly used ones)
+VALID_TRIGGER_FUNCTIONS = {
+    'abs', 'avg', 'band', 'between', 'bitand', 'bitlshift', 'bitnot', 'bitor',
+    'bitrshift', 'bitxor', 'cbrt', 'ceil', 'change', 'changecount', 'count',
+    'countunique', 'date', 'dayofmonth', 'dayofweek', 'diff', 'exp', 'expm1',
+    'find', 'first', 'floor', 'forecast', 'fuzzytime', 'in', 'insert', 'jsonpath',
+    'kurtosis', 'last', 'left', 'length', 'log', 'log10', 'ltrim', 'mad', 'max',
+    'mid', 'min', 'mod', 'monodec', 'monoinc', 'nodata', 'now', 'percentile',
+    'power', 'rate', 'repeat', 'replace', 'right', 'round', 'rtrim', 'signum',
+    'skewness', 'sqrt', 'stddevpop', 'stddevsamp', 'sum', 'time', 'timeleft',
+    'trendavg', 'trendcount', 'trendmax', 'trendmin', 'trendstl', 'trendsum',
+    'trim', 'truncate', 'varpop', 'varsamp', 'xmlxpath',
+}
+
+
+def validate_duplicate_attributes(file_content):
+    """
+    Check for duplicate attribute names within YAML structures.
+    This detects issues like having two 'name:' attributes in the same object,
+    which would cause "Duplicate key 'name' detected" errors in Zabbix GUI.
+    
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Stack to track current indentation context
+    # Each element: (indent_level, attributes_seen, start_line)
+    context_stack = []
+    
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Skip empty lines and comments
+        if not stripped or stripped.startswith('#'):
+            continue
+        
+        # Calculate current indentation level
+        current_indent = len(line) - len(line.lstrip())
+        
+        # Pop contexts with higher or equal indentation (we've left those scopes)
+        while context_stack and current_indent <= context_stack[-1][0]:
+            context_stack.pop()
+        
+        # Check if this line defines an attribute (key: value)
+        if ':' in stripped and not stripped.startswith('- '):
+            # Extract the attribute name
+            attr_match = re.match(r'^([^:]+):\s*', stripped)
+            if attr_match:
+                attr_name = attr_match.group(1).strip()
+                
+                # Skip if it's a complex key (contains spaces, brackets, etc.) as these are usually values
+                if ' ' not in attr_name and '[' not in attr_name and '{' not in attr_name:
+                    # Check if we have a current context
+                    if context_stack:
+                        # Check for duplicate in current context
+                        if attr_name in context_stack[-1][1]:
+                            original_line = context_stack[-1][1][attr_name]
+                            errors.append((
+                                line_num,
+                                f"Duplicate attribute '{attr_name}' detected. First occurrence at line {original_line}, duplicate at line {line_num}."
+                            ))
+                        else:
+                            # Add to current context
+                            context_stack[-1][1][attr_name] = line_num
+                    else:
+                        # Start new context
+                        context_stack.append((current_indent, {attr_name: line_num}, line_num))
+        
+        # Check for list items that might start a new object context
+        elif stripped.startswith('- '):
+            # List item - this might contain nested attributes
+            # Start a new context for this list item
+            context_stack.append((current_indent + 2, {}, line_num))  # +2 for typical list item indentation
+        
+        # Check if line has only a key (no value), indicating start of nested object
+        elif stripped.endswith(':') and not stripped.startswith('- '):
+            # This is a nested object key, start new context
+            context_stack.append((current_indent + 2, {}, line_num))  # +2 for typical nested indentation
+    
+    return errors
+
+
+def validate_trigger_expressions(yaml_data, file_content):
+    """
+    Validate trigger expressions for invalid or deprecated functions.
+    Returns a list of (line_num, error_message) tuples for invalid expressions.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Pattern to match function calls in expressions
+    func_pattern = re.compile(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
+    
+    def find_line_for_expression(expr_snippet, start_line=0):
+        """Find the line number where an expression appears."""
+        for i, line in enumerate(lines[start_line:], start_line + 1):
+            if 'expression:' in line and expr_snippet[:30] in line:
+                return i
+        # Try to find just the expression content
+        for i, line in enumerate(lines[start_line:], start_line + 1):
+            if expr_snippet[:40] in line:
+                return i
+        return None
+    
+    def check_expression(expression, trigger_name, path):
+        """Check a single expression for invalid functions."""
+        if not expression:
+            return
+        
+        # Find all function calls in the expression
+        matches = func_pattern.findall(expression)
+        for func_name in matches:
+            func_lower = func_name.lower()
+            if func_lower in INVALID_TRIGGER_FUNCTIONS:
+                suggestion = INVALID_TRIGGER_FUNCTIONS[func_lower]
+                line_num = find_line_for_expression(expression)
+                errors.append((
+                    line_num or 0,
+                    f"Invalid/deprecated function '{func_name}()' in trigger '{trigger_name}' at {path}. {suggestion}"
+                ))
+        
+        # Check for common syntax errors
+        # Empty parameter in find() - like find(item,,"pattern")
+        if ',,' in expression and 'find(' in expression:
+            # This might be valid if it's intentional empty time_shift
+            # But find(item,,"fail") is definitely wrong
+            if re.search(r'find\([^)]+,,\s*"[^"]+"\s*\)', expression):
+                line_num = find_line_for_expression(expression)
+                errors.append((
+                    line_num or 0,
+                    f"Invalid find() syntax in trigger '{trigger_name}' at {path}. "
+                    f"Syntax: find(item,#num,time_shift,\"operator\",\"pattern\")"
+                ))
+    
+    def check_triggers(triggers, path):
+        """Check a list of triggers for invalid expressions."""
+        if not isinstance(triggers, list):
+            return
+        
+        for t_idx, trigger in enumerate(triggers):
+            if not isinstance(trigger, dict):
+                continue
+            
+            trigger_name = trigger.get('name', f'trigger({t_idx + 1})')
+            trigger_path = f"{path}/trigger({t_idx + 1})"
+            
+            # Check for missing expression
+            expression = trigger.get('expression', '')
+            if not expression:
+                line_num = find_line_for_expression(trigger_name)
+                errors.append((
+                    line_num or 0,
+                    f"Missing required 'expression' tag in trigger '{trigger_name}' at {trigger_path}"
+                ))
+            else:
+                check_expression(expression, trigger_name, trigger_path)
+            
+            # Also check recovery_expression if present
+            recovery_expr = trigger.get('recovery_expression', '')
+            if recovery_expr:
+                check_expression(recovery_expr, f"{trigger_name} (recovery)", trigger_path)
+            
+            # Check dependencies for missing expressions
+            dependencies = trigger.get('dependencies', [])
+            if isinstance(dependencies, list):
+                for dep_idx, dep in enumerate(dependencies):
+                    if isinstance(dep, dict):
+                        dep_name = dep.get('name', f'dependency({dep_idx + 1})')
+                        dep_path = f"{trigger_path}/dependencies/dependency({dep_idx + 1})"
+                        
+                        if 'expression' not in dep:
+                            line_num = None
+                            # Try to find the line with the dependency name
+                            for i, line in enumerate(lines, 1):
+                                if f"name: '{dep_name}'" in line or f'name: "{dep_name}"' in line or f"name: {dep_name}" in line:
+                                    line_num = i
+                                    break
+                            errors.append((
+                                line_num or 0,
+                                f"Missing required 'expression' tag in dependency '{dep_name}' at {dep_path}. "
+                                f"Zabbix 7.0 requires both 'name' and 'expression' for trigger dependencies."
+                            ))
+    
+    export_data = yaml_data.get('zabbix_export', {})
+    
+    # Check standalone triggers
+    triggers = export_data.get('triggers', [])
+    check_triggers(triggers, '/zabbix_export/triggers')
+    
+    # Check template triggers and trigger_prototypes
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            template_path = f"/zabbix_export/templates/{template_name}"
+            
+            # Check template-level triggers
+            check_triggers(template.get('triggers', []), f"{template_path}/triggers")
+            
+            # Check item-level triggers
+            items = template.get('items', [])
+            if isinstance(items, list):
+                for item_idx, item in enumerate(items):
+                    if isinstance(item, dict) and 'triggers' in item:
+                        item_name = item.get('name', f'item({item_idx + 1})')
+                        item_path = f"{template_path}/items/item({item_idx + 1})"
+                        check_triggers(item.get('triggers', []), f"{item_path}/triggers")
+            
+            # Check discovery rule trigger_prototypes
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, rule in enumerate(discovery_rules):
+                    if isinstance(rule, dict):
+                        rule_name = rule.get('name', f'discovery_rule({dr_idx + 1})')
+                        rule_path = f"{template_path}/discovery_rules/{rule_name}"
+                        
+                        trigger_prototypes = rule.get('trigger_prototypes', [])
+                        check_triggers(trigger_prototypes, f"{rule_path}/trigger_prototypes")
+                        
+                        # Check item_prototype triggers as well
+                        item_prototypes = rule.get('item_prototypes', [])
+                        if isinstance(item_prototypes, list):
+                            for ip_idx, ip in enumerate(item_prototypes):
+                                if isinstance(ip, dict):
+                                    ip_name = ip.get('name', f'item_prototype({ip_idx + 1})')
+                                    ip_path = f"{rule_path}/item_prototypes/item_prototype({ip_idx + 1})"
+                                    # Check both 'triggers' and 'trigger_prototypes'
+                                    if 'triggers' in ip:
+                                        check_triggers(ip.get('triggers', []), f"{ip_path}/triggers")
+                                    if 'trigger_prototypes' in ip:
+                                        check_triggers(ip.get('trigger_prototypes', []), f"{ip_path}/trigger_prototypes")
+    
+    return errors
+
+
+def validate_trigger_dependency_exists(yaml_data, file_content):
+    """
+    Validate that trigger dependencies reference triggers that actually exist.
+    Dependencies must reference triggers in the same scope (same template for regular triggers,
+    same discovery rule for trigger_prototypes).
+    Returns a list of (line_num, error_message) tuples for missing dependencies.
+    """
+    errors = []
+    lines = file_content.split('\n')
+    
+    def find_line_number(search_text):
+        """Find line number containing the search text."""
+        for i, line in enumerate(lines, 1):
+            if search_text in line:
+                return i
+        return 0
+    
+    def collect_trigger_names(triggers_list):
+        """Collect all trigger names from a list of triggers."""
+        names = set()
+        if isinstance(triggers_list, list):
+            for trigger in triggers_list:
+                if isinstance(trigger, dict):
+                    name = trigger.get('name')
+                    if name:
+                        names.add(name)
+        return names
+    
+    def check_dependencies(triggers_list, available_trigger_names, scope_path, scope_description):
+        """Check that all dependencies reference existing triggers."""
+        if not isinstance(triggers_list, list):
+            return
+        
+        for t_idx, trigger in enumerate(triggers_list):
+            if not isinstance(trigger, dict):
+                continue
+            
+            trigger_name = trigger.get('name', f'trigger({t_idx + 1})')
+            dependencies = trigger.get('dependencies', [])
+            
+            if isinstance(dependencies, list):
+                for dep_idx, dep in enumerate(dependencies):
+                    if isinstance(dep, dict):
+                        dep_name = dep.get('name')
+                        if dep_name and dep_name not in available_trigger_names:
+                            # Find line number for the dependency
+                            line_num = find_line_number(f"- name: '{dep_name}'") or \
+                                       find_line_number(f'- name: "{dep_name}"') or \
+                                       find_line_number(f"name: '{dep_name}'") or \
+                                       find_line_number(f'name: "{dep_name}"') or 0
+                            errors.append((
+                                line_num,
+                                f"Trigger '{trigger_name}' at {scope_path} depends on trigger '{dep_name}', "
+                                f"which does not exist in {scope_description}. "
+                                f"Add the missing trigger or remove the dependency."
+                            ))
+    
+    # Process templates
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            template_path = f"/zabbix_export/templates/{template_name}"
+            
+            # Collect all regular triggers at template level
+            template_triggers = template.get('triggers', [])
+            template_trigger_names = collect_trigger_names(template_triggers)
+            
+            # Check dependencies in regular triggers
+            check_dependencies(
+                template_triggers, 
+                template_trigger_names, 
+                f"{template_path}/triggers",
+                f"template '{template_name}'"
+            )
+            
+            # Process discovery rules
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if not isinstance(dr, dict):
+                        continue
+                    
+                    dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                    dr_path = f"{template_path}/discovery_rules/{dr_name}"
+                    
+                    # Collect trigger_prototypes at DISCOVERY RULE level ONLY
+                    dr_trigger_prototypes = dr.get('trigger_prototypes', [])
+                    dr_level_trigger_names = collect_trigger_names(dr_trigger_prototypes)
+                    
+                    # Collect trigger_prototypes from item_prototypes (IP-level)
+                    item_prototypes = dr.get('item_prototypes', [])
+                    ip_level_trigger_names = set()
+                    if isinstance(item_prototypes, list):
+                        for ip in item_prototypes:
+                            if isinstance(ip, dict):
+                                ip_trigger_prototypes = ip.get('trigger_prototypes', [])
+                                ip_level_trigger_names.update(collect_trigger_names(ip_trigger_prototypes))
+                    
+                    # ALL trigger names in the discovery rule (for IP-level triggers to reference)
+                    all_dr_trigger_names = dr_level_trigger_names | ip_level_trigger_names
+                    
+                    # Check dependencies in discovery rule trigger_prototypes
+                    # DR-level triggers can ONLY depend on other DR-level triggers (not IP-level)
+                    check_dependencies(
+                        dr_trigger_prototypes,
+                        dr_level_trigger_names,  # Only DR-level triggers are valid dependencies
+                        f"{dr_path}/trigger_prototypes",
+                        f"discovery rule '{dr_name}' (trigger_prototypes at discovery rule level)"
+                    )
+                    
+                    # Check dependencies in item_prototype trigger_prototypes
+                    # IP-level triggers can depend on any trigger in the discovery rule
+                    if isinstance(item_prototypes, list):
+                        for ip_idx, ip in enumerate(item_prototypes):
+                            if isinstance(ip, dict):
+                                ip_name = ip.get('name', f'item_prototype({ip_idx + 1})')
+                                ip_path = f"{dr_path}/item_prototypes/{ip_name}"
+                                ip_trigger_prototypes = ip.get('trigger_prototypes', [])
+                                
+                                check_dependencies(
+                                    ip_trigger_prototypes,
+                                    all_dr_trigger_names,  # IP-level can depend on both DR and IP level
+                                    f"{ip_path}/trigger_prototypes",
+                                    f"discovery rule '{dr_name}'"
+                                )
+    
+    return errors
+
+
+def validate_required_uuids(yaml_data, file_content):
+    """
+    Validate that required elements have UUID tags.
+    In Zabbix 7.0, certain elements require UUIDs: templates, items, triggers, 
+    discovery_rules, valuemaps, template_groups, dashboards, graphs, etc.
+    Returns a list of (line_num, error_message) tuples for missing UUIDs.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_name(name_value, context_key=None):
+        """Find the line number where a name appears."""
+        for i, line in enumerate(lines, 1):
+            if f"name: '{name_value}'" in line or f'name: "{name_value}"' in line or f"name: {name_value}" in line:
+                return i
+        return None
+    
+    def check_list_for_uuids(items, path, item_type):
+        """Check a list of items for missing UUIDs."""
+        if not isinstance(items, list):
+            return
+        
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                continue
+            
+            item_name = item.get('name', item.get('template', f'{item_type}({idx + 1})'))
+            item_path = f"{path}/{item_type}({idx + 1})"
+            
+            if 'uuid' not in item:
+                line_num = find_line_for_name(item_name)
+                errors.append((
+                    line_num or 0,
+                    f"Missing required 'uuid' tag in {item_type} '{item_name}' at {item_path}"
+                ))
+    
+    export_data = yaml_data.get('zabbix_export', {})
+    
+    # Check template_groups
+    template_groups = export_data.get('template_groups', [])
+    check_list_for_uuids(template_groups, '/zabbix_export/template_groups', 'template_group')
+    
+    # Check templates
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            template_path = f"/zabbix_export/templates/template({t_idx + 1})"
+            
+            # Check template itself has uuid
+            if 'uuid' not in template:
+                line_num = find_line_for_name(template_name)
+                errors.append((
+                    line_num or 0,
+                    f"Missing required 'uuid' tag in template '{template_name}' at {template_path}"
+                ))
+            
+            # Check items
+            check_list_for_uuids(template.get('items', []), f"{template_path}/items", 'item')
+            
+            # Check discovery_rules
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, rule in enumerate(discovery_rules):
+                    if isinstance(rule, dict):
+                        rule_name = rule.get('name', f'discovery_rule({dr_idx + 1})')
+                        rule_path = f"{template_path}/discovery_rules/discovery_rule({dr_idx + 1})"
+                        
+                        if 'uuid' not in rule:
+                            line_num = find_line_for_name(rule_name)
+                            errors.append((
+                                line_num or 0,
+                                f"Missing required 'uuid' tag in discovery_rule '{rule_name}' at {rule_path}"
+                            ))
+                        
+                        # Check item_prototypes
+                        check_list_for_uuids(rule.get('item_prototypes', []), f"{rule_path}/item_prototypes", 'item_prototype')
+                        
+                        # Check trigger_prototypes
+                        check_list_for_uuids(rule.get('trigger_prototypes', []), f"{rule_path}/trigger_prototypes", 'trigger_prototype')
+                        
+                        # Check graph_prototypes
+                        check_list_for_uuids(rule.get('graph_prototypes', []), f"{rule_path}/graph_prototypes", 'graph_prototype')
+            
+            # Check valuemaps
+            check_list_for_uuids(template.get('valuemaps', []), f"{template_path}/valuemaps", 'valuemap')
+            
+            # Check dashboards
+            dashboards = template.get('dashboards', [])
+            if isinstance(dashboards, list):
+                for d_idx, dashboard in enumerate(dashboards):
+                    if isinstance(dashboard, dict):
+                        dashboard_name = dashboard.get('name', f'dashboard({d_idx + 1})')
+                        dashboard_path = f"{template_path}/dashboards/dashboard({d_idx + 1})"
+                        
+                        if 'uuid' not in dashboard:
+                            line_num = find_line_for_name(dashboard_name)
+                            errors.append((
+                                line_num or 0,
+                                f"Missing required 'uuid' tag in dashboard '{dashboard_name}' at {dashboard_path}"
+                            ))
+    
+    # Check standalone triggers
+    triggers = export_data.get('triggers', [])
+    check_list_for_uuids(triggers, '/zabbix_export/triggers', 'trigger')
+    
+    return errors
+
+
+def find_duplicate_uuids(yaml_data, file_content):
+    """
+    Find all UUIDs in the YAML data and check for duplicates.
+    Returns a list of (line_num, error_message) tuples for any duplicates found.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    uuid_locations = {}  # uuid -> list of (path, line_num)
+    
+    def find_line_for_uuid(uuid_value):
+        """Find the line number where a specific UUID appears."""
+        for i, line in enumerate(lines, 1):
+            if uuid_value in line and 'uuid:' in line:
+                return i
+        return None
+    
+    def collect_uuids(obj, path="", in_application_prototypes=False):
+        """Recursively collect all UUIDs from the YAML structure.
+        
+        Note: application_prototypes can legitimately share UUIDs when multiple
+        items should be grouped into the same application, so we skip those.
+        """
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                current_path = f"{path}.{key}" if path else key
+                # Skip application_prototypes - they legitimately share UUIDs
+                if key == 'application_prototypes':
+                    continue
+                if key == 'uuid' and isinstance(value, str):
+                    if value not in uuid_locations:
+                        uuid_locations[value] = []
+                    line_num = find_line_for_uuid(value)
+                    uuid_locations[value].append((current_path, line_num))
+                else:
+                    collect_uuids(value, current_path)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                collect_uuids(item, f"{path}[{i}]")
+    
+    # Collect all UUIDs
+    collect_uuids(yaml_data)
+    
+    # Check for duplicates
+    for uuid_value, locations in uuid_locations.items():
+        if len(locations) > 1:
+            # Format the locations for error message
+            location_strs = []
+            for path, line_num in locations:
+                if line_num:
+                    location_strs.append(f"{path} (line {line_num})")
+                else:
+                    location_strs.append(path)
+            
+            # Use the first line number for the error
+            first_line = locations[0][1] or 0
+            errors.append((first_line, 
+                f"Duplicate UUID '{uuid_value}' found at: {'; '.join(location_strs)}. "
+                f"Each UUID must be unique within the template."))
+    
+    return errors
+
+
+def find_duplicate_item_keys(yaml_data, file_content):
+    """
+    Find all item keys in the YAML data and check for duplicates within the same scope.
+    Returns a list of (line_num, error_message) tuples for any duplicates found.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_key(key_value):
+        """Find the line number where a specific key appears."""
+        for i, line in enumerate(lines, 1):
+            # Match 'key: value' pattern
+            if f"key: {key_value}" in line or f"key: '{key_value}'" in line:
+                return i
+        return None
+    
+    def collect_item_keys(items, path, key_locations):
+        """Collect all item keys from an items list."""
+        if not isinstance(items, list):
+            return
+        for i, item in enumerate(items):
+            if isinstance(item, dict) and 'key' in item:
+                key_value = item['key']
+                if key_value not in key_locations:
+                    key_locations[key_value] = []
+                line_num = find_line_for_key(key_value)
+                key_locations[key_value].append((f"{path}[{i}]", line_num))
+    
+    def process_template(template, template_path):
+        """Process a template and check for duplicate keys in items and item_prototypes."""
+        key_locations = {}
+        
+        # Check regular items
+        if 'items' in template:
+            collect_item_keys(template['items'], f"{template_path}.items", key_locations)
+        
+        # Check discovery rules and their item_prototypes
+        if 'discovery_rules' in template:
+            rules = template['discovery_rules']
+            if isinstance(rules, list):
+                for r_idx, rule in enumerate(rules):
+                    if isinstance(rule, dict) and 'item_prototypes' in rule:
+                        collect_item_keys(rule['item_prototypes'], 
+                            f"{template_path}.discovery_rules[{r_idx}].item_prototypes", 
+                            key_locations)
+        
+        # Report duplicates
+        for key_value, locations in key_locations.items():
+            if len(locations) > 1:
+                location_strs = []
+                for path, line_num in locations:
+                    if line_num:
+                        location_strs.append(f"{path} (line {line_num})")
+                    else:
+                        location_strs.append(path)
+                
+                first_line = locations[0][1] or 0
+                errors.append((first_line,
+                    f"Duplicate item key '{key_value}' found at: {'; '.join(location_strs)}. "
+                    f"Each item key must be unique within a template."))
+    
+    # Process each template
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if isinstance(template, dict):
+                process_template(template, f"templates[{t_idx}]")
+    
+    return errors
+
 
 def validate_zabbix_schema(yaml_data, file_content):
     errors = []
@@ -538,6 +2208,92 @@ def validate_zabbix_schema(yaml_data, file_content):
     for line_num, msg in unquoted_errors:
         errors.append(f"Line {line_num}: {msg}")
 
+    # Check for fields that require string values but have bare integers
+    string_field_errors = validate_string_required_fields(file_content)
+    for line_num, msg in string_field_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid enum values (drawtype, yaxisside, calc_fnc, etc.)
+    enum_errors = validate_enum_fields(file_content)
+    for line_num, msg in enum_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for unexpected tags in specific contexts (e.g., uuid in dashboard pages)
+    unexpected_tag_errors = validate_unexpected_tags(file_content)
+    for line_num, msg in unexpected_tag_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for common misspellings of Zabbix tags (e.g., value_maps instead of valuemaps)
+    spelling_errors = validate_tag_spelling(file_content)
+    for line_num, msg in spelling_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid LLD filter condition operators
+    lld_operator_errors = validate_lld_filter_operators(yaml_data, file_content)
+    for line_num, msg in lld_operator_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid 'filter' tag inside dashboard widgets
+    dashboard_filter_errors = validate_dashboard_widget_filter(yaml_data, file_content)
+    for line_num, msg in dashboard_filter_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid 'filter' tag inside item_prototypes
+    item_prototype_filter_errors = validate_item_prototype_filter(yaml_data, file_content)
+    for line_num, msg in item_prototype_filter_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for non-numeric items in graph prototypes
+    graph_item_type_errors = validate_graph_item_types(yaml_data, file_content)
+    for line_num, msg in graph_item_type_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid export tags like 'date'
+    invalid_export_tag_errors = validate_invalid_export_tags(yaml_data, file_content)
+    for line_num, msg in invalid_export_tag_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for LLD macros in item prototypes
+    lld_macro_errors = validate_lld_macro_in_prototypes(yaml_data, file_content)
+    for line_num, msg in lld_macro_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for numeric constants that should be string constants in Zabbix 7.0
+    numeric_constant_errors = validate_numeric_constants(yaml_data, file_content)
+    for line_num, msg in numeric_constant_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for invalid/deprecated trigger expression functions
+    expression_errors = validate_trigger_expressions(yaml_data, file_content)
+    for line_num, msg in expression_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for missing required UUIDs (valuemaps, items, triggers, etc.)
+    missing_uuid_errors = validate_required_uuids(yaml_data, file_content)
+    for line_num, msg in missing_uuid_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check that trigger dependencies reference existing triggers
+    dependency_errors = validate_trigger_dependency_exists(yaml_data, file_content)
+    for line_num, msg in dependency_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for duplicate UUIDs
+    duplicate_uuid_errors = find_duplicate_uuids(yaml_data, file_content)
+    for line_num, msg in duplicate_uuid_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # Check for duplicate item keys
+    duplicate_key_errors = find_duplicate_item_keys(yaml_data, file_content)
+    for line_num, msg in duplicate_key_errors:
+        errors.append(f"Line {line_num}: {msg}")
+
+    # TODO: Fix duplicate attribute detection - currently too aggressive
+    # # Check for duplicate attribute names in YAML structures
+    # duplicate_attribute_errors = validate_duplicate_attributes(file_content)
+    # for line_num, msg in duplicate_attribute_errors:
+    #     errors.append(f"Line {line_num}: {msg}")
+
     # Check required top-level structure
     if 'zabbix_export' not in yaml_data:
         # Only error if the file looks like YAML (not Python or other source)
@@ -547,7 +2303,8 @@ def validate_zabbix_schema(yaml_data, file_content):
     
     export_data = yaml_data['zabbix_export']
     
-    # Check version
+    # Check version - initialize first to avoid NameError later
+    version = None
     if 'version' not in export_data:
         errors.append("Missing required 'version' field in zabbix_export")
     else:
@@ -556,6 +2313,29 @@ def validate_zabbix_schema(yaml_data, file_content):
             expected = ", ".join([f"'{v}' ({desc})" for v, desc in SUPPORTED_VERSIONS.items()])
             errors.append(f"Unsupported version: '{version}'. Expected one of: {expected}")
     
+    # Check for sections INSIDE templates that should be at zabbix_export level
+    # In Zabbix 7.0, 'graphs' must be at zabbix_export level, NOT inside templates
+    # Error: "Invalid tag '/zabbix_export/templates/template(1)': unexpected tag 'graphs'"
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if isinstance(template, dict):
+                template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+                # Check if graphs is incorrectly placed inside a template
+                if 'graphs' in template:
+                    # Find the line number
+                    line_num = None
+                    for i, line in enumerate(lines, 1):
+                        # Match 'graphs:' at 6 spaces (inside template)
+                        if re.match(r'^      graphs:\s*$', line):
+                            line_num = i
+                            break
+                    if line_num:
+                        line_prefix = f"Line {line_num}: "
+                        errors.append(f"{line_prefix}Misplaced 'graphs' section inside template '{template_name}'. "
+                                     f"In Zabbix 7.0, 'graphs' must be at the zabbix_export level (2 spaces indentation), "
+                                     f"not inside templates (6 spaces). Move it outside the template block.")
+
     # Check templates section
     if 'templates' not in export_data:
         errors.append("Missing required 'templates' section")
@@ -660,6 +2440,23 @@ def validate_zabbix_schema(yaml_data, file_content):
 
 def validate_items(items, prefix, lines, template_line, errors, warnings):
     """Validate items section"""
+    if isinstance(items, dict):
+        items = [items]
+    elif not isinstance(items, list):
+        line = find_line_number(lines, items) or template_line
+        errors.append(f"Line ~{line}: {prefix}: Should be list/dict")
+        return
+
+    for item_idx, item in enumerate(items):
+        item_prefix = f"{prefix}[{item_idx}]"
+
+        if not isinstance(item, dict):
+            continue
+
+        # Check for required 'name' field
+        if 'name' not in item:
+            line = find_line_number(lines, item) or template_line
+            errors.append(f"Line ~{line}: {item_prefix}: the tag 'name' is missing.")
     if isinstance(items, dict):
         items = [items]
     elif not isinstance(items, list):
@@ -1053,8 +2850,8 @@ def validate_yaml_file(file_path):
         #yaml_data = yaml.safe_load(file_content)
         yaml_data = load_yaml(file_content)
             
-        # Basic YAML syntax is valid, now check Zabbix schema
-        schema_errors, schema_warnings, version = validate_zabbix_schema(yaml_data, file_content)
+        # Comprehensive Zabbix schema validation with all checks
+        schema_errors, schema_warnings, version = validate_comprehensive_zabbix_schema(yaml_data, file_content)
         
         has_errors = len(schema_errors) > 0
         has_warnings = len(schema_warnings) > 0
@@ -1093,6 +2890,328 @@ def validate_yaml_file(file_path):
     except Exception as e:
         print(f"❌ Error reading file: {e}")
         return False
+
+def validate_required_fields(yaml_data, file_content):
+    """
+    Validate that required fields are present in the template structure.
+    Returns a list of (line_num, error_message) tuples for missing required fields.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_value(search_value):
+        """Find line number for a value."""
+        for i, line in enumerate(lines, 1):
+            if search_value in line:
+                return i
+        return 0
+    
+    export_data = yaml_data.get('zabbix_export', {})
+    
+    # Check required zabbix_export fields
+    required_export_fields = ['version', 'templates']
+    for field in required_export_fields:
+        if field not in export_data:
+            errors.append((
+                0,
+                f"Missing required field '{field}' in zabbix_export section"
+            ))
+    
+    # Check templates
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', f'template({t_idx + 1})')
+            
+            # Required template fields
+            required_template_fields = ['template', 'name']
+            for field in required_template_fields:
+                if field not in template:
+                    line_num = find_line_for_value(template_name)
+                    errors.append((
+                        line_num,
+                        f"Missing required field '{field}' in template '{template_name}'"
+                    ))
+            
+            # Check vendor fields (required for proper template organization)
+            vendor = template.get('vendor', {})
+            if not isinstance(vendor, dict) or not vendor.get('name'):
+                line_num = find_line_for_value(template_name)
+                errors.append((
+                    line_num,
+                    f"Missing required vendor information in template '{template_name}'. "
+                    f"Add: vendor: {{name: 'Vendor Name', version: 'Version'}}"
+                ))
+    
+    return errors
+
+
+def validate_snmp_configuration(yaml_data, file_content):
+    """
+    Validate SNMP configuration for items and discovery rules.
+    Returns a list of (line_num, error_message) tuples for SNMP configuration issues.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # SNMP item types that require specific configuration
+    SNMP_TYPES = {'SNMPV1', 'SNMPV2', 'SNMPV3', '1', '4', '6'}
+    
+    def find_line_for_item(item_name):
+        """Find line number for an item by name."""
+        for i, line in enumerate(lines, 1):
+            if f"name: {item_name}" in line or f"name: '{item_name}'" in line:
+                return i
+        return 0
+    
+    def check_snmp_item(item, path, item_name):
+        """Check SNMP configuration for a single item."""
+        item_type = str(item.get('type', '')).upper()
+        
+        if item_type in SNMP_TYPES:
+            # SNMP items must have snmp_oid
+            if 'snmp_oid' not in item:
+                line_num = find_line_for_item(item_name)
+                errors.append((
+                    line_num,
+                    f"SNMP item '{item_name}' at {path} is missing required 'snmp_oid' field"
+                ))
+            
+            # Validate SNMP OID format
+            snmp_oid = item.get('snmp_oid', '')
+            if snmp_oid:
+                is_valid, error_msg = validate_snmp_oid(snmp_oid)
+                if not is_valid:
+                    line_num = find_line_for_item(item_name)
+                    errors.append((
+                        line_num,
+                        f"Invalid SNMP OID in item '{item_name}' at {path}: {error_msg}"
+                    ))
+    
+    # Check templates
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', f'template({t_idx + 1})')
+            
+            # Check regular items
+            items = template.get('items', [])
+            if isinstance(items, list):
+                for i_idx, item in enumerate(items):
+                    if isinstance(item, dict):
+                        item_name = item.get('name', f'item({i_idx + 1})')
+                        check_snmp_item(item, f"templates/{template_name}/items/item({i_idx + 1})", item_name)
+            
+            # Check discovery rules and their item prototypes
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if isinstance(dr, dict):
+                        dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                        
+                        # Check discovery rule itself
+                        check_snmp_item(dr, f"templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})", dr_name)
+                        
+                        # Check item prototypes
+                        item_prototypes = dr.get('item_prototypes', [])
+                        if isinstance(item_prototypes, list):
+                            for ip_idx, ip in enumerate(item_prototypes):
+                                if isinstance(ip, dict):
+                                    ip_name = ip.get('name', f'item_prototype({ip_idx + 1})')
+                                    check_snmp_item(ip, f"templates/{template_name}/discovery_rules/discovery_rule({dr_idx + 1})/item_prototypes/item_prototype({ip_idx + 1})", ip_name)
+    
+    return errors
+
+
+def validate_key_format(yaml_data, file_content):
+    """
+    Enhanced validation for Zabbix item key formats.
+    Returns a list of (line_num, error_message) tuples for invalid key formats.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_key(key_value):
+        """Find line number for a specific key."""
+        for i, line in enumerate(lines, 1):
+            if f"key: {key_value}" in line or f"key: '{key_value}'" in line:
+                return i
+        return 0
+    
+    def validate_item_key_enhanced(key, item_name, path):
+        """Enhanced item key validation with specific error messages."""
+        is_valid, error_msg = validate_item_key(key)
+        if not is_valid:
+            line_num = find_line_for_key(key)
+            errors.append((
+                line_num,
+                f"Invalid item key '{key}' in '{item_name}' at {path}: {error_msg}"
+            ))
+        
+        # Additional validations
+        # Check for common mistakes
+        if key.startswith('.'):
+            line_num = find_line_for_key(key)
+            errors.append((
+                line_num,
+                f"Item key '{key}' in '{item_name}' at {path} starts with '.' - keys cannot start with a dot"
+            ))
+        
+        if '..' in key:
+            line_num = find_line_for_key(key)
+            errors.append((
+                line_num,
+                f"Item key '{key}' in '{item_name}' at {path} contains consecutive dots '..' - invalid syntax"
+            ))
+        
+        # Check for spaces (only flag if outside of bracket parameters)
+        if ' ' in key:
+            # Allow spaces within bracket parameters for custom scripts
+            # Pattern: key_name[parameters with spaces allowed]
+            bracket_match = re.match(r'^([^[]+)(\[.*\])$', key)
+            if bracket_match:
+                key_name, params = bracket_match.groups()
+                # Only check the key name part before brackets for spaces
+                if ' ' in key_name:
+                    line_num = find_line_for_key(key)
+                    errors.append((
+                        line_num,
+                        f"Item key '{key}' in '{item_name}' at {path} has spaces in key name part (before brackets) - only parameters within brackets can contain spaces"
+                    ))
+            else:
+                # No brackets, so spaces are not allowed at all
+                if not (key.count('"') >= 2 or key.count("'") >= 2):
+                    line_num = find_line_for_key(key)
+                    errors.append((
+                        line_num,
+                        f"Item key '{key}' in '{item_name}' at {path} contains unquoted spaces - parameters with spaces must be quoted or use bracket notation"
+                    ))
+    
+    def check_items_keys(items, path_prefix):
+        """Check keys in a list of items."""
+        if not isinstance(items, list):
+            return
+        
+        for i_idx, item in enumerate(items):
+            if isinstance(item, dict) and 'key' in item:
+                item_name = item.get('name', f'item({i_idx + 1})')
+                key = item['key']
+                validate_item_key_enhanced(key, item_name, f"{path_prefix}/item({i_idx + 1})")
+    
+    # Check templates
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', f'template({t_idx + 1})')
+            template_path = f"templates/{template_name}"
+            
+            # Check regular items
+            check_items_keys(template.get('items', []), f"{template_path}/items")
+            
+            # Check discovery rules and their item prototypes
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if isinstance(dr, dict):
+                        dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                        dr_path = f"{template_path}/discovery_rules/discovery_rule({dr_idx + 1})"
+                        
+                        # Check discovery rule key
+                        if 'key' in dr:
+                            validate_item_key_enhanced(dr['key'], dr_name, dr_path)
+                        
+                        # Check item prototypes
+                        check_items_keys(dr.get('item_prototypes', []), f"{dr_path}/item_prototypes")
+    
+    return errors
+
+
+def validate_duplicate_macros(yaml_data, file_content):
+    """
+    Validate that there are no duplicate macro definitions within templates.
+    Returns a list of (line_num, error_message) tuples for duplicate macros.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', template.get('name', f'template({t_idx + 1})'))
+            macros = template.get('macros', [])
+            
+            if isinstance(macros, list):
+                macro_names = {}
+                for m_idx, macro in enumerate(macros):
+                    if isinstance(macro, dict) and 'macro' in macro:
+                        macro_name = macro['macro']
+                        if macro_name in macro_names:
+                            # Find line numbers for both occurrences
+                            first_line = find_line_number(lines, macro_names[macro_name]) or 0
+                            second_line = find_line_number(lines, macro) or 0
+                            errors.append((second_line, 
+                                f"Duplicate macro '{macro_name}' found in template '{template_name}'. "
+                                f"First occurrence at line ~{first_line}, duplicate at line ~{second_line}. "
+                                f"Each macro must be unique within a template."))
+                        else:
+                            macro_names[macro_name] = macro
+    
+    return errors
+
+
+def validate_comprehensive_zabbix_schema(yaml_data, file_content):
+    """
+    Comprehensive Zabbix template validation combining all checks.
+    Returns (errors, warnings, version) tuple.
+    """
+    all_errors = []
+    all_warnings = []
+    
+    # Get basic schema validation first
+    errors, warnings, version = validate_zabbix_schema(yaml_data, file_content)
+    all_errors.extend(errors)
+    all_warnings.extend(warnings)
+    
+    # Add missing validation checks
+    required_field_errors = validate_required_fields(yaml_data, file_content)
+    for line_num, msg in required_field_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    snmp_config_errors = validate_snmp_configuration(yaml_data, file_content)
+    for line_num, msg in snmp_config_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    key_format_errors = validate_key_format(yaml_data, file_content)
+    for line_num, msg in key_format_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    # Check for duplicate macros
+    duplicate_macro_errors = validate_duplicate_macros(yaml_data, file_content)
+    for line_num, msg in duplicate_macro_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    return all_errors, all_warnings, version
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

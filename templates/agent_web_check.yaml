@@ -1,131 +1,120 @@
 zabbix_export:
   version: '7.0'
   template_groups:
-  - uuid: 2b5a2a0e2f2a4a0ca3a7b8b4b2f2a0e1
-    name: Custom
+    - uuid: 2b5a2a0e2f2a4a0ca3a7b8b4b2f2a0e1
+      name: Custom
   templates:
-  - uuid: 2e4c3b1a5d2f4a9c8b7e0a1f3c2d4b5a
-    template: 'Agent Web Check'
-    name: 'Agent Web Check'
-    description: |
-      HTTP(S) checks via PowerShell executed by Zabbix Agent.
-      Discovery returns one row with {#SCRIPT.NAME}; prototypes pass the script name as $1.
-      Target URL and thresholds are controlled by macros. Extended request options are provided
-      but require the script to support those parameters.
-
-      Author: Simon Jackson (@sjackson0109)
-
-    groups:
-      - name: Custom
-
-    macros:
-    # Core
-    - macro: '{$WEB_URL}'
-      value: 'https://example.com'
-      description: 'URL to check.'
-    - macro: '{$WEB_TIMEOUT}'
-      value: '30'
-      description: 'Timeout in seconds.'
-    - macro: '{$WEB_EXPECT_CODE}'
-      value: '200'
-      description: 'Expected HTTP status code.'
-    - macro: '{$WEB_MAX_LATENCY}'
-      value: '1500'
-      description: 'Latency threshold in ms for warning trigger.'
-
-    # Optional content match (enable only if your script supports -ExpectContent)
-    - macro: '{$WEB_EXPECT_CONTENT}'
-      value: '^$'
-      description: 'Regex for page content match. Leave ^$ to disable.'
-
-    # Extended options (only if your script + UserParameter supports them)
-    - macro: '{$WEB_METHOD}'
-      value: 'GET'
-      description: 'HTTP method for extended request.'
-    - macro: '{$WEB_ALLOW_INVALID_CERT}'
-      value: '0'
-      description: 'Allow invalid TLS certs (1/0) in extended request.'
-    - macro: '{$WEB_FOLLOW_REDIRECT}'
-      value: '1'
-      description: 'Follow redirects (1/0) in extended request.'
-    - macro: '{$WEB_MAX_REDIRECTS}'
-      value: '5'
-      description: 'Max redirects in extended request.'
-    - macro: '{$WEB_MIN_STATUS}'
-      value: '200'
-      description: 'Minimum acceptable status in extended request.'
-    - macro: '{$WEB_MAX_STATUS}'
-      value: '299'
-      description: 'Maximum acceptable status in extended request.'
-    - macro: '{$WEB_EXCLUDE_CODES}'
-      value: '^$'
-      description: 'Comma-separated status codes to exclude, or ^$ to disable.'
-
-    discovery_rules:
-    - uuid: 7a9c5e1b2d4f4a91bbf2cdd0b2b3c5e7
-      name: 'Script Discovery - Agent Web Check'
-      type: ZABBIX_PASSIVE
-      key: custom.web[*]
-      delay: 1h
-      lifetime: 1d
-      description: 'LLD JSON with one row: {#SCRIPT.NAME}=agent_web_check.ps1'
-      preprocessing:
-      - type: JSONPATH
-        parameters:
-        - '$.data[*]'
-
-      item_prototypes:
-      - uuid: 5aa3c181d45a4c70ad89a39e2fbb7c88
-        name: 'Web response time from {HOST.NAME} for {$WEB_URL}'
-        type: ZABBIX_PASSIVE
-        key: 'custom.web[*]'
-        value_type: FLOAT
-        units: ms
-        trends: '0'
-        description: 'End-to-end HTTP(S) response time, ms.'
-        trigger_prototypes:
-        - uuid: 13d7dcb7292d44fbb64d3bb9c7e7e811
-          name: 'High web latency from {HOST.NAME} for {$WEB_URL}'
-          expression: 'last(/Agent Web Check/custom.web[*])>{$WEB_MAX_LATENCY}'
-          priority: WARNING
-          description: 'Response time exceeded {$WEB_MAX_LATENCY} ms.'
-
-      - uuid: 81f84ffef4c04b78a4e30f6de3d0a21f
-        name: 'Web availability from {HOST.NAME} for {$WEB_URL}'
-        type: ZABBIX_PASSIVE
-        key: 'custom.web[*]'
-        value_type: FLOAT
-        trends: '0'
-        description: '1 if HTTP(S) succeeded and matched expected status, 0 otherwise.'
-        trigger_prototypes:
-        - uuid: b821d4c77e8a4372a5bc83f3ebd86a6e
-          name: 'Web check failure from {HOST.NAME} for {$WEB_URL}'
-          expression: 'last(/Agent Web Check/custom.web[*])=0'
-          priority: HIGH
-          description: 'HTTP check failed or unexpected status code.'
-
-      - uuid: 77b7a49a4e8a4a0bbefc2a8b7a99f8aa
-        name: 'Web status code from {HOST.NAME} for {$WEB_URL}'
-        type: ZABBIX_PASSIVE
-        key: 'custom.web[*]'
-        value_type: FLOAT
-        trends: '0'
-        description: 'Returned HTTP status code.'
-
-      - uuid: 44fb1a19f9454eafad3c3a2d92b4d4d1
-        name: 'Web content match from {HOST.NAME} for {$WEB_URL}'
-        type: ZABBIX_PASSIVE
-        key: 'custom.web[*]'
-        value_type: FLOAT
-        trends: '0'
-        description: '1 if content regex matches, 0 if not. Requires script to support -ExpectContent.'
-
-      # Optional extended request (requires matching UserParameter and script support)
-      - uuid: 96f5a8b2ef5c4fb6a3c4b7e9d1a2b3c4
-        name: 'Web extended request from {HOST.NAME} for {$WEB_URL}'
-        type: ZABBIX_PASSIVE
-        key: 'custom.web[*]'
-        value_type: TEXT
-        trends: '0'
-        status: DISABLED
-        description: 'Extended HTTP(S) request; returns raw output or JSON per your script. Disabled by default.'
+    - uuid: 2e4c3b1a5d2f4a9c8b7e0a1f3c2d4b5a
+      template: 'Agent Web Check'
+      name: 'Agent Web Check'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
+      description: |
+        HTTP(S) checks via PowerShell executed by Zabbix Agent.
+        Discovery returns one row with {#SCRIPT.NAME}; prototypes pass the script name as $1.
+        Target URL and thresholds are controlled by macros. Extended request options are provided
+        but require the script to support those parameters.
+        
+        Author: Simon Jackson (@sjackson0109)
+      groups:
+        - name: Custom
+      discovery_rules:
+        - uuid: 7a9c5e1b2d4f4a91bbf2cdd0b2b3c5e7
+          name: 'Script Discovery - Agent Web Check'
+          key: 'custom.web[*]'
+          delay: 1h
+          lifetime: 1d
+          description: 'LLD JSON with one row: {#SCRIPT.NAME}=agent_web_check.ps1'
+          item_prototypes:
+            - uuid: 81f84ffef4c04b78a4e30f6de3d0a21f
+              name: 'Web availability from {HOST.NAME} for {$WEB_URL}'
+              key: 'custom.web.availability[{#SCRIPT.NAME}]'
+              value_type: FLOAT
+              trends: '0'
+              description: '1 if HTTP(S) succeeded and matched expected status, 0 otherwise.'
+              trigger_prototypes:
+                - uuid: b821d4c77e8a4372a5bc83f3ebd86a6e
+                  expression: 'last(/Agent Web Check/custom.web.availability[{#SCRIPT.NAME}])=0'
+                  name: 'Web check failure from {HOST.NAME} for {$WEB_URL}'
+                  priority: HIGH
+                  description: 'HTTP check failed or unexpected status code.'
+            - uuid: 44fb1a19f9454eafad3c3a2d92b4d4d1
+              name: 'Web content match from {HOST.NAME} for {$WEB_URL}'
+              key: 'custom.web.content_match[{#SCRIPT.NAME}]'
+              value_type: FLOAT
+              trends: '0'
+              description: '1 if content regex matches, 0 if not. Requires script to support -ExpectContent.'
+            - uuid: 96f5a8b2ef5c4fb6a3c4b7e9d1a2b3c4
+              name: 'Web extended request from {HOST.NAME} for {$WEB_URL}'
+              key: 'custom.web.extended[{#SCRIPT.NAME},{$WEB_URL},{$WEB_TIMEOUT},{$WEB_METHOD},{$WEB_USER_AGENT},{$WEB_FOLLOW_REDIRECT},{$WEB_MAX_REDIRECTS},{$WEB_ALLOW_INVALID_CERT}]'
+              value_type: TEXT
+              trends: '0'
+              status: DISABLED
+              description: 'Extended HTTP(S) request with full options including User-Agent. Returns raw output or JSON per your script. Disabled by default.'
+            - uuid: 5aa3c181d45a4c70ad89a39e2fbb7c88
+              name: 'Web response time from {HOST.NAME} for {$WEB_URL}'
+              key: 'custom.web.response_time[{#SCRIPT.NAME}]'
+              value_type: FLOAT
+              trends: '0'
+              units: ms
+              description: 'End-to-end HTTP(S) response time, ms.'
+              trigger_prototypes:
+                - uuid: 13d7dcb7292d44fbb64d3bb9c7e7e811
+                  expression: 'last(/Agent Web Check/custom.web.response_time[{#SCRIPT.NAME}])>{$WEB_MAX_LATENCY}'
+                  name: 'High web latency from {HOST.NAME} for {$WEB_URL}'
+                  priority: WARNING
+                  description: 'Response time exceeded {$WEB_MAX_LATENCY} ms.'
+            - uuid: 77b7a49a4e8a4a0bbefc2a8b7a99f8aa
+              name: 'Web status code from {HOST.NAME} for {$WEB_URL}'
+              key: 'custom.web.status_code[{#SCRIPT.NAME}]'
+              value_type: FLOAT
+              trends: '0'
+              description: 'Returned HTTP status code.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[*]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$WEB_ALLOW_INVALID_CERT}'
+          value: '0'
+          description: 'Allow invalid TLS certs (1/0) in extended request.'
+        - macro: '{$WEB_EXCLUDE_CODES}'
+          value: ^$
+          description: 'Comma-separated status codes to exclude, or ^$ to disable.'
+        - macro: '{$WEB_EXPECT_CODE}'
+          value: '200'
+          description: 'Expected HTTP status code.'
+        - macro: '{$WEB_EXPECT_CONTENT}'
+          value: ^$
+          description: 'Regex for page content match. Leave ^$ to disable.'
+        - macro: '{$WEB_FOLLOW_REDIRECT}'
+          value: '1'
+          description: 'Follow redirects (1/0) in extended request.'
+        - macro: '{$WEB_MAX_LATENCY}'
+          value: '1500'
+          description: 'Latency threshold in ms for warning trigger.'
+        - macro: '{$WEB_MAX_REDIRECTS}'
+          value: '5'
+          description: 'Max redirects in extended request.'
+        - macro: '{$WEB_MAX_STATUS}'
+          value: '299'
+          description: 'Maximum acceptable status in extended request.'
+        - macro: '{$WEB_METHOD}'
+          value: GET
+          description: 'HTTP method for extended request.'
+        - macro: '{$WEB_MIN_STATUS}'
+          value: '200'
+          description: 'Minimum acceptable status in extended request.'
+        - macro: '{$WEB_TIMEOUT}'
+          value: '30'
+          description: 'Timeout in seconds.'
+        - macro: '{$WEB_URL}'
+          value: 'https://example.com'
+          description: 'URL to check.'
+        - macro: '{$WEB_USER_AGENT}'
+          value: zabbix-agent-web-check/1.0
+          description: 'User-Agent header for extended request.'

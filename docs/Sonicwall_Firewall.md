@@ -1,4 +1,4 @@
-# Zabbix Template: SonicWall Firewall
+﻿# Zabbix Template: SonicWall Firewall
 
 ### Author: Simon Jackson / sjackson0109  
 ### Created: 2025/04/10  
@@ -98,6 +98,6 @@ Tested on SonicOS Enhanced 6.5.x and 7.x platforms.
 - `sonicwall_firewall.yaml` – Zabbix Template (v7.0 YAML)
 - `README.md` – Template usage and notes
 
-## License
+## Licence
 
-Distributed under a permissive license. Attribution appreciated.
+Distributed under a permissive Licence. Attribution appreciated.

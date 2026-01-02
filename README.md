@@ -1,11 +1,14 @@
-## Overview
+﻿## Overview
 
 ### Template Validation
 
-Before importing any template into Zabbix, it's highly recommended to validate it using our comprehensive validation tool. These scripts catche ~95% of common errors before import, returning more helpful error messages, and significantly saves on debugging time.
+Before importing any template into Zabbix, it's highly recommended to validate it using our comprehensive validation tool. These scripts catch ~95% of common errors before import, returning more helpful error messages, and significantly saves on debugging time.
 
 **Quick Start**:
 ```bash
+# Install dependencies (PyYAML is required)
+pip install -r requirements.txt
+
 # Validate a single template
 python scripts/validate_zabbix_template.py templates/your_template.yaml
 
@@ -21,21 +24,27 @@ python scripts/validate_all_templates.py
 
 The validator checks:
 - ✅ YAML syntax and Zabbix schema compliance
-- ✅ UUID format (UUIDv4)
-- ✅ Item key syntax (bracket matching)
+- ✅ UUID format and uniqueness validation (UUIDv4)
+- ✅ Item key syntax and format validation
 - ✅ Time unit formats (1m, 5h, 30s)
-- ✅ SNMP OID formats
+- ✅ SNMP OID formats and configuration validation
 - ✅ Enum values (item types, trigger priorities)
-- ✅ Trigger expression parsing
-- ✅ Item reference integrity
+- ✅ Trigger expression parsing and function validation
+- ✅ Item reference integrity and dependency validation
 - ✅ Multi-line string validation
+- ✅ Required field validation (vendor info, UUIDs)
+- ✅ LLD macro validation in prototypes
+- ✅ String vs numeric constant validation (Zabbix 7.0)
+- ✅ Discovery rule filter operator validation
+- ✅ Template structural integrity checks
 
 ## Structure
 All custom monitoring scripts reside under this repository. Below are the available scripts with their respective documentation:
 
 ### Available Scripts:
 - **[snmp_client.py](docs/SNMP-Client.md)** - Comprehensive SNMPv1/v2c/v3 client with authentication and privacy support. RFC 3414 compliant, supports MD5/SHA authentication and DES/AES encryption. Integrates with Zabbix external scripts for discovery, check, and detailed check modes.
-- **[get_stun_turn_checks.py](docs/STUN-TURN-Checks.md)** - STUN/TURN monitoring script with full RFC 5389/5766 support. Handles STUN binding requests, TURN allocation with authentication, and UDP/TCP/TLS transports. Optimized for fast monitoring.
+- **[get_domain_health.py](docs/Domain-Health.md)** - Domain health and compliance monitoring. Performs DNS record checks, DNSSEC/DANE validation, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP data retrieval, ASN lookup, and NS server monitoring. Full RFC compliance checking.
+- **[get_stun_turn_checks.py](docs/STUN-TURN-Checks.md)** - STUN/TURN monitoring script with full RFC 5389/5766 support. Handles STUN binding requests, TURN allocation with authentication, and UDP/TCP/TLS transports. Optimised for fast monitoring.
 - **[get_tcp_port_scan.py](docs/TCP-Port-Scan.md)** - Multithreaded TCP scanner for service discovery and exposure audits. Designed for Zabbix LLD and interactive CLI use.
 - **[get_sip_options.py](docs/SIP-Options.md)** - Sends SIP OPTIONS requests to a SIP server and verifies responses. Fully RFC 3261 compliant with extensive argument support.
 - **[get_tls_handshake.py](docs/TLS-Handshake.md)** - Tests TLS handshake capabilities of a host. Detects available SSL/TLS protocols and ciphers, and provides a compatibility report.
@@ -55,7 +64,7 @@ Each script is documented individually, providing installation instructions, usa
   HTTP(S) endpoint monitoring via PowerShell executed by Zabbix Agent. Supports status, latency, and content validation. Highly configurable with macros.
 
 - **[AlienVault OTX](docs/AlienVault_OTX.md)**  
-  Monitors AlienVault OTX pulses and indicators via the external script. Features automated IOC discovery, severity/confidence tracking, pulse count, robust error handling, macro/env flexibility, and performance optimization. See [AlienVault_OTX.md](docs/AlienVault_OTX.md) for full documentation and troubleshooting.
+  Monitors AlienVault OTX pulses and indicators via the external script. Features automated IOC discovery, severity/confidence tracking, pulse count, robust error handling, macro/env flexibility, and performance optimisation. See [AlienVault_OTX.md](docs/AlienVault_OTX.md) for full documentation and troubleshooting.
 
 - **[APC Netbotz](docs/APC_Netbotz.md)**  
   Comprehensive SNMP-based monitoring for APC NetBotz environmental devices. Supports multiple device families, sensor discovery, and value mapping.
@@ -68,6 +77,9 @@ Each script is documented individually, providing installation instructions, usa
 
 - **[Dell Unity Array](docs/Dell_Unity_Array.md)**  
   Monitors EMC Unity XT series storage arrays using REST API. Includes discovery, error triggers, and macro configuration.
+
+- **[Domain Health](docs/Domain-Health.md)**  
+  Comprehensive domain health and compliance monitoring. Checks DNS records, DNSSEC, DANE/TLSA, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP, ASN, and NS server availability. Full RFC compliance with health score dashboard.
 
 - **[Eaton UPS](docs/Eaton_UPS.md)**  
   Complete SNMP template for Eaton UPS systems. Dynamic discovery of power, battery, load, and environment metrics using XUPS-MIB.
@@ -171,6 +183,6 @@ For usage details of each script, refer to the individual README files linked ab
 - Each script follows best practices for **error handling**, **logging**, and **parameterisation**.
 - Contributions and improvements are welcome.
 
-## License
-This project is licensed under the **Apache License 2.0**.  
-See the [License.md](LICENSE.md) for details.
+## Licence
+This project is licensed under the **Apache Licence 2.0**.  
+See the [Licence.md](Licence.md) for details.

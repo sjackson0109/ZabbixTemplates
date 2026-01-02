@@ -4,6 +4,9 @@ zabbix_export:
     - uuid: c1b937bd6e904eb4bc3ea91e6abbd830
       template: 'Web Scenario Triggers'
       name: 'Web Scenario Triggers'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
       groups:
         - name: Environment
       discovery_rules:
@@ -92,7 +95,7 @@ zabbix_export:
               value_type: TEXT
               trends: '0'
               delay: 1m
-            - uuid: f1c32f50d4e548a4b24d20dff43e5a43
+            - uuid: c0aeb648e41a4b6c889b9b4c6a93d1a7
               name: 'Web Scenario: {#SCENARIO} Fail Flag'
               key: 'p2.web.test.fail[{#SCENARIO}]'
               value_type: TEXT

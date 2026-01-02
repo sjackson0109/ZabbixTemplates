@@ -1,4 +1,4 @@
-<#
+﻿<#
 Author: Simon Jackson (@sjackson0109)
 Created: 2025/07/21
 Version: 1.1
@@ -33,7 +33,7 @@ try {
         $pair = "${Username}:${Password}"
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($pair)
         $base64 = [Convert]::ToBase64String($bytes)
-        $client.DefaultRequestHeaders.Authorization = "Basic $base64"
+        $client.DefaultRequestHeaders.Authorisation = "Basic $base64"
     }
 
     # Custom Headers

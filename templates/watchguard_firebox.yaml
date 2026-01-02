@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: 70bea07f3fbf4af0bf65b40690311461
       template: 'Watchguard Firewall'
       name: 'Watchguard Firewall'
+      vendor:
+        name: 'WatchGuard'
+        version: '12.x'
       description: |
         Overview
         This template monitors WatchGuard Firebox appliances using SNMPv2.
@@ -446,7 +449,7 @@ zabbix_export:
           delay: '30'
           history: 1w
           units: uptime
-          description: 'The time since the network management portion of the system was last re-initialized.'
+          description: 'The time since the network management portion of the system was last re-initialised.'
           preprocessing:
             - type: MULTIPLIER
               parameters:
@@ -561,7 +564,7 @@ zabbix_export:
             - type: MULTIPLIER
               parameters:
                 - '8'
-        - uuid: 5646e63dd8e4497a9e4ceebbaf85f756
+        - uuid: e87fe62f46544b6d8a9faf2b1c3d7b0b
           name: 'System Total Packets Sent (pps)'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.3097.6.3.10.0
@@ -1424,7 +1427,7 @@ zabbix_export:
           description: 'Threshold in bits per second for gateway VPN traffic triggering a warning-level alert.'
         - macro: '{$WATCHGUARD_CACHED_THRESHOLD}'
           value: '99'
-          description: 'Threshold for memory cache utilization percentage before alerting.'
+          description: 'Threshold for memory cache utilisation percentage before alerting.'
         - macro: '{$WATCHGUARD_CLUSTER_HEALTH_PERCENT}'
           value: '90'
           description: 'Minimum expected FireCluster sync health percentage.'
@@ -2130,9 +2133,9 @@ zabbix_export:
           name: cluster.sync.valuemap
           mappings:
             - value: '0'
-              newvalue: 'Not Synchronized'
+              newvalue: 'Not Synchronised'
             - value: '1'
-              newvalue: Synchronized
+              newvalue: Synchronised
         - uuid: cddcb4c626d641759b26f30d7c8d129b
           name: fan.status.valuemap
           mappings:

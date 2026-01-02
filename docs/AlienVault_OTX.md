@@ -1,4 +1,4 @@
-# AlienVault OTX Zabbix Integration
+﻿# AlienVault OTX Zabbix Integration
 
 ## Overview
 This integration provides automated monitoring of AlienVault OTX (Open Threat Exchange) threat intelligence data in Zabbix. It includes a Zabbix template and an external script for discovering, tracking, and alerting on IOCs (Indicators of Compromise) from OTX pulses.
@@ -12,7 +12,7 @@ This integration provides automated monitoring of AlienVault OTX (Open Threat Ex
 - **IOC Metadata Exposure:** Each discovered IOC now includes first seen, last seen, pulse name, tags, references, and threat type for richer context and filtering in Zabbix.
 - **Robust Error Handling:** All operations return Zabbix-friendly output, with clear error reporting and safe defaults.
 - **Macro/Env Flexibility:** Supports macros/environment variables for API endpoint, timeout, thresholds, and debug logging.
-- **Performance Optimized:** Uses a persistent SQLite cache to minimize redundant API calls and improve performance, even across script runs.
+- **Performance Optimised:** Uses a persistent SQLite cache to minimize redundant API calls and improve performance, even across script runs.
 
 ---
 
@@ -75,7 +75,7 @@ The AlienVault OTX template includes a comprehensive Zabbix host dashboard to he
 - Graph of new OTX pulses over time and a table of recent pulses with severity and tags.
 
 ### Response Actions
-- Table of recommended or taken response actions for each threat (customize as needed for your workflow).
+- Table of recommended or taken response actions for each threat (customise as needed for your workflow).
 
 ### API Health & Performance
 - Single value and graph widgets for API health status and latency, helping monitor integration reliability.

@@ -35,6 +35,9 @@ zabbix_export:
         - OIDs and labels are consistent with APC/Schneider MIB specifications
         
         Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: APC
+        version: 4.x
       groups:
         - name: Environment
       items:
@@ -57,9 +60,10 @@ zabbix_export:
           snmp_oid: 1.3.6.1.4.1.5528.100.100.0
           key: netbotz.errorStatus
           delay: 5m
+          status: DISABLED
           description: |
             Overall error status of the APC Netbotz device (1 = error, 0 = normal).
-            Note: Not supported by all PowerNet models.
+            Note: Not supported by all NetBotz models. Enable manually if your device supports this OID.
           tags:
             - tag: Component
               value: General
@@ -115,6 +119,18 @@ zabbix_export:
           tags:
             - tag: Component
               value: General
+        - uuid: 914d627190cc4213a20ad4fa8cc9c46b
+          name: 'PDU Model (Schlectrics Electric Series)'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.318.1.1.12.1.16.0
+          key: netbotz.pdu.model
+          delay: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Model identifier for Schlectrics Electric Series PDU connected to APC Netbotz.'
+          tags:
+            - tag: Component
+              value: PDU
         - uuid: 31beff4720c8483d8afb3182c4c4575f
           name: 'Device Serial'
           type: SNMP_AGENT
@@ -160,7 +176,6 @@ zabbix_export:
           snmp_oid: 'discovery[{#AIRFLOW_LABEL},1.3.6.1.4.1.5528.100.4.1.5.1.4]'
           key: netbotz.airflow.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 0932e5cd6afb493aa7869c66f37cc742
               name: '{#AIRFLOW_LABEL} Air Flow Error'
@@ -226,6 +241,14 @@ zabbix_export:
                   calc_fnc: ALL
                   item:
                     host: 'APC Netbotz'
+                    key: 'netbotz.airflow[{#AIRFLOW_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
                     key: 'netbotz.airflow.errorStatus[{#AIRFLOW_LABEL}]'
         - uuid: e788553b495046d4909a878528151aab
           name: 'Current (Schlectrics Electric Series)'
@@ -233,7 +256,6 @@ zabbix_export:
           snmp_oid: 'discovery[{#AMP_LABEL},1.3.6.1.4.1.5528.100.4.1.6.1.4]'
           key: netbotz.amp.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 66f5909f341c4ceba53a6e86521fab05
               name: '{#AMP_LABEL} Current Error'
@@ -307,13 +329,20 @@ zabbix_export:
                   item:
                     host: 'APC Netbotz'
                     key: 'netbotz.amp[{#AMP_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.amp.errorStatus[{#AMP_LABEL}]'
         - uuid: 3c615cdf348f45fb80293ad3fde97f57
           name: 'Audio (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#AUDIO_LABEL},1.3.6.1.4.1.5528.100.4.1.4.1.4]'
           key: netbotz.audio.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 0344bb9028b14b62a39500d5e45094da
               name: '{#AUDIO_LABEL} Audio Error'
@@ -392,13 +421,20 @@ zabbix_export:
                   item:
                     host: 'APC Netbotz'
                     key: 'netbotz.audio[{#AUDIO_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.audio.errorStatus[{#AUDIO_LABEL}]'
         - uuid: 2417a250b7344c63ac01281d73a9626f
           name: 'Dew Point (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#DEWPOINT_LABEL},1.3.6.1.4.1.5528.100.4.1.3.1.4]'
           key: netbotz.dew.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 4f38a0eb11d3430c929f24527de62def
               name: '{#DEWPOINT_LABEL} Dew Point Error'
@@ -464,13 +500,29 @@ zabbix_export:
                       value: Sensors
                     - tag: Metric
                       value: Dew
+          graph_prototypes:
+            - uuid: c6e1f08254ca4fe98e673e7655ae7abc
+              name: '{#DEWPOINT_LABEL} Dew Point'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.dewpoint[{#DEWPOINT_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.dewpoint.errorStatus[{#DEWPOINT_LABEL}]'
         - uuid: 39bb98926d704737a4193057cdc3456d
           name: 'Door Switch (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#DOOR_LABEL},1.3.6.1.4.1.5528.100.4.2.2.1.4]'
           key: netbotz.door.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 59bed0c8a55140b78771b0775a970997
               name: '{#DOOR_LABEL} Door Switch Error'
@@ -522,13 +574,30 @@ zabbix_export:
                       value: DoorState
                     - tag: Symptom
                       value: SomeoneLeftTheDoorOpen
+          graph_prototypes:
+            - uuid: 53c3d9feecb748b5b0dbba183f4eac12
+              name: '{#DOOR_LABEL} Door Switch'
+              yaxismax: '0'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.door[{#DOOR_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.door.errorStatus[{#DOOR_LABEL}]'
         - uuid: 2ea8fec3c4c4458c8f1fcb588c75b68a
           name: 'Dry Contact (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#DRY_LABEL},1.3.6.1.4.1.5528.100.4.2.1.1.4]'
           key: netbotz.dry.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: a988742580d0472992ccba552e866934
               name: '{#DRY_LABEL} Dry Contact Error'
@@ -580,13 +649,30 @@ zabbix_export:
                       value: 'Dry Contact'
                     - tag: Symptom
                       value: 'Liquid?'
+          graph_prototypes:
+            - uuid: cf83ff2755d842bc856a4523268d7c0a
+              name: '{#DRY_LABEL} Dry Contact'
+              yaxismax: '0'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.dry[{#DRY_LABEL}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.dry.errorStatus[{#DRY_LABEL}]'
         - uuid: 43c5b63aaa864170ad916ecb8546a1a7
           name: 'Enclosure (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#ENCLOSURE_INDEX},1.3.6.1.4.1.5528.100.2.1.1.1.1]'
           key: netbotz.enclosure.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 7fb0ef7284cd4a0aa3a5c712caac4720
               name: '{#ENCLOSURE_INDEX} Enclosure Error'
@@ -618,13 +704,30 @@ zabbix_export:
               tags:
                 - tag: Component
                   value: Enclosure
+          graph_prototypes:
+            - uuid: fec9b25529044129909b685ed7c6a3b2
+              name: '{#ENCLOSURE_LABEL} Enclosure Status'
+              yaxismax: '0'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.enclosure.status[{#ENCLOSURE_INDEX}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.enclosure.errorStatus[{#ENCLOSURE_INDEX}]'
         - uuid: 8a87563886eb4246b143bd960492ae73
           name: 'Humidity (Schlectrics Electric Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#HUMIDITY_LABEL},1.3.6.1.4.1.5528.100.4.1.2.1.4]'
           key: netbotz.humidity.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 9f8c71a3ed3c46c49809520b3362a181
               name: '{#HUMIDITY_LABEL} Humidity Error'
@@ -701,20 +804,20 @@ zabbix_export:
                   item:
                     host: 'APC Netbotz'
                     key: 'netbotz.humidity[{#HUMIDITY_LABEL}]'
-        - uuid: 914d627190cc4213a20ad4fa8cc9c46b
-          name: 'Model Detection (Schlectrics Electric Series)'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#NETBOTZ_MODEL},1.3.6.1.4.1.318.1.1.12.1.16.0]'
-          key: netbotz.model.discovery
-          delay: 1h
-          status: DISABLED
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: F63100
+                  yaxisside: RIGHT
+                  calc_fnc: ALL
+                  item:
+                    host: 'APC Netbotz'
+                    key: 'netbotz.humidity.errorStatus[{#HUMIDITY_LABEL}]'
         - uuid: 348b089d838546f8af06685967b36903
-          name: 'Legacy PowerNet Sensors (Legacy APC PowerNet Series)'
+          name: 'PowerNet Legacy Sensors (Legacy APC PowerNet Series)'
           type: SNMP_AGENT
           snmp_oid: 'discovery[{#SENSOR_LABEL},.1.3.6.1.4.1.318.1.1.4.4.2.1.3]'
           key: netbotz.sensor.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 8c225603eeb745debae22dfa2503d553
               name: 'Sensor: {#SENSOR_LABEL} Alarm'
@@ -818,7 +921,6 @@ zabbix_export:
           snmp_oid: 'discovery[{#TEMP_LABEL},1.3.6.1.4.1.5528.100.4.1.1.1.4]'
           key: netbotz.temperature.discovery
           delay: 1h
-          status: DISABLED
           item_prototypes:
             - uuid: 081693a2ff874ef3b5f91ea820ee2576
               name: '{#TEMP_LABEL} Temperature Error'
@@ -1040,12 +1142,12 @@ zabbix_export:
           description: 'Threshold for low temperature alarms (legacy models)'
       dashboards:
         - uuid: 830f2f99d9234f23b0d0eeab2cbf6240
-          name: NetBotz
+          name: 'APC NetBotz'
           pages:
-            - name: NetBotz
+            - name: 'APC NetBotz'
               widgets:
                 - type: graphprototype
-                  name: 'Module Temperatures'
+                  name: 'Temperatures over Time (C)'
                   width: '35'
                   height: '4'
                   fields:
@@ -1056,12 +1158,12 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'APC Netbotz'
-                        name: '{#TEMP_LABEL} Temperature'
+                        name: '{#SENSOR_LABEL} Temperature'
                     - type: STRING
                       name: reference
                       value: TRHZE
                 - type: graphprototype
-                  name: 'Module Humidity'
+                  name: 'Humidity over Time (%RH)'
                   'y': '4'
                   width: '35'
                   height: '4'
@@ -1073,12 +1175,12 @@ zabbix_export:
                       name: graphid.0
                       value:
                         host: 'APC Netbotz'
-                        name: '{#HUMIDITY_LABEL} Humidity'
+                        name: '{#SENSOR_LABEL} Humidity'
                     - type: STRING
                       name: reference
                       value: TZBKB
                 - type: graphprototype
-                  name: 'Module Noise Levels'
+                  name: 'Noise Levels ovr Time (dB)'
                   'y': '8'
                   width: '35'
                   height: '4'
@@ -1095,7 +1197,7 @@ zabbix_export:
                       name: reference
                       value: SAMPB
                 - type: graphprototype
-                  name: 'Module Air Flow'
+                  name: 'Air Flow over Time (CFM)'
                   'y': '12'
                   width: '35'
                   height: '4'
@@ -1112,7 +1214,7 @@ zabbix_export:
                       name: reference
                       value: WEUHI
                 - type: graphprototype
-                  name: 'Module Current Levels'
+                  name: 'Current over Time (A)'
                   'y': '16'
                   width: '35'
                   height: '4'
@@ -1128,6 +1230,23 @@ zabbix_export:
                     - type: STRING
                       name: reference
                       value: YOHAF
+                - type: graphprototype
+                  name: 'Dew Point over Time (C)'
+                  'y': '20'
+                  width: '35'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#DEWPOINT_LABEL} Dew Point'
+                    - type: STRING
+                      name: reference
+                      value: DPGRF
                 - type: honeycomb
                   name: 'Important Info'
                   x: '35'
@@ -1167,6 +1286,75 @@ zabbix_export:
                     - type: INTEGER
                       name: secondary_label_decimal_places
                       value: '0'
+                - type: item
+                  name: 'Device Error'
+                  x: '35'
+                  'y': '5'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'APC Netbotz'
+                        key: netbotz.errorStatus
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: graphprototype
+                  name: 'Door Switch Status'
+                  x: '35'
+                  'y': '8'
+                  width: '12'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#DOOR_LABEL} Door Switch'
+                    - type: STRING
+                      name: reference
+                      value: DOORG
+                - type: graphprototype
+                  name: 'Enclosure Status'
+                  x: '35'
+                  'y': '12'
+                  width: '24'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#ENCLOSURE_LABEL} Enclosure Status'
+                    - type: STRING
+                      name: reference
+                      value: ENCLG
+                - type: graphprototype
+                  name: 'Dry Contact Status'
+                  x: '47'
+                  'y': '8'
+                  width: '12'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'APC Netbotz'
+                        name: '{#DRY_LABEL} Dry Contact'
+                    - type: STRING
+                      name: reference
+                      value: DRYCG
       valuemaps:
         - uuid: 5f406ba532ad4e8e912fda53ff420502
           name: netbotz.door.state.valuemap

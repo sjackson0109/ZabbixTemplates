@@ -1,4 +1,4 @@
-# SNMPv3 Client with Authentication and Privacy Support
+﻿# SNMPv3 Client with Authentication and Privacy Support
 
 A comprehensive Python-based SNMP client that supports SNMPv1, SNMPv2c, and **full SNMPv3 with authentication and privacy encryption**. Designed for Zabbix integration without requiring external SNMP tools.
 
@@ -10,7 +10,7 @@ A comprehensive Python-based SNMP client that supports SNMPv1, SNMPv2c, and **fu
 - **Privacy Encryption**: None, DES, AES (128/192/256 bit) with CFB mode
 - **Zabbix Integration**: Built-in discovery, check, and debug modes
 - **Cross-Platform**: Works on Linux, Windows, and Docker containers
-- **Vendor Compatibility**: Optimized for SonicWall, Cisco, and other enterprise devices
+- **Vendor Compatibility**: Optimised for SonicWall, Cisco, and other enterprise devices
 - **Pure Python**: Minimal dependencies with optional crypto library support
 
 ## 📋 Requirements
@@ -184,7 +184,7 @@ RUN chmod +x /usr/lib/zabbix/externalscripts/snmp_client.py
 ## 🛠️ Advanced Configuration
 
 ### Engine Discovery
-The script automatically handles SNMPv3 engine discovery with fallback patterns optimized for:
+The script automatically handles SNMPv3 engine discovery with fallback patterns optimised for:
 - SonicWall devices
 - Cisco equipment  
 - Generic SNMPv3 implementations
@@ -271,7 +271,7 @@ Result: SonicWall NSv 470 Firewall
    python snmp_client.py get host oid -v 3 -u user -A sha -a pass --check-d
    ```
 
-## 📝 License
+## 📝 Licence
 
 This project is part of the ZabbixTemplates repository and follows the same licensing terms.
 

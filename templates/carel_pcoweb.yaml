@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: edec55083af745beaed7cdb51656da0e
@@ -15,13 +15,16 @@ zabbix_export:
         https://netopslife.wordpress.com/2017/10/12/nagios-snmp-denco-pco-web-carel/
         
         Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: Carel
+        version: 2.x
       groups:
         - name: Environment
       items:
         - uuid: 245ded6263b04f348c2529360ed1cf36
           name: 'Alarm: Airflow Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.12]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.12.0
           key: denco.alarm.airflow
           delay: 15m
           preprocessing:
@@ -29,15 +32,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 80b7532620a849d5b3c97b1fb8ba1451
+              expression: 'last(/Carel pCOWeb/denco.alarm.airflow)=1'
+              name: 'Airflow Fail'
+              priority: WARNING
+              description: 'Airflow Fail alarm is active'
+              manual_close: 'YES'
         - uuid: b159a5fa3e7848fd90b8b5cd3f4d4be0
           name: 'Alarm: Auxiliary Sensor'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.15]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.15.0
           key: denco.alarm.auxilary
           delay: 15m
           preprocessing:
@@ -45,15 +55,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 8b586819306344c3bd11101ee0f2ba6b
+              expression: 'last(/Carel pCOWeb/denco.alarm.auxilary)=1'
+              name: 'Auxiliary Sensor'
+              priority: WARNING
+              description: 'Auxiliary Sensor alarm is active'
+              manual_close: 'YES'
         - uuid: b73958aeda4f49858eacfef56eeb2371
           name: 'Alarm: Circuit 1 (VRF) High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.27]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.27.0
           key: denco.alarm.circuit.1.pressure.high
           delay: 15m
           preprocessing:
@@ -61,15 +78,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 33a71d3bc8c644179302da0132cab8cd
+              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.1.pressure.high)=1'
+              name: 'Circuit 1 (VRF) High Pressure Trip'
+              priority: AVERAGE
+              description: 'Circuit 1 (VRF) High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: d0a202fcabe64d6c9d45d0d6adb6a5a0
           name: 'Alarm: Circuit 1 (VRF) Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.33]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.33.0
           key: denco.alarm.circuit.1.pressure.low
           delay: 15m
           preprocessing:
@@ -77,15 +101,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: f02f1c57d947413b8848b973088e0364
+              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.1.pressure.low)=1'
+              name: 'Circuit 1 (VRF) Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Circuit 1 (VRF) Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 8b4ae66be9804bb5a1bfb3123f5cd389
           name: 'Alarm: Circuit 2 (VRF) High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.28]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.28.0
           key: denco.alarm.circuit.2.pressure.high
           delay: 15m
           preprocessing:
@@ -93,15 +124,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 2b3842d21ce34996b75bbb0ab81d61f6
+              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.2.pressure.high)=1'
+              name: 'Circuit 2 (VRF) High Pressure Trip'
+              priority: AVERAGE
+              description: 'Circuit 2 (VRF) High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 654563ba2e6d4b379ecfd1724f071130
           name: 'Alarm: Circuit 2 (VRF) Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.34]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.34.0
           key: denco.alarm.circuit.2.pressure.low
           delay: 15m
           preprocessing:
@@ -109,15 +147,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: a93435ac1bc34faba3f097751ac2c6b5
+              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.2.pressure.low)=1'
+              name: 'Circuit 2 (VRF) Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Circuit 2 (VRF) Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 8884336e6d664e4486ab52c0d17e7fc0
           name: 'Alarm: Compressor 1 High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.23]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.23.0
           key: denco.alarm.compressor.1.temperature.high
           delay: 15m
           preprocessing:
@@ -125,15 +170,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 9d621f03bf5d45d09a7a8a18f9a21398
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.1.temperature.high)=1'
+              name: 'Compressor 1 High Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 1 High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 83e1cbc2a64949d3ab1e988bc0ad1f1f
           name: 'Alarm: Compressor 1 Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.29]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.29.0
           key: denco.alarm.compressor.1.temperature.low
           delay: 15m
           preprocessing:
@@ -141,15 +193,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 310ea08a585c47cc8930ccdf919ec6f4
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.1.temperature.low)=1'
+              name: 'Compressor 1 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 1 Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 8706c584e31843c88bd881c4562710ba
           name: 'Alarm: Compressor 2 High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.24]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.24.0
           key: denco.alarm.compressor.2.temperature.high
           delay: 15m
           preprocessing:
@@ -157,15 +216,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 0c0137415018472da6c276225cb61662
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.2.temperature.high)=1'
+              name: 'Compressor 2 High Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 2 High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 80314f25219a46e8aa6f9bbdbc11ac54
           name: 'Alarm: Compressor 2 Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.30]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.30.0
           key: denco.alarm.compressor.2.temperature.low
           delay: 15m
           preprocessing:
@@ -173,15 +239,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: e4b5373cf12440ae8494c93bb9f27f7e
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.2.temperature.low)=1'
+              name: 'Compressor 2 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 2 Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: a0f1b7ac9b24496d8d959cb722bca98d
           name: 'Alarm: Compressor 3 High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.25]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.25.0
           key: denco.alarm.compressor.3.temperature.high
           delay: 15m
           preprocessing:
@@ -189,15 +262,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 9c34ebd59c8a4d91846d03a3a4a1a7a5
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.3.temperature.high)=1'
+              name: 'Compressor 3 High Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 3 High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: b366b4d4a3c747c49bc736d446e8e63c
           name: 'Alarm: Compressor 3 Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.31]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.31.0
           key: denco.alarm.compressor.3.temperature.low
           delay: 15m
           preprocessing:
@@ -205,15 +285,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 763c0f013dac423e8c367620067c68cd
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.3.temperature.low)=1'
+              name: 'Compressor 3 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 3 Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: b25e45a6591f4abd98af29a5528a49df
           name: 'Alarm: Compressor 4 High Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.26]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.26.0
           key: denco.alarm.compressor.4.temperature.high
           delay: 15m
           preprocessing:
@@ -221,15 +308,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: cd5b0889eae849b5a90aabb868f3faaa
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.4.temperature.high)=1'
+              name: 'Compressor 4 High Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 4 High Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 24c31687162e4600a034236500ba15a7
           name: 'Alarm: Compressor 4 Low Pressure Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.32]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.32.0
           key: denco.alarm.compressor.4.temperature.low
           delay: 15m
           preprocessing:
@@ -237,15 +331,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 787598e3a0e24366b2b7e366dedf4b9a
+              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.4.temperature.low)=1'
+              name: 'Compressor 4 Low Pressure Trip'
+              priority: AVERAGE
+              description: 'Compressor 4 Low Pressure Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 2679f47855764bc0a9c183153969c7be
           name: 'Alarm: Condensing Pressure 1 Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.7]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.7.0
           key: denco.alarm.condensing.pressure.1
           delay: 15m
           preprocessing:
@@ -253,15 +354,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 62b3dba2ec1b46978ab40480226d7921
+              expression: 'last(/Carel pCOWeb/denco.alarm.condensing.pressure.1)=1'
+              name: 'Condensing Pressure 1 Sensor Fail'
+              priority: HIGH
+              description: 'Condensing Pressure 1 Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: a4acad836fc84a069ec33dee8b0d02c5
           name: 'Alarm: Condensing Pressure 2 Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.8]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.8.0
           key: denco.alarm.condensing.pressure.2
           delay: 15m
           preprocessing:
@@ -269,15 +377,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 8b21d8d33269402bb781d7a81f2c9538
+              expression: 'last(/Carel pCOWeb/denco.alarm.condensing.pressure.2)=1'
+              name: 'Condensing Pressure 2 Sensor Fail'
+              priority: HIGH
+              description: 'Condensing Pressure 2 Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: 2560bfd16a9843e9919bd562b09a3c04
           name: 'Alarm: Filter Blocked'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.13]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.13.0
           key: denco.alarm.filter.blocked
           delay: 15m
           preprocessing:
@@ -285,15 +400,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: b324741a49a949a7aeb7be06cbcc9b4e
+              expression: 'last(/Carel pCOWeb/denco.alarm.filter.blocked)=1'
+              name: 'Filter Blocked'
+              priority: WARNING
+              description: 'Filter Blocked alarm is active'
+              manual_close: 'YES'
         - uuid: 810e6f48d5db40edb0cf257f0665e1c9
           name: 'Alarm: Humidifier Refrigerant Leak Detection'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.85]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.85.0
           key: denco.alarm.gas.leak
           delay: 15m
           preprocessing:
@@ -301,15 +423,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 3a1866a027a948a990bf8dc7464d8b71
+              expression: 'last(/Carel pCOWeb/denco.alarm.gas.leak)=1'
+              name: 'Humidifier Refrigerant Leak Detection'
+              priority: HIGH
+              description: 'Humidifier Refrigerant Leak Detection alarm is active'
+              manual_close: 'YES'
         - uuid: 7d9f66e9c421481ea4121353e571ce63
           name: 'Alarm: Humidifier High Current'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.36]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.36.0
           key: denco.alarm.humidifier.current.high
           delay: 15m
           preprocessing:
@@ -317,15 +446,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: e26b8ede56f34dc2a021af2118f18d6d
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.current.high)=1'
+              name: 'Humidifier High Current'
+              priority: WARNING
+              description: 'Humidifier High Current alarm is active'
+              manual_close: 'YES'
         - uuid: d613f6f0756744c7a7e8f31baf73478f
           name: 'Alarm: Humidifier Low Current'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.38]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.38.0
           key: denco.alarm.humidifier.current.low
           delay: 15m
           preprocessing:
@@ -333,15 +469,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 67acb4fe260249adb461f0bef8532caf
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.current.low)=1'
+              name: 'Humidifier Low Current'
+              priority: WARNING
+              description: 'Humidifier Low Current alarm is active'
+              manual_close: 'YES'
         - uuid: 348d9886e7a1410d9f91e8610ea805e4
           name: 'Alarm: Humidifier Refrigerant Exhausted'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.66]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.66.0
           key: denco.alarm.humidifier.gas.exhausted
           delay: 15m
           description: 'Refrigerant gas is contained in a bottle/cylinder.'
@@ -350,7 +493,7 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
@@ -358,7 +501,7 @@ zabbix_export:
         - uuid: 545cff2595884d288484ef0a3ab79b2a
           name: 'Alarm: Humidifier Lack Of Water'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.37]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.37.0
           key: denco.alarm.humidifier.water.low
           delay: 15m
           preprocessing:
@@ -366,15 +509,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: f48675b3f7af4b30b155197d45dd6791
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.water.low)=1'
+              name: 'Humidifier Lack Of Water'
+              priority: WARNING
+              description: 'Humidifier Lack Of Water alarm is active'
+              manual_close: 'YES'
         - uuid: 12af336b8a8c47faa7387d358be1b786
           name: 'Alarm: Supply Air Humidity Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.11]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.11.0
           key: denco.alarm.humidity.air.supply
           delay: 15m
           preprocessing:
@@ -382,15 +532,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 0bf9f54cfffe4fa198ed42e6e272b991
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.air.supply)=1'
+              name: 'Supply Air Humidity Sensor Fail'
+              priority: HIGH
+              description: 'Supply Air Humidity Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: c639938049914c2996ef6382946a3c00
           name: 'Alarm: High Control Humidity'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.18]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.18.0
           key: denco.alarm.humidity.control.high
           delay: 15m
           preprocessing:
@@ -398,15 +555,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 161836094b234aceae5b2ca7ef1ce8b3
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.control.high)=1'
+              name: 'High Control Humidity'
+              priority: WARNING
+              description: 'High Control Humidity alarm is active'
+              manual_close: 'YES'
         - uuid: 0dccda22cb454405876c62481bcd07b7
           name: 'Alarm: Low Control Humidity'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.19]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.19.0
           key: denco.alarm.humidity.control.low
           delay: 15m
           preprocessing:
@@ -414,15 +578,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: b36a63139764485c8858f65b7b56cef8
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.control.low)=1'
+              name: 'Low Control Humidity'
+              priority: WARNING
+              description: 'Low Control Humidity alarm is active'
+              manual_close: 'YES'
         - uuid: 10974ad524224663b366efce5c30b96d
           name: 'Alarm: Return Air Humidity Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.6]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.6.0
           key: denco.alarm.humidty.air.return
           delay: 15m
           preprocessing:
@@ -430,15 +601,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: e153bdfff30a4f618d93ab802b3a791c
+              expression: 'last(/Carel pCOWeb/denco.alarm.humidty.air.return)=1'
+              name: 'Return Air Humidity Sensor Fail'
+              priority: HIGH
+              description: 'Return Air Humidity Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: a82b2f3f73e8406cbd44d24f7daa8ccc
           name: 'Alarm: Kilxon Trip'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.22]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.22.0
           key: denco.alarm.klixon
           delay: 15m
           preprocessing:
@@ -446,15 +624,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 4740481c7efa4b56bfd19c60c6cc3b28
+              expression: 'last(/Carel pCOWeb/denco.alarm.klixon)=1'
+              name: 'Kilxon Trip'
+              priority: AVERAGE
+              description: 'Kilxon Trip alarm is active'
+              manual_close: 'YES'
         - uuid: 9551e4e7bc0b4c2db0fb11e2508f3966
           name: 'Alarm: Return Air Temperature Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.5]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.5.0
           key: denco.alarm.temperature.air.return
           delay: 15m
           preprocessing:
@@ -462,15 +647,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 3a74cadc83354de180aa34a6569cca6b
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.air.return)=1'
+              name: 'Return Air Temperature Sensor Fail'
+              priority: HIGH
+              description: 'Return Air Temperature Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: d91d3bf4b0434c87bb9e2dc4383cc342
           name: 'Alarm: Supply Air Temperature Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.10]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.10.0
           key: denco.alarm.temperature.air.supply
           delay: 15m
           preprocessing:
@@ -478,15 +670,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 289738d64a494030b3e4a2811d9f1e13
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.air.supply)=1'
+              name: 'Supply Air Temperature Sensor Fail'
+              priority: HIGH
+              description: 'Supply Air Temperature Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: 91bcd03b12fb4a1d9fb9e15c9552f3e5
           name: 'Alarm: High Control Temperature'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.16]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.16.0
           key: denco.alarm.temperature.control.high
           delay: 15m
           preprocessing:
@@ -494,15 +693,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 731307dd51c547eabedc5e0881c57ebe
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.control.high)=1'
+              name: 'High Control Temperature'
+              priority: WARNING
+              description: 'High Control Temperature alarm is active'
+              manual_close: 'YES'
         - uuid: 6da4ffe585cb4bbfae236c159c2cdedd
           name: 'Alarm: Low Control Temperature'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.17]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.17.0
           key: denco.alarm.temperature.control.low
           delay: 15m
           preprocessing:
@@ -510,15 +716,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 7e7a4e3dc8dd4fdb9805691279f5e0f2
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.control.low)=1'
+              name: 'Low Control Temperature'
+              priority: WARNING
+              description: 'Low Control Temperature alarm is active'
+              manual_close: 'YES'
         - uuid: 9745026411cb4277b0df72c0e5615847
           name: 'Alarm: High Supply Temperature'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.21]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.21.0
           key: denco.alarm.temperature.supply.high
           delay: 15m
           preprocessing:
@@ -526,15 +739,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 248b9ddaf85f48a18523ae11ad9eaba8
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.supply.high)=1'
+              name: 'High Supply Temperature'
+              priority: WARNING
+              description: 'High Supply Temperature alarm is active'
+              manual_close: 'YES'
         - uuid: b94e8ed8d4f74e54a04f0a04d2678887
           name: 'Alarm: Low Supply Temperature'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.20]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.20.0
           key: denco.alarm.temperature.supply.low
           delay: 15m
           preprocessing:
@@ -542,15 +762,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 0ba1fadbfe804e97a169efd93e1a3b75
+              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.supply.low)=1'
+              name: 'Low Supply Temperature'
+              priority: WARNING
+              description: 'Low Supply Temperature alarm is active'
+              manual_close: 'YES'
         - uuid: 7e72f851760d4677b39382e5e5adafd5
           name: 'Alarm: Water Detection'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.14]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.14.0
           key: denco.alarm.water
           delay: 15m
           preprocessing:
@@ -558,15 +785,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: ad45a0f0244f4e15a3aa43b5d9c32902
+              expression: 'last(/Carel pCOWeb/denco.alarm.water)=1'
+              name: 'Water Detection'
+              priority: HIGH
+              description: 'Water Detection alarm is active'
+              manual_close: 'YES'
         - uuid: 42dc6e67b9884b4cadd32b1e76c9e510
           name: 'Alarm: Water Temperature Sensor Fail'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.9]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.9.0
           key: denco.alarm.water.temperature
           delay: 15m
           preprocessing:
@@ -574,15 +808,22 @@ zabbix_export:
               parameters:
                 - '-1'
               error_handler: CUSTOM_VALUE
-              error_handler_params: '1'
+              error_handler_params: '0'
             - type: IN_RANGE
               parameters:
                 - '0'
                 - '1'
+          triggers:
+            - uuid: 6e27f48c10184f92aade259244edd277
+              expression: 'last(/Carel pCOWeb/denco.alarm.water.temperature)=1'
+              name: 'Water Temperature Sensor Fail'
+              priority: HIGH
+              description: 'Water Temperature Sensor Fail alarm is active'
+              manual_close: 'YES'
         - uuid: ab3b1fb28a3b4866a6ae4e6beeed3355
           name: 'Measured Humidity (%RH)'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.2.2.0]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.2.2.0
           key: denco.environment.humidity
           delay: 2m
           value_type: FLOAT
@@ -604,7 +845,7 @@ zabbix_export:
         - uuid: 53b98cd17ee14edf94a241170c53f44b
           name: 'Measured Temperature (C)'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.2.1.0]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.2.1.0
           key: denco.environment.temperature
           delay: 2m
           value_type: FLOAT
@@ -624,7 +865,7 @@ zabbix_export:
         - uuid: 316f21c8f7c54aa8b83234a225b7a076
           name: 'Target Humidity (%HR)'
           type: SNMP_AGENT
-          snmp_oid: 'get[1.3.6.1.4.1.9839.2.1.2.16.0]'
+          snmp_oid: 1.3.6.1.4.1.9839.2.1.2.16.0
           key: denco.system.setpoint.humidity
           delay: 5m
           value_type: FLOAT
@@ -640,7 +881,7 @@ zabbix_export:
         - uuid: 2b92ab04841542719f28849b53854b80
           name: 'Target Temperature (C)'
           type: SNMP_AGENT
-          snmp_oid: 'get[1.3.6.1.4.1.9839.2.1.2.15.0]'
+          snmp_oid: 1.3.6.1.4.1.9839.2.1.2.15.0
           key: denco.system.setpoint.temperature
           delay: 5m
           value_type: FLOAT
@@ -656,7 +897,7 @@ zabbix_export:
         - uuid: f7caaefac77b44c3ac81b1f2984f9b22
           name: 'Unit Status'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.1.0]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.1.0
           key: denco.system.status
           description: 'Any NON-ZERO value should be investigated.'
           preprocessing:
@@ -680,7 +921,7 @@ zabbix_export:
         - uuid: a2d220c14b7642a19f95b9414ac09498
           name: 'Supervisor Mode'
           type: SNMP_AGENT
-          snmp_oid: 'get[.1.3.6.1.4.1.9839.2.1.1.112.0]'
+          snmp_oid: .1.3.6.1.4.1.9839.2.1.1.112.0
           key: denco.system.supervisor.mode
           delay: 5m
           description: |
@@ -1142,7 +1383,7 @@ zabbix_export:
           units: uptime
           description: |
             MIB: SNMPv2-MIB
-            The time (in hundredths of a second) since the network management portion of the system was last re-initialized.
+            The time (in hundredths of a second) since the network management portion of the system was last re-initialised.
           preprocessing:
             - type: MULTIPLIER
               parameters:

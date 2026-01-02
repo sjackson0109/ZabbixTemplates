@@ -1,4 +1,4 @@
-
+﻿
 # Zabbix Agent Checks: PowerShell Ping & Web Monitoring
 
 ## Overview
@@ -81,7 +81,7 @@ UserParameter=custom.web.content[*],powershell.exe -NoProfile -ExecutionPolicy B
 
 ### Features
 - Supports HTTP and HTTPS endpoints
-- Customizable request methods (GET, POST, etc.)
+- Customisable request methods (GET, POST, etc.)
 - Configurable headers, timeouts, and payloads
 - Response code and content validation
 - Designed for Zabbix external script integration

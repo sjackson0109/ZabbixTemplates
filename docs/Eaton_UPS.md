@@ -1,4 +1,4 @@
-# Eaton UPS Zabbix Template Documentation
+﻿# Eaton UPS Zabbix Template Documentation
 
 ## Overview
 This document provides comprehensive details for the **Eaton UPS Zabbix Template**. The template enables advanced monitoring of Eaton Uninterruptible Power Supply (UPS) systems using SNMP, leveraging the XUPS-MIB for dynamic discovery and metric collection. It is designed for Zabbix 6.0+ and 7.0+ environments and supports a wide range of Eaton UPS models, including but not limited to:
@@ -99,9 +99,9 @@ This document provides comprehensive details for the **Eaton UPS Zabbix Template
 
 ## References
 - [Eaton XUPS-MIB Documentation](https://powerquality.eaton.com/Support/Software-Drivers/MIBs.asp)
-- [Eaton SNMP Card Manuals](https://www.eaton.com/us/en-us/catalog/backup-power-ups-surge-it-power-distribution/snmp-network-management-card.html)
+- [Eaton SNMP Card Manuals](https://www.eaton.com/us/en-us/Catalogue/backup-power-ups-surge-it-power-distribution/snmp-network-management-card.html)
 - [Zabbix Template Import Guide](https://www.zabbix.com/documentation/current/en/manual/config/templates/template)
-- [Eaton UPS Product Page](https://www.eaton.com/us/en-us/catalog/backup-power-ups-surge-it-power-distribution.html)
+- [Eaton UPS Product Page](https://www.eaton.com/us/en-us/Catalogue/backup-power-ups-surge-it-power-distribution.html)
 
-## License
-This template and documentation are provided under the **Apache License 2.0**. See the [LICENSE.md](../LICENSE.md) file for details.
+## Licence
+This template and documentation are provided under the **Apache Licence 2.0**. See the [Licence.md](../Licence.md) file for details.

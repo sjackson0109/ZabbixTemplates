@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Backup directories
+scripts/Backups/
+Backups/
+backup/
+*.bak
+*.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+
+# Cache files
+*.cache
+*.sqlite3
+otx_indicator_cache.sqlite3
+
+# Temporary files
+*.tmp
+*.temp

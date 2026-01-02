@@ -1,4 +1,4 @@
-# Zabbix Template: WatchGuard Firebox
+﻿# Zabbix Template: WatchGuard Firebox
 
 ### Author: Simon Jackson / sjackson0109  
 ### Created: 2025/04/01  
@@ -122,6 +122,6 @@ Includes a predefined "Watchguard Firebox" dashboard:
 - `watchguard_firebox.yaml` – Zabbix Template (v7.0 YAML)
 - `README.md` – Template overview and usage
 
-## License
+## Licence
 
-Distributed under a permissive license. Attribution appreciated.
+Distributed under a permissive Licence. Attribution appreciated.

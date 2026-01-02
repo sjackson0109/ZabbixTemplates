@@ -1,22 +1,68 @@
 zabbix_export:
   version: '7.0'
   template_groups:
-    - uuid: 2b5a2a0e2f2a4a0ca3a7b8b4b2f2a0e2
-      name: Custom
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
   templates:
     - uuid: 1f3b2a0c4d1e489b9a1f0b7e4a9f1c2e
       template: 'Agent Ping Check'
       name: 'Agent Ping Check'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
       description: |
         ICMP reachability and latency via PowerShell executed by Zabbix Agent.
         Discovery returns a single row with {#SCRIPT.NAME}; prototypes pass the script name as $1.
         The actual destination is controlled by host macro {$PING_TARGET} (IP or DNS).
-
+        
         Author: Simon Jackson / @sjackson0109
-
       groups:
         - name: Templates
-
+      discovery_rules:
+        - uuid: c712c6612f124e87934feb7db915d3f7
+          name: 'Script Discovery - Agent Ping Check'
+          key: custom.ping.discovery
+          delay: 1h
+          lifetime: 1d
+          description: 'LLD JSON with rows: {#SCRIPT.NAME}=agent_ping_check.ps1, {$PING_TARGET}=destination IP or DNS'
+          item_prototypes:
+            - uuid: 1d2221a4f2fd44839b1688e29e0c1639
+              name: 'Ping availability from {HOST.NAME} to {$PING_TARGET}'
+              key: 'custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode available]'
+              value_type: FLOAT
+              trends: '0'
+              description: '1 if reachable, 0 if not.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.available
+              trigger_prototypes:
+                - uuid: 573d565315d0430cbee364057283af56
+                  expression: 'last(/Agent Ping Check/custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode available])=0'
+                  name: 'Ping failure from {HOST.NAME} to {$PING_TARGET}'
+                  priority: HIGH
+                  description: 'No echo replies after {$PING_COUNT} attempts.'
+            - uuid: 239dc7935ffc46e087f53b7e047929dc
+              name: 'Ping latency from {HOST.NAME} to {$PING_TARGET}'
+              key: 'custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode latency]'
+              value_type: FLOAT
+              trends: '0'
+              units: ms
+              description: 'Round-trip latency in milliseconds.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.averageTime
+              trigger_prototypes:
+                - uuid: f15b5b23424d411e94d22f615f0da81a
+                  expression: 'last(/Agent Ping Check/custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode latency])>{$PING_MAX_RTT}'
+                  name: 'High ping latency from {HOST.NAME} to {$PING_TARGET}'
+                  priority: WARNING
+                  description: 'Latency exceeded {$PING_MAX_RTT} ms.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.data[0]'
       tags:
         - tag: Author
           value: 'Simon Jackson'
@@ -34,7 +80,7 @@ zabbix_export:
           value: '32'
           description: 'ICMP payload size, bytes.'
         - macro: '{$PING_TARGET}'
-          value: '8.8.8.8'
+          value: 8.8.8.8
           description: 'Destination to ping. IPv4/IPv6 literal or DNS name.'
         - macro: '{$PING_TIMEOUT}'
           value: '1000'
@@ -42,49 +88,3 @@ zabbix_export:
         - macro: '{$PING_TTL}'
           value: '64'
           description: 'Time To Live.'
-
-      discovery_rules:
-        - uuid: c712c6612f124e87934feb7db915d3f7
-          name: 'Script Discovery - Agent Ping Check'
-          key: custom.ping.discovery
-          delay: 1h
-          lifetime: 1d
-          description: 'LLD JSON with rows: {#SCRIPT.NAME}=agent_ping_check.ps1, {$PING_TARGET}=destination IP or DNS'
-          preprocessing:
-            - type: JSONPATH
-              parameters:
-                - '$.data[0]'
-          item_prototypes:
-            - uuid: 239dc7935ffc46e087f53b7e047929dc
-              name: 'Ping latency from {HOST.NAME} to {$PING_TARGET}'
-              key: 'custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode latency]'
-              value_type: FLOAT
-              units: ms
-              trends: '0'
-              description: 'Round-trip latency in milliseconds.'
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - $.averageTime
-              trigger_prototypes:
-                - uuid: f15b5b23424d411e94d22f615f0da81a
-                  name: 'High ping latency from {HOST.NAME} to {$PING_TARGET}'
-                  expression: 'last(/Agent Ping Check/custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode latency])>{$PING_MAX_RTT}'
-                  priority: WARNING
-                  description: 'Latency exceeded {$PING_MAX_RTT} ms.'
-            - uuid: 1d2221a4f2fd44839b1688e29e0c1639
-              name: 'Ping availability from {HOST.NAME} to {$PING_TARGET}'
-              key: 'custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode available]'
-              value_type: FLOAT
-              trends: '0'
-              description: '1 if reachable, 0 if not.'
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - $.available
-              trigger_prototypes:
-                - uuid: 573d565315d0430cbee364057283af56
-                  name: 'Ping failure from {HOST.NAME} to {$PING_TARGET}'
-                  expression: 'last(/Agent Ping Check/custom.ping[-ScriptName {#SCRIPT.NAME} -Target {$PING_TARGET} -Count {$PING_COUNT} -Timeout {$PING_TIMEOUT} -BufferSize {$PING_SIZE} -TimeToLive {$PING_TTL} -DontFragment {$PING_DF} -Mode available])=0'
-                  priority: HIGH
-                  description: 'No echo replies after {$PING_COUNT} attempts.'

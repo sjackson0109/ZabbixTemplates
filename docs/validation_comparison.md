@@ -1,4 +1,4 @@
-# Zabbix 7.4 Import Validation vs validate_zabbix_template.py Comparison
+﻿# Zabbix 7.4 Import Validation vs validate_zabbix_template.py Comparison
 
 **Last Updated**: November 12, 2025  
 **Validator Version**: 2.0 (Enhanced)  
@@ -142,7 +142,7 @@ Zabbix uses `CExpressionValidator.php` which performs:
 
 | Check | Description | Our Script Status |
 |-------|-------------|-------------------|
-| **Function Syntax** | Validates `last()`, `avg()`, `max()`, etc. | ✅ **IMPLEMENTED** - 15+ functions recognized |
+| **Function Syntax** | Validates `last()`, `avg()`, `max()`, etc. | ✅ **IMPLEMENTED** - 15+ functions recognised |
 | **Function Parameters** | Validates parameter count and types | ⚠️ **PARTIAL** - Structure validated, not types |
 | **Time Parameters** | Validates time suffixes (s, m, h, d, w) | ✅ **IMPLEMENTED** - Complete validation |
 | **Math Operators** | Validates +, -, *, /, (), etc. | ✅ **IMPLEMENTED** - Parser doesn't false-positive on math |
@@ -383,7 +383,7 @@ min(/Linux/net.if.in[{#IFNAME}],5m)*100/last(/Linux/net.if.speed[{#IFNAME}])>90 
    - Automated regression testing
    - Ensure validator catches all known error patterns
 
-3. **Performance optimization**
+3. **Performance optimisation**
    - Current validator is fast (~1 second for large templates)
    - Could parallelize for bulk validation
    - Consider caching for repeated validations
@@ -412,7 +412,7 @@ Our `validate_zabbix_template.py` script has been **significantly enhanced** and
 
 ### What This Means
 
-The validator now catches **85-90% of issues** that would cause Zabbix import failures, up from 30-40% previously. This is a **game-changing improvement** that makes the validator a reliable first-line defense against import errors.
+The validator now catches **85-90% of issues** that would cause Zabbix import failures, up from 30-40% previously. This is a **game-changing improvement** that makes the validator a reliable first-line Defence against import errors.
 
 ### Success Criteria (UPDATED)
 

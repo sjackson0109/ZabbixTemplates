@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: d521a999078a4fd8ad95399c0119cfb8
       template: 'TLS Compliance Checker'
       name: 'TLS Compliance Checker'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
       description: |
         Overview:
         Comprehensive Zabbix template for auditing and tracking TLS protocol and cipher compliance across web services.

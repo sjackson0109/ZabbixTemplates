@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: 0e60ac85bc3941e2a1d66a048ff164da
@@ -32,9 +32,9 @@ zabbix_export:
         
         Items
         - SNMP polling of all standard XUPS-MIB metrics.
-        - Preprocessing of raw counters to normalized units (V, %, A, W, °C, seconds).
+        - Preprocessing of raw counters to normalised units (V, %, A, W, °C, seconds).
         - Value mapping of alarm and state integers into human-readable text.
-        - Optimized polling intervals by sensor category (battery vs input vs ID).
+        - Optimised polling intervals by sensor category (battery vs input vs ID).
         
         Discovery rules
         - Input line discovery (for multi-phase UPS systems).
@@ -69,6 +69,9 @@ zabbix_export:
         - Suitable for datacenter and edge deployments, both on-prem and remote.
         
         Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: Eaton
+        version: 9.x
       groups:
         - name: UPS
       items:

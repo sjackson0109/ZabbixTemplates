@@ -1,0 +1,2895 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 6ed1c8323a3c41448917d13593aa6581
+      template: 'Domain Health'
+      name: 'Domain Health'
+      description: |
+        Domain Health & Compliance Monitoring for Zabbix.
+        Performs DNS record checks, DNSSEC validation, DANE/TLSA verification,
+        email authentication (SPF/DKIM/DMARC), registrar/WHOIS/RDAP data retrieval,
+        ASN lookup, NS server monitoring, and RFC compliance checks.
+        
+        Features:
+        - Query and validate A, AAAA, MX, NS, CNAME, SOA, PTR, TXT, SRV, CAA, DNSSEC records
+        - Validate SPF, DKIM, DMARC records for email authentication
+        - Check DNSSEC presence, trust chain, key types (KSK/ZSK), algorithms, RRSIG expiry
+        - DANE/TLSA record discovery and certificate validation (RFC 6698)
+        - Retrieve registrar/WHOIS/RDAP data (expiry, status, lock)
+        - ASN lookup for hosting provider identification
+        - NS server discovery with availability and latency monitoring
+        - Detect RFC non-conformity, syntax errors, and common misconfigurations
+        - Health score calculation (0-100) based on compliance checks
+        
+        RFC Compliance:
+        - RFC 1034, 1035: Core DNS protocol and record types
+        - RFC 1912: Common DNS operational errors
+        - RFC 2181: DNS specification clarifications
+        - RFC 4033-4035: DNSSEC
+        - RFC 6698: DANE/TLSA
+        - RFC 7208: SPF
+        - RFC 7489: DMARC
+        - RFC 6844: CAA
+        - RFC 2782: SRV records
+        - RFC 3596: IPv6 (AAAA)
+        - RFC 7480-7484: RDAP
+        - RFC 8624: DNSSEC Algorithm Status
+        
+        Author: 'Simon Jackson / @sjackson0109'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 00ea54302e0043f3ac754b32de6322fc
+          name: 'DNS A Records Valid'
+          type: DEPENDENT
+          key: 'dns.a.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.a.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: a
+            - tag: rfc
+              value: RFC1035
+          triggers:
+            - uuid: 45fc6a9324b34f90afad43797c9b4292
+              expression: 'last(/Domain Health/dns.a.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS A Records Missing on {$DNS_DOMAIN}'
+              priority: WARNING
+              tags:
+                - tag: dns_check
+                  value: a
+                - tag: rfc
+                  value: RFC1035
+        - uuid: f0ceec12fd9f400b94a47bfb2883b18c
+          name: 'DNS AAAA Records Valid'
+          type: DEPENDENT
+          key: 'dns.aaaa.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.aaaa.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: aaaa
+            - tag: rfc
+              value: RFC3596
+        - uuid: b07cc3a4c9cd4b6a802c8b9f7dffd0fa
+          name: 'ASN Count'
+          type: DEPENDENT
+          key: 'dns.asn.count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of unique ASNs hosting this domain. Multiple ASNs may indicate CDN or multi-homed hosting.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.unique_asns.length()
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.asn[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: asn
+            - tag: integration
+              value: dns_health
+        - uuid: c18dd4b5dad04c7ba13d9ca08eaae1ab
+          name: 'ASN Primary'
+          type: DEPENDENT
+          key: 'dns.asn.primary[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Primary ASN for this domain (first unique ASN found).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.unique_asns[0].asn'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.asn[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: asn
+            - tag: integration
+              value: dns_health
+        - uuid: d29ee5c6ebe14d8cb24eadb19fbba2bc
+          name: 'ASN Primary Name'
+          type: DEPENDENT
+          key: 'dns.asn.primary_name[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Name of primary AS (network provider).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.unique_asns[0].as_name'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.asn[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: asn
+            - tag: integration
+              value: dns_health
+        - uuid: af6bb2f3b8bc4a5f8f1b7a8e6ceec9ef
+          name: 'ASN Full Data'
+          type: EXTERNAL
+          key: 'dns.asn[{$DNS_DOMAIN}]'
+          delay: 1d
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Autonomous System Number information for domain IP addresses. Identifies hosting provider and network.'
+          tags:
+            - tag: dns_check
+              value: asn
+            - tag: integration
+              value: dns_health
+        - uuid: ae5354c4b0d14ac092bb7bd6671ea59f
+          name: 'BIMI Configured'
+          type: DEPENDENT
+          key: 'dns.bimi.configured[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if BIMI is configured (1=Yes, 0=No).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.configured
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.bimi[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: bimi
+            - tag: integration
+              value: dns_health
+        - uuid: d966d18663074214a0d25b2921d95fa4
+          name: 'BIMI Logo URL'
+          type: DEPENDENT
+          key: 'dns.bimi.logo_url[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'BIMI logo URL (SVG image location).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.logo_url
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.bimi[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: bimi
+            - tag: integration
+              value: dns_health
+        - uuid: 11801fbf73184048b8b3de167d841ea1
+          name: 'BIMI Full Data'
+          type: EXTERNAL
+          key: 'dns.bimi[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'BIMI (Brand Indicators for Message Identification) record check. Enables brand logo display in email clients.'
+          tags:
+            - tag: dns_check
+              value: bimi
+            - tag: email_security
+              value: bimi
+            - tag: integration
+              value: dns_health
+        - uuid: 945657f252274c1c85d1cb05f5f9c5e7
+          name: 'DNS CAA Records Valid'
+          type: DEPENDENT
+          key: 'dns.caa.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.caa.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: caa
+            - tag: rfc
+              value: RFC6844
+          triggers:
+            - uuid: 61ef758b54a5431bb7dd2e7aa85622e8
+              expression: 'last(/Domain Health/dns.caa.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS CAA Records Missing on {$DNS_DOMAIN}'
+              priority: INFO
+              tags:
+                - tag: dns_check
+                  value: caa
+                - tag: rfc
+                  value: RFC6844
+        - uuid: efbbbc3b8de44d58afb5ea2bfd6faf8d
+          name: 'DANE Library Status'
+          type: DEPENDENT
+          key: 'dns.dane.library_status[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Status of crypto libraries for DANE validation: dnspython, cryptography, pyopenssl.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.library_status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{}'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var s = JSON.parse(value); var out = []; if(s.dnspython) out.push("dnspython:OK"); else out.push("dnspython:MISSING"); if(s.cryptography) out.push("cryptography:OK"); else out.push("cryptography:MISSING"); if(s.pyopenssl) out.push("pyopenssl:OK"); else out.push("pyopenssl:MISSING"); return out.join(", ");'
+          master_item:
+            key: 'dns.dane[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dane
+            - tag: integration
+              value: dns_health
+        - uuid: cdf99aa196bc42b3adf3c80fdb4d8d6b
+          name: 'DANE TLSA Record Count'
+          type: DEPENDENT
+          key: 'dns.dane.record_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of TLSA records for _443._tcp.domain. Zero means DANE is not configured.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.record_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dane[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dane
+            - tag: rfc
+              value: RFC6698
+        - uuid: deaaabb2a7cd43c4bea4d91aec5e9e7c
+          name: 'DANE Valid'
+          type: DEPENDENT
+          key: 'dns.dane.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if DANE/TLSA validation passed (1=Valid, 0=Invalid or not configured). Full validation requires cryptography and pyOpenSSL.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.dane[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dane
+            - tag: rfc
+              value: RFC6698
+        - uuid: bce88ff085ab41a29ce2b7fcec3c7c5a
+          name: 'DANE Full Data'
+          type: EXTERNAL
+          key: 'dns.dane[{$DNS_DOMAIN}]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'DANE (DNS-based Authentication of Named Entities) check for HTTPS port 443. Includes TLSA records and certificate validation.'
+          tags:
+            - tag: dns_check
+              value: dane
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC6698
+        - uuid: 00ccc0148674449797f1e2dc64a1ef13
+          name: 'DANE MX Coverage Percent'
+          type: DEPENDENT
+          key: 'dns.dane_mx.coverage[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Percentage of MX servers with DANE TLSA records (0-100%).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.dane_coverage
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["dane_mx","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: dane_mx
+            - tag: rfc
+              value: RFC7673
+        - uuid: 4b54bdcbbae54c81a940a37afe232a4e
+          name: 'DNS DKIM Error'
+          type: DEPENDENT
+          key: 'dns.dkim.error[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dkim.error
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dkim
+        - uuid: 7670c5aa3f754a288382f83bb2da9891
+          name: 'DNS DKIM Record Valid'
+          type: DEPENDENT
+          key: 'dns.dkim.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dkim.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dkim
+          triggers:
+            - uuid: 5373acf2edf24ed1a9bf8cc3f9253c74
+              expression: 'last(/Domain Health/dns.dkim.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS DKIM Record Invalid on {$DNS_DOMAIN}'
+              priority: WARNING
+              tags:
+                - tag: dns_check
+                  value: dkim
+        - uuid: f50d9aa216004552974090575609b7ed
+          name: 'DNS DMARC Error'
+          type: DEPENDENT
+          key: 'dns.dmarc.error[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dmarc.error
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dmarc
+            - tag: rfc
+              value: RFC7489
+        - uuid: 4f288debe99a4aeeb7ba6cd7d582dfd9
+          name: 'DNS DMARC Record Valid'
+          type: DEPENDENT
+          key: 'dns.dmarc.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dmarc.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dmarc
+            - tag: rfc
+              value: RFC7489
+          triggers:
+            - uuid: 9024aeef0fad4cc8a38fe1cc217b7fad
+              expression: 'last(/Domain Health/dns.dmarc.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS DMARC Record Invalid on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              tags:
+                - tag: dns_check
+                  value: dmarc
+                - tag: rfc
+                  value: RFC7489
+        - uuid: b2c3d4e5f6a74b8c9d0e1f2a3b4c5d6e
+          name: 'DNSBL Clean Status'
+          type: DEPENDENT
+          key: 'dns.dnsbl.clean[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if domain IPs are clean (not listed on any DNSBL). 1=Clean, 0=Listed on one or more blacklists.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.clean
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'get_domain_health.py["dnsbl","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: dnsbl
+            - tag: rfc
+              value: RFC5782
+          triggers:
+            - uuid: 1a70b13d6c8f42f1954224fd11a9642f
+              expression: 'last(/Domain Health/dns.dnsbl.clean[{$DNS_DOMAIN}])=0'
+              name: 'Domain IP Listed on DNSBL/Blacklist on {$DNS_DOMAIN}'
+              priority: HIGH
+              description: 'One or more of the domain IP addresses is listed on a DNSBL (RFC 5782). This can severely impact email deliverability and domain reputation. Check DNSBL listings and request removal.'
+              tags:
+                - tag: dns_check
+                  value: dnsbl
+                - tag: rfc
+                  value: RFC5782
+                - tag: security
+                  value: reputation
+        - uuid: b23a700c6f86404cb5caf4fa04c721f6
+          name: 'DNSBL Total Listings'
+          type: DEPENDENT
+          key: 'dns.dnsbl.listings[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Total number of blacklist listings across all checked DNSBLs.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.total_listings
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["dnsbl","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: dnsbl
+            - tag: rfc
+              value: RFC5782
+        - uuid: c7e33abb30b64bcd879d2ba7f4ed270b
+          name: 'DNSSEC Algorithms'
+          type: DEPENDENT
+          key: 'dns.dnssec.algorithms[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'DNSSEC algorithms in use (e.g., RSASHA256, ECDSAP256SHA256, ED25519).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.dnskey.algorithms
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).join(", ");'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC8624
+        - uuid: 50ce5292ca20416987ea2be1071cd767
+          name: 'DNSSEC Algorithm Compliant'
+          type: DEPENDENT
+          key: 'dns.dnssec.algorithm_compliant[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if DNSSEC algorithms in use are compliant with RFC 8624 recommendations (1=Compliant, 0=Deprecated/weak algorithms in use).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.algorithm_compliance.compliant
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC8624
+          triggers:
+            - uuid: f01c06808ad446928095670d120993b5
+              expression: 'last(/Domain Health/dns.dnssec.algorithm_compliant[{$DNS_DOMAIN}])=0'
+              name: 'DNSSEC Deprecated Algorithm in use on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'DNSSEC is using deprecated or weak algorithms per RFC 8624. Algorithms like RSASHA1 (algorithm 5) use SHA-1 which is considered weak. Consider migrating to ECDSAP256SHA256 (algorithm 13) or ED25519 (algorithm 15).'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: deprecated_algorithm
+                - tag: rfc
+                  value: RFC8624
+        - uuid: abd77eef74fa40f18bd1a6ebdb2b6b4f
+          name: 'DNSSEC Chain Valid'
+          type: DEPENDENT
+          key: 'dns.dnssec.chain_valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if DNSSEC chain of trust from root is valid (1=Valid, 0=Invalid). Requires dnspython for full validation.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.chain_validation.chain_valid
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4035
+        - uuid: 857f57944f8b47f7b027f580b5c8c868
+          name: 'DNSSEC Deprecated Algorithms'
+          type: DEPENDENT
+          key: 'dns.dnssec.deprecated_algorithms[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'List of deprecated DNSSEC algorithms in use, per RFC 8624. Empty if all algorithms are compliant.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.algorithm_compliance.deprecated_algorithms
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC8624
+        - uuid: f4b007e80df34fada46abfd4c1bac4de
+          name: 'DNSSEC DNSKEY Count'
+          type: DEPENDENT
+          key: 'dns.dnssec.dnskey_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Total number of DNSKEY records for the domain.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.dnskey.count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4034
+        - uuid: d8f44bcc41c74cde98ae3cb8a5fe381c
+          name: 'DNSSEC DS Record Count'
+          type: DEPENDENT
+          key: 'dns.dnssec.ds_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of DS (Delegation Signer) records at parent zone. DS records link child zone to parent for chain of trust.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.ds.count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4034
+        - uuid: f93d5d161dd14020bbd5df07a5f81344
+          name: 'DNS DNSSEC Enabled'
+          type: DEPENDENT
+          key: 'dns.dnssec.enabled[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dnssec.enabled
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4033
+          triggers:
+            - uuid: 4bc4068b9e044565a839ed2e23176618
+              expression: 'last(/Domain Health/dns.dnssec.enabled[{$DNS_DOMAIN}])=0'
+              name: 'DNS DNSSEC Not Enabled on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'DNSSEC is not enabled for this domain. This is informational - many domains operate without DNSSEC. Consider enabling DNSSEC for improved DNS security.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: rfc
+                  value: RFC4033
+        - uuid: 11bf2ced0775478282f4fc0b406293b8
+          name: 'DNSSEC Failure Description'
+          type: DEPENDENT
+          key: 'dns.dnssec.failure_description[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Human-readable description explaining why DNSSEC validation failed. Empty if DNSSEC is valid or not configured.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.failure_description
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: diagnostic
+              value: failure_description
+            - tag: dns_check
+              value: dnssec
+        - uuid: 0ab88fff85fa41f29de3b8ed04b7c6d0
+          name: 'DNSSEC Failure Reason'
+          type: DEPENDENT
+          key: 'dns.dnssec.failure_reason[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            Machine-readable failure reason for DNSSEC validation issues:
+            - not_configured: No DNSKEY or DS records found
+            - missing_dnskey: DS exists but DNSKEY missing (broken chain)
+            - missing_ds: DNSKEY exists but DS missing (incomplete setup)
+            - rrsig_not_visible: Keys present but RRSIG not visible (EDNS0/DO limitation)
+            - missing_ksk: No Key Signing Key found
+            - missing_zsk: No Zone Signing Key found
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.failure_reason
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: diagnostic
+              value: failure_reason
+            - tag: dns_check
+              value: dnssec
+          triggers:
+            - uuid: 771867ecc9ee42ae96588a8b50fdf737
+              expression: 'find(/Domain Health/dns.dnssec.failure_reason[{$DNS_DOMAIN}],,"like","missing_dnskey")=1'
+              name: 'DNSSEC Broken Chain: DS exists but DNSKEY missing on {$DNS_DOMAIN}'
+              priority: HIGH
+              description: 'CRITICAL - A DS (Delegation Signer) record exists in the parent zone, but no DNSKEY records are published in the child zone. This is a broken DNSSEC configuration that will cause DNSSEC-validating resolvers to FAIL resolution for this domain. Resolution: 1) Publish DNSKEY records in the zone, OR 2) Remove the DS record from the parent zone to disable DNSSEC.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: broken_chain
+                - tag: rfc
+                  value: RFC4033
+            - uuid: d979df24896049e6a4c2544ed6853aab
+              expression: 'find(/Domain Health/dns.dnssec.failure_reason[{$DNS_DOMAIN}],,"like","missing_ds")=1'
+              name: 'DNSSEC Incomplete: DNSKEY exists but DS missing on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'DNSSEC is partially configured. DNSKEY records exist in the zone, but no DS record is published in the parent zone. Without a DS record, the chain of trust cannot be established from the root. Resolution: 1) Add a DS record to the parent zone (registrar DNSSEC settings), OR 2) Remove DNSKEY records if DNSSEC is not desired.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: incomplete
+                - tag: rfc
+                  value: RFC4033
+            - uuid: 915747a9326c4cb69feff1b96578c105
+              expression: 'find(/Domain Health/dns.dnssec.failure_reason[{$DNS_DOMAIN}],,"like","missing_ksk")=1'
+              name: 'DNSSEC Missing KSK on {$DNS_DOMAIN}'
+              priority: HIGH
+              description: 'DNSSEC is misconfigured: No Key Signing Key (KSK, flags=257) found. The zone has ZSK but is missing the KSK needed to sign the DNSKEY RRset and create the chain of trust.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: missing_ksk
+                - tag: rfc
+                  value: RFC4033
+            - uuid: d9b5acb1940d4960b0c60a46239968d8
+              expression: 'find(/Domain Health/dns.dnssec.failure_reason[{$DNS_DOMAIN}],,"like","missing_zsk")=1'
+              name: 'DNSSEC Missing ZSK on {$DNS_DOMAIN}'
+              priority: HIGH
+              description: 'DNSSEC is misconfigured: No Zone Signing Key (ZSK, flags=256) found. The zone has KSK but is missing the ZSK needed to sign zone records like A, MX, NS.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: missing_zsk
+                - tag: rfc
+                  value: RFC4033
+            - uuid: 5f379c8d3cd2430cbb2ca16eb8213594
+              expression: 'find(/Domain Health/dns.dnssec.failure_reason[{$DNS_DOMAIN}],,"like","rrsig_not_visible")=1'
+              name: 'DNSSEC RRSIG Not Visible on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'DNSSEC appears configured (DNSKEY and DS records present), but RRSIG records are not visible. This may be due to: 1) DNS query library limitation - stdlib DNS queries do not set EDNS0 DO (DNSSEC OK) bit, 2) Zone is publishing keys but not signing records. To verify DNSSEC works correctly, install dnspython library (pip install dnspython) or use external validators like dnsviz.net or verisignlabs.com/dnssec.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: failure
+                  value: rrsig_limitation
+                - tag: rfc
+                  value: RFC4033
+        - uuid: a5c118f91ef44fab857b0fe5d2cb05ef
+          name: 'DNSSEC KSK Count'
+          type: DEPENDENT
+          key: 'dns.dnssec.ksk_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of Key Signing Keys (flag 257). KSKs sign DNSKEY RRsets and are referenced by parent DS records.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.dnskey.ksk_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: key_type
+              value: ksk
+        - uuid: e9a55cdd52d84defa9bf4dc9b60f492d
+          name: 'DNSSEC RRSIG Count'
+          type: DEPENDENT
+          key: 'dns.dnssec.rrsig_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of RRSIG (Resource Record Signature) records. Each signed RRset has an RRSIG.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rrsig.count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4034
+        - uuid: fab66dee63e94ef0bac0f5daca1a5a3e
+          name: 'DNSSEC RRSIG Nearest Expiry Days'
+          type: DEPENDENT
+          key: 'dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: FLOAT
+          units: d
+          description: 'Days until the soonest RRSIG expires. Negative means already expired. DNSSEC validation will fail if RRSIGs expire.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rrsig.nearest_expiry_days
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4034
+          triggers:
+            - uuid: bda88bb3c6d54e7a90f4c8e9a7b5d3f2
+              expression: 'last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])>7 and last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])<=14'
+              name: 'DNSSEC RRSIG Expiring (14 days) on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'DNSSEC RRSIG signatures expire within 14 days. Plan key rotation/re-signing.'
+              dependencies:
+                - name: 'DNSSEC RRSIG Expiring Soon (7 days) on {$DNS_DOMAIN}'
+                  expression: 'last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])>=0 and last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])<=7'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: expiry
+                  value: warning
+                - tag: rfc
+                  value: RFC4034
+            - uuid: acf77aa2b5c44d6f89e3b7d8f6a4c2e1
+              expression: 'last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])>=0 and last(/Domain Health/dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}])<=7'
+              name: 'DNSSEC RRSIG Expiring Soon (7 days) on {$DNS_DOMAIN}'
+              priority: HIGH
+              description: 'DNSSEC RRSIG signatures expire within 7 days. If not renewed, DNSSEC validation will fail.'
+              tags:
+                - tag: dns_check
+                  value: dnssec
+                - tag: expiry
+                  value: critical
+                - tag: rfc
+                  value: RFC4034
+        - uuid: 71997615a61e4303af9573ee32daeae0
+          name: 'DNS DNSSEC Valid'
+          type: DEPENDENT
+          key: 'dns.dnssec.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.dnssec.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: rfc
+              value: RFC4033
+        - uuid: b6d229aa2fa54abc968c1af6e3dc16fa
+          name: 'DNSSEC ZSK Count'
+          type: DEPENDENT
+          key: 'dns.dnssec.zsk_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of Zone Signing Keys (flag 256). ZSKs sign zone records like A, MX, NS.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.dnskey.zsk_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: key_type
+              value: zsk
+        - uuid: e3aff6d7fce24e9ca35faec3b0afb3cd
+          name: 'DNSSEC Detailed Data'
+          type: EXTERNAL
+          key: 'dns.dnssec_detailed[{$DNS_DOMAIN}]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Detailed DNSSEC analysis including DNSKEY types (KSK/ZSK), algorithms, DS records, RRSIG expiry, and chain validation.'
+          tags:
+            - tag: dns_check
+              value: dnssec
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC4033
+        - uuid: a7be8ecb1a3f4931a067f61bb4d7f16f
+          name: 'Email Security Score'
+          type: DEPENDENT
+          key: 'dns.email_security.score[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Email security score (0-6). Counts configured: SPF, DKIM, DMARC, MTA-STS, TLS-RPT, BIMI.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.score
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.email_security[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: email_security
+            - tag: integration
+              value: dns_health
+          triggers:
+            - uuid: 1e1e21556bc1474f9e8b3bc347fafefd
+              expression: 'last(/Domain Health/dns.email_security.score[{$DNS_DOMAIN}])<=2'
+              name: 'Email Security Score Low on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Email security score is 2 or lower out of 6. Missing email authentication mechanisms (SPF, DKIM, DMARC, MTA-STS, TLS-RPT, BIMI). Improve email security posture.'
+              tags:
+                - tag: dns_check
+                  value: email_security
+                - tag: security
+                  value: email
+        - uuid: 2ea6aa41a46346bfaae2dfd921fbb3fa
+          name: 'Email Security Full Data'
+          type: EXTERNAL
+          key: 'dns.email_security[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Comprehensive email security status including SPF, DKIM, DMARC, MTA-STS, TLS-RPT, and BIMI.'
+          tags:
+            - tag: dns_check
+              value: email_security
+            - tag: integration
+              value: dns_health
+        - uuid: e78672c6923d4aa38482f4631b34a4ed
+          name: 'Email SRV Services Found'
+          type: DEPENDENT
+          key: 'dns.email_srv.count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of email-related SRV records found for client autoconfiguration.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.services_found
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["email_srv","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: email_srv
+            - tag: rfc
+              value: RFC6186
+        - uuid: e1f2a3b4c5d64e7f8a9b0c1d2e3f4a5b
+          name: 'Glue Records Valid'
+          type: DEPENDENT
+          key: 'dns.glue.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if glue records are properly configured (1=Valid, 0=Missing or invalid).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.glue_valid
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'get_domain_health.py["glue","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: glue
+            - tag: rfc
+              value: RFC9471
+          triggers:
+            - uuid: a46a968185914eabb822b640f2480581
+              expression: 'last(/Domain Health/dns.glue.valid[{$DNS_DOMAIN}])=0'
+              name: 'Glue Records Missing or Invalid on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              description: 'Glue records are missing or invalid (RFC 9471). Required for in-bailiwick nameservers to prevent circular resolution dependencies.'
+              tags:
+                - tag: dns_check
+                  value: glue
+                - tag: reliability
+                  value: glue
+                - tag: rfc
+                  value: RFC9471
+        - uuid: 3a7cea35c4014a78a5fdde57dfe50367
+          name: 'DNS Health Score'
+          type: EXTERNAL
+          key: 'dns.health.score[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 90d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.health_score
+          tags:
+            - tag: dns_check
+              value: health_score
+            - tag: integration
+              value: dns_health
+          triggers:
+            - uuid: ef61558b4c70403895f77e5de3fa1956
+              expression: 'last(/Domain Health/dns.health.score[{$DNS_DOMAIN}])<50'
+              name: 'DNS Health Score Critical on {$DNS_DOMAIN}'
+              priority: HIGH
+              tags:
+                - tag: dns_check
+                  value: health_score
+                - tag: severity
+                  value: high
+            - uuid: c9207b50d02f422cb884d52b2d7c047e
+              expression: 'last(/Domain Health/dns.health.score[{$DNS_DOMAIN}])<75 and last(/Domain Health/dns.health.score[{$DNS_DOMAIN}])>=50'
+              name: 'DNS Health Score Warning on {$DNS_DOMAIN}'
+              priority: WARNING
+              tags:
+                - tag: dns_check
+                  value: health_score
+                - tag: severity
+                  value: warning
+        - uuid: e635bbdceecf4e7b902020530ffa03e9
+          name: 'DNS Health Full Report'
+          type: EXTERNAL
+          key: 'dns.health[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: dns_check
+              value: full_report
+            - tag: integration
+              value: dns_health
+        - uuid: 72f86959c666472792b81d92d0ea9ce1
+          name: 'DNS Query Latency (ms)'
+          type: DEPENDENT
+          key: 'dns.latency.ms[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: FLOAT
+          units: ms
+          description: 'DNS query resolution time in milliseconds.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.latency_ms
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: 'dns.latency[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: latency
+            - tag: integration
+              value: dns_health
+          triggers:
+            - uuid: 125e6473ada445d1900f5529201fafe7
+              expression: 'last(/Domain Health/dns.latency.ms[{$DNS_DOMAIN}])>{$DNS_LATENCY_WARNING}'
+              name: 'DNS Query Latency High on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'DNS query latency exceeds {$DNS_LATENCY_WARNING}ms threshold. This may indicate DNS server performance issues or network problems.'
+              tags:
+                - tag: dns_check
+                  value: latency
+                - tag: performance
+                  value: warning
+        - uuid: 1a6ed025ea1d4da7a53c9d8cbd33d4e0
+          name: 'DNS Query Latency'
+          type: EXTERNAL
+          key: 'dns.latency[{$DNS_DOMAIN}]'
+          delay: 5m
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'DNS query resolution latency measurement.'
+          tags:
+            - tag: dns_check
+              value: latency
+            - tag: integration
+              value: dns_health
+        - uuid: f55e2b8e029b4f85befb2e2e397e1614
+          name: 'MTA-STS Configured'
+          type: DEPENDENT
+          key: 'dns.mta_sts.configured[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if MTA-STS is configured (1=Yes, 0=No).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.configured
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.mta_sts[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: mta_sts
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC8461
+          triggers:
+            - uuid: 8422715ed06a4ee4964b42450d870e31
+              expression: 'last(/Domain Health/dns.mta_sts.configured[{$DNS_DOMAIN}])=0'
+              name: 'MTA-STS Not Configured on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'MTA-STS (RFC 8461) is not configured. MTA-STS prevents TLS downgrade attacks on SMTP connections. Consider publishing a _mta-sts TXT record.'
+              tags:
+                - tag: dns_check
+                  value: mta_sts
+                - tag: email_security
+                  value: mta_sts
+                - tag: rfc
+                  value: RFC8461
+        - uuid: 69969865268c46e1a7e481582a86804c
+          name: 'MTA-STS Policy ID'
+          type: DEPENDENT
+          key: 'dns.mta_sts.id[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'MTA-STS policy ID (changes when policy is updated).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.id
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.mta_sts[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: mta_sts
+            - tag: integration
+              value: dns_health
+        - uuid: 5af4149fc95f40f8a574e3d6ab9bbe25
+          name: 'MTA-STS Full Data'
+          type: EXTERNAL
+          key: 'dns.mta_sts[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'MTA-STS (RFC 8461) policy record check. Prevents TLS downgrade attacks on SMTP.'
+          tags:
+            - tag: dns_check
+              value: mta_sts
+            - tag: email_security
+              value: mta_sts
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC8461
+        - uuid: 5d550dea94594f689435299c3de3340b
+          name: 'DNS MX Records Valid'
+          type: DEPENDENT
+          key: 'dns.mx.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.mx.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: mx
+            - tag: rfc
+              value: RFC1035
+          triggers:
+            - uuid: d2fdbd2ef619473fb5739450b90356b5
+              expression: 'last(/Domain Health/dns.mx.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS MX Records Invalid on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              tags:
+                - tag: dns_check
+                  value: mx
+                - tag: rfc
+                  value: RFC1035
+        - uuid: 767606b158e54caeb9a88749213de711
+          name: 'DNS NS Records Valid'
+          type: DEPENDENT
+          key: 'dns.ns.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.ns.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: ns
+            - tag: rfc
+              value: RFC1035
+          triggers:
+            - uuid: ebb7238c3c204ac79a1dc58de38718d5
+              expression: 'last(/Domain Health/dns.ns.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS NS Records Invalid on {$DNS_DOMAIN}'
+              priority: HIGH
+              tags:
+                - tag: dns_check
+                  value: ns
+                - tag: rfc
+                  value: RFC1035
+        - uuid: bd7dfce4f5954c2f8984041504b102b4
+          name: 'NS Count'
+          type: DEPENDENT
+          key: 'dns.ns_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Total number of authoritative nameservers for the domain.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.ns_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["ns_diversity","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: ns_diversity
+            - tag: rfc
+              value: RFC2182
+          triggers:
+            - uuid: f0ad6327ac8e48cd9ee156aafbfd79e0
+              expression: 'last(/Domain Health/dns.ns_count[{$DNS_DOMAIN}])<2'
+              name: 'Insufficient NS Count on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              description: 'Domain has less than 2 authoritative nameservers (RFC 2182 recommends at least 2). Single points of failure risk DNS availability.'
+              tags:
+                - tag: dns_check
+                  value: ns_diversity
+                - tag: reliability
+                  value: spof
+                - tag: rfc
+                  value: RFC2182
+        - uuid: 43ce1a9333ed461f9bef635f5f383471
+          name: 'NS Diversity Score'
+          type: DEPENDENT
+          key: 'dns.ns_diversity.score[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Nameserver diversity score (0-100). Higher scores indicate better distribution for resilience.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.diversity_score
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["ns_diversity","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: ns_diversity
+            - tag: rfc
+              value: RFC2182
+          triggers:
+            - uuid: ab18f6e9c6534cdda0da84b2d26caa30
+              expression: 'last(/Domain Health/dns.ns_diversity.score[{$DNS_DOMAIN}])<50'
+              name: 'NS Diversity Score Low on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Nameserver diversity score is below 50 (RFC 2182). Low diversity increases risk of DNS outages. Consider using nameservers on different networks/ASNs.'
+              tags:
+                - tag: dns_check
+                  value: ns_diversity
+                - tag: reliability
+                  value: redundancy
+                - tag: rfc
+                  value: RFC2182
+        - uuid: dafa4c1d51a54df98ab0a228a7cc1ade
+          name: 'RDAP Creation Date'
+          type: DEPENDENT
+          key: 'dns.rdap.creation_date[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Domain creation/registration date from RDAP.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.creation_date
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: fe5aa1e2a7ab49488e0a697d5bddb8de
+          name: 'RDAP Days Until Expiry'
+          type: DEPENDENT
+          key: 'dns.rdap.days_until_expiry[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          units: d
+          description: 'Days until domain expiry from RDAP data.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.days_until_expiry
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: 35611e0ca8de435abed0d2d2f067c002
+          name: 'RDAP Domain Age (Days)'
+          type: DEPENDENT
+          key: 'dns.rdap.domain_age[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Domain age in days since registration. Newly registered domains (< 30 days) may indicate phishing risk.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.domain_age_days
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: security
+              value: domain_age
+          triggers:
+            - uuid: 4b9c694ff1c5458c8e4075fccbc8edb8
+              expression: 'last(/Domain Health/dns.rdap.domain_age[{$DNS_DOMAIN}])>=0 and last(/Domain Health/dns.rdap.domain_age[{$DNS_DOMAIN}])<30'
+              name: 'Domain Age Under 30 Days on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Domain was registered less than 30 days ago. Newly registered domains may indicate phishing or spam campaigns. Verify domain legitimacy.'
+              tags:
+                - tag: dns_check
+                  value: rdap
+                - tag: security
+                  value: domain_age
+        - uuid: eb0b5d2e62b64ea0abc1b339b8dd2bef
+          name: 'RDAP Expiry Date'
+          type: DEPENDENT
+          key: 'dns.rdap.expiry_date[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Domain expiry date from RDAP in ISO 8601 format.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.expiry_date
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: c9e33b0c40f44ce88faef117f6bb09cd
+          name: 'RDAP Nameservers'
+          type: DEPENDENT
+          key: 'dns.rdap.nameservers[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Comma-separated list of nameservers from RDAP data.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.nameservers
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).join(", ");'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: ed4ff0d196fa48398df9586c4acca7cd
+          name: 'RDAP Registrar'
+          type: DEPENDENT
+          key: 'dns.rdap.registrar[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.registrar
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: fc1c6e3f73c74fb1acd2c44ac9ee3cfa
+          name: 'RDAP Server'
+          type: DEPENDENT
+          key: 'dns.rdap.server[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'RDAP server URL used for the query.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rdap_server
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: d49ee6b7fbaf4d93b25fbec2b1ccb4de
+          name: 'RDAP Client Delete Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.client_delete_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if clientDeleteProhibited status is set (1=Yes, 0=No). Prevents accidental domain deletion.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("client delete prohibited") >= 0 || s.toLowerCase().indexOf("clientdeleteprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registrar_lock
+              value: delete
+        - uuid: c38dd5a6eafe4c82a14eadb1a0bba3cd
+          name: 'RDAP Client Transfer Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.client_transfer_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if clientTransferProhibited status is set (1=Yes, 0=No). Prevents unauthorized domain transfers.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("client transfer prohibited") >= 0 || s.toLowerCase().indexOf("clienttransferprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registrar_lock
+              value: transfer
+          triggers:
+            - uuid: 7bea09ad21b74fd2925fdb59c72c22a2
+              expression: 'last(/Domain Health/dns.rdap.status.client_transfer_prohibited[{$DNS_DOMAIN}])=0'
+              name: 'Domain Transfer Lock Disabled on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Domain transfer lock (clientTransferProhibited) is not enabled. This leaves the domain vulnerable to unauthorized transfers. Enable registrar transfer lock.'
+              tags:
+                - tag: dns_check
+                  value: rdap
+                - tag: registrar_lock
+                  value: transfer
+                - tag: security
+                  value: domain_lock
+        - uuid: e5aff7c80cb04ea48369fdd3c2ddc5ef
+          name: 'RDAP Client Update Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.client_update_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if clientUpdateProhibited status is set (1=Yes, 0=No). Prevents unauthorized DNS/contact changes.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("client update prohibited") >= 0 || s.toLowerCase().indexOf("clientupdateprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registrar_lock
+              value: update
+        - uuid: a7c119ea2ed24ac6858c1ff5e4ffe7ab
+          name: 'RDAP Server Delete Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.server_delete_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if serverDeleteProhibited status is set (1=Yes, 0=No). Registry-level delete protection.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("server delete prohibited") >= 0 || s.toLowerCase().indexOf("serverdeleteprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registry_lock
+              value: delete
+        - uuid: f6b008d91dc14fb5847b0ee4d3eed6fa
+          name: 'RDAP Server Transfer Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.server_transfer_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if serverTransferProhibited status is set (1=Yes, 0=No). Registry-level transfer lock.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("server transfer prohibited") >= 0 || s.toLowerCase().indexOf("servertransferprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registry_lock
+              value: transfer
+        - uuid: b8d22afb3fe34bd7869d2006f5aaf8bc
+          name: 'RDAP Server Update Prohibited'
+          type: DEPENDENT
+          key: 'dns.rdap.status.server_update_prohibited[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if serverUpdateProhibited status is set (1=Yes, 0=No). Registry-level update protection.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var arr = JSON.parse(value); return arr.some(function(s) { return s.toLowerCase().indexOf("server update prohibited") >= 0 || s.toLowerCase().indexOf("serverupdateprohibited") >= 0; }) ? 1 : 0;'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: registry_lock
+              value: update
+        - uuid: a16bb3e4c8dc4a608f2c8b9f8effd1ab
+          name: 'RDAP Status List'
+          type: DEPENDENT
+          key: 'dns.rdap.status[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'Comma-separated list of all domain status codes from RDAP (e.g., clientTransferProhibited, serverDeleteProhibited).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).join(", ");'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: b27cc4f5d9ed4b71903d9ca09faae2bc
+          name: 'RDAP Status Count'
+          type: DEPENDENT
+          key: 'dns.rdap.status_count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of domain status codes applied by the registrar.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status.length()
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.rdap[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+        - uuid: dc3ee9c085ef472cbce8475b3fbba6bc
+          name: 'RDAP Full Data'
+          type: EXTERNAL
+          key: 'dns.rdap[{$DNS_DOMAIN}]'
+          delay: 1d
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'RDAP (Registration Data Access Protocol) data for domain. Modern replacement for WHOIS with structured JSON output.'
+          tags:
+            - tag: dns_check
+              value: rdap
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC7480
+        - uuid: 8e121a86260e4641adc37f2cac430bea
+          name: 'RFC 2181 CNAME Coexists'
+          type: DEPENDENT
+          key: 'dns.rfc2181.cname_coexists[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if CNAME coexists with other records (1=Violation, 0=OK). Per RFC 2181, CNAME must not coexist with other data.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.cname_validation.cname_coexists
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.rfc2181[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rfc2181
+            - tag: rfc
+              value: RFC2181
+          triggers:
+            - uuid: a48a08827ab6492485e93c6a8cbd38ea
+              expression: 'last(/Domain Health/dns.rfc2181.cname_coexists[{$DNS_DOMAIN}])=1'
+              name: 'RFC 2181 Violation: CNAME coexists with other records on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              description: 'RFC 2181 violation detected: A CNAME record coexists with other record types at the same name. Per RFC 2181 Section 10.1, a CNAME record must not coexist with any other data. This can cause unpredictable DNS resolution behavior.'
+              tags:
+                - tag: dns_check
+                  value: rfc2181
+                - tag: failure
+                  value: cname_violation
+                - tag: rfc
+                  value: RFC2181
+        - uuid: 5aa62bbf870b45318e63aa9aeac36a3f
+          name: 'RFC 2181 Compliant'
+          type: DEPENDENT
+          key: 'dns.rfc2181.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates RFC 2181 compliance (1=Compliant, 0=Violations found). Checks CNAME rules and TTL consistency.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '1'
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.rfc2181[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: rfc2181
+            - tag: rfc
+              value: RFC2181
+          triggers:
+            - uuid: 7feb2a29c6564aa5843d627bc959e1bf
+              expression: 'last(/Domain Health/dns.rfc2181.valid[{$DNS_DOMAIN}])=0'
+              name: 'RFC 2181 Compliance Failed on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'RFC 2181 DNS specification compliance check failed. This may indicate CNAME rule violations or inconsistent TTLs across RRsets. Review the RFC 2181 validation data for details.'
+              tags:
+                - tag: dns_check
+                  value: rfc2181
+                - tag: rfc
+                  value: RFC2181
+        - uuid: 5dd0a32f7b3546718050af02d05314a3
+          name: 'RFC 2181 Validation Data'
+          type: EXTERNAL
+          key: 'dns.rfc2181[{$DNS_DOMAIN}]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'RFC 2181 compliance check including CNAME rules and TTL consistency validation.'
+          tags:
+            - tag: dns_check
+              value: rfc2181
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC2181
+        - uuid: 9683a4c7e49c4de6803dba41b8ecbbe3
+          name: 'DNS SOA Expire'
+          type: DEPENDENT
+          key: 'dns.soa.expire[{$DNS_DOMAIN}]'
+          delay: '0'
+          units: s
+          description: 'Expire time (seconds) from SOA record. How long secondary NS should serve zone data without successful refresh.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.expire
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: adb3716d3812476eb2705f5d67eccd00
+          name: 'DNS SOA Minimum TTL'
+          type: DEPENDENT
+          key: 'dns.soa.minimum[{$DNS_DOMAIN}]'
+          delay: '0'
+          units: s
+          description: 'Minimum TTL (seconds) from SOA record. Used for negative caching (NXDOMAIN responses).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.minimum
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC2308
+        - uuid: c50b5328402641739be9bbb1b7973bdb
+          name: 'DNS SOA Primary NS'
+          type: DEPENDENT
+          key: 'dns.soa.mname[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          description: 'Primary nameserver (MNAME) from SOA record.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.mname
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: cf2d4d03ae7f4a79bbedaac151b1ff46
+          name: 'DNS SOA Refresh'
+          type: DEPENDENT
+          key: 'dns.soa.refresh[{$DNS_DOMAIN}]'
+          delay: '0'
+          units: s
+          description: 'Refresh interval (seconds) from SOA record. How often secondary NS should check for updates.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.refresh
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: 64b4c532d7414c9badc2598499acf230
+          name: 'DNS SOA Retry'
+          type: DEPENDENT
+          key: 'dns.soa.retry[{$DNS_DOMAIN}]'
+          delay: '0'
+          units: s
+          description: 'Retry interval (seconds) from SOA record. How long secondary NS should wait before retrying failed transfer.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.retry
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: 1d3f501f359349e2ac5973d06ca24b5d
+          name: 'DNS SOA Contact Email'
+          type: DEPENDENT
+          key: 'dns.soa.rname[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          description: 'Responsible person email (RNAME) from SOA record. Format: admin.example.com = admin@example.com'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.rname
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: bae5f758442c4f36a30eb3b8a3cea94b
+          name: 'DNS SOA Serial'
+          type: DEPENDENT
+          key: 'dns.soa.serial[{$DNS_DOMAIN}]'
+          delay: '0'
+          description: 'Zone serial number from SOA record. Should increase on each zone update.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.soa.serial
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+        - uuid: 3b40d868cc6e450ab880aa6ad7d8dc96
+          name: 'DNS SOA Record Valid'
+          type: DEPENDENT
+          key: 'dns.soa.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.soa.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: soa
+            - tag: rfc
+              value: RFC1035
+          triggers:
+            - uuid: 6c611785345546a38a7c5ab9d773271f
+              expression: 'last(/Domain Health/dns.soa.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS SOA Record Invalid on {$DNS_DOMAIN}'
+              priority: HIGH
+              tags:
+                - tag: dns_check
+                  value: soa
+                - tag: rfc
+                  value: RFC1035
+        - uuid: ca35b78cc7e14d9395ef56c33f2f0978
+          name: 'DNS SPF Error'
+          type: DEPENDENT
+          key: 'dns.spf.error[{$DNS_DOMAIN}]'
+          delay: '0'
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.spf.error
+              error_handler: CUSTOM_VALUE
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: spf
+            - tag: rfc
+              value: RFC7208
+        - uuid: 06e9aacda37843739991ae81d4b9f06a
+          name: 'DNS SPF Record Valid'
+          type: DEPENDENT
+          key: 'dns.spf.valid[{$DNS_DOMAIN}]'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.checks.spf.valid
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.health[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: spf
+            - tag: rfc
+              value: RFC7208
+          triggers:
+            - uuid: b67794716b7d477895c23cf915687f0d
+              expression: 'last(/Domain Health/dns.spf.valid[{$DNS_DOMAIN}])=0'
+              name: 'DNS SPF Record Invalid on {$DNS_DOMAIN}'
+              priority: AVERAGE
+              tags:
+                - tag: dns_check
+                  value: spf
+                - tag: rfc
+                  value: RFC7208
+        - uuid: 3aae3c24b11349f68b9e8fea3702c27a
+          name: 'SSHFP Record Count'
+          type: DEPENDENT
+          key: 'dns.sshfp.count[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Number of SSHFP records published for domain.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.record_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_domain_health.py["sshfp","{$DNS_DOMAIN}"]'
+          tags:
+            - tag: dns_check
+              value: sshfp
+            - tag: rfc
+              value: RFC4255
+        - uuid: cbc25295ba334a8e9a665cf1b8872b52
+          name: 'TLS-RPT Configured'
+          type: DEPENDENT
+          key: 'dns.tls_rpt.configured[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          description: 'Indicates if TLS-RPT is configured (1=Yes, 0=No).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.configured
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: 'dns.tls_rpt[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: tls_rpt
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC8460
+          triggers:
+            - uuid: fbaeac5c39e24b8eb37f6ebf3d8bb80a
+              expression: 'last(/Domain Health/dns.tls_rpt.configured[{$DNS_DOMAIN}])=0'
+              name: 'TLS-RPT Not Configured on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'TLS-RPT (RFC 8460) is not configured. TLS-RPT enables receiving reports about TLS connectivity problems. Consider publishing a _smtp._tls TXT record.'
+              tags:
+                - tag: dns_check
+                  value: tls_rpt
+                - tag: email_security
+                  value: tls_rpt
+                - tag: rfc
+                  value: RFC8460
+        - uuid: b78c8a29704e4464976e4bf248bdd2fb
+          name: 'TLS-RPT Reporting URI'
+          type: DEPENDENT
+          key: 'dns.tls_rpt.rua[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          description: 'TLS-RPT reporting URI (email address for receiving reports).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rua
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).join(", ");'
+          master_item:
+            key: 'dns.tls_rpt[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: tls_rpt
+            - tag: integration
+              value: dns_health
+        - uuid: 02d8f33f7b8d4bf8bcf42cdbac0ebf51
+          name: 'TLS-RPT Full Data'
+          type: EXTERNAL
+          key: 'dns.tls_rpt[{$DNS_DOMAIN}]'
+          delay: 1h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'TLS-RPT (RFC 8460) record check. Enables receiving TLS connectivity reports.'
+          tags:
+            - tag: dns_check
+              value: tls_rpt
+            - tag: email_security
+              value: tls_rpt
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC8460
+        - uuid: cb2dd8b974df472bbbd7364a2eaae5ab
+          name: 'WHOIS Days Until Expiry'
+          type: DEPENDENT
+          key: 'dns.whois.days_until_expiry[{$DNS_DOMAIN}]'
+          delay: '0'
+          history: 90d
+          units: d
+          description: 'Number of days until domain registration expires. Calculated from WHOIS expiry date.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.days_until_expiry
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: 'dns.whois[{$DNS_DOMAIN}]'
+          tags:
+            - tag: dns_check
+              value: whois
+            - tag: integration
+              value: dns_health
+          triggers:
+            - uuid: 8d6e9f2ab4c34c7e80f1a9e8a7b6c5d4
+              expression: 'last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])>{$DNS_EXPIRY_WARNING} and last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])<={$DNS_EXPIRY_INFO}'
+              name: 'Domain Expiry Notice ({$DNS_EXPIRY_INFO} days) on {$DNS_DOMAIN}'
+              priority: INFO
+              description: 'Domain registration expires in {$DNS_EXPIRY_INFO} days or less. Plan renewal to avoid service disruption.'
+              dependencies:
+                - name: 'Domain Expiry Warning ({$DNS_EXPIRY_WARNING} days) on {$DNS_DOMAIN}'
+                  expression: 'last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])>0 and last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])<={$DNS_EXPIRY_WARNING}'
+              tags:
+                - tag: dns_check
+                  value: whois
+                - tag: expiry
+                  value: info
+            - uuid: 7c5d8e1fa3b24a6db9e0c8d7f6a5b4c3
+              expression: 'last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])>0 and last(/Domain Health/dns.whois.days_until_expiry[{$DNS_DOMAIN}])<={$DNS_EXPIRY_WARNING}'
+              name: 'Domain Expiry Warning ({$DNS_EXPIRY_WARNING} days) on {$DNS_DOMAIN}'
+              priority: WARNING
+              description: 'Domain registration expires in {$DNS_EXPIRY_WARNING} days or less. Renew immediately to avoid service disruption.'
+              tags:
+                - tag: dns_check
+                  value: whois
+                - tag: expiry
+                  value: warning
+        - uuid: aa0ffc557b1f4c65abc612ef355516cd
+          name: 'WHOIS Expiry Date'
+          type: EXTERNAL
+          key: 'dns.whois.expiry[{$DNS_DOMAIN}]'
+          delay: 1d
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.expiry_date
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          tags:
+            - tag: dns_check
+              value: whois
+            - tag: integration
+              value: dns_health
+        - uuid: 9d27ba76ee034e0fb6e46f4134613021
+          name: 'WHOIS Registrar'
+          type: EXTERNAL
+          key: 'dns.whois.registrar[{$DNS_DOMAIN}]'
+          delay: 1d
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.registrar
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          tags:
+            - tag: dns_check
+              value: whois
+            - tag: integration
+              value: dns_health
+        - uuid: ba1cc7a863ce461aaac6253f1dffd4ff
+          name: 'WHOIS Full Data'
+          type: EXTERNAL
+          key: 'dns.whois[{$DNS_DOMAIN}]'
+          delay: 1d
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: dns_check
+              value: whois
+            - tag: integration
+              value: dns_health
+        - uuid: c3f4568ecfc24f40be83c73935f21009
+          name: 'DANE MX Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["dane_mx","{$DNS_DOMAIN}"]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'DANE TLSA records for MX servers (RFC 7673). Validates SMTP TLS using TLSA records on port 25.'
+          tags:
+            - tag: dns_check
+              value: dane_mx
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC7673
+        - uuid: a1b2c3d4e5f64a7b8c9d0e1f2a3b4c5d
+          name: 'DNSBL Status Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["dnsbl","{$DNS_DOMAIN}"]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'DNS-based Blackhole List (DNSBL) check for domain IP addresses (RFC 5782). Checks major blacklists: Spamhaus, SpamCop, Barracuda, SORBS, etc.'
+          tags:
+            - tag: dns_check
+              value: dnsbl
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC5782
+        - uuid: 5fcd14f908ae4629ab50a1e3cfff2fec
+          name: 'Email SRV Records Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["email_srv","{$DNS_DOMAIN}"]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Email client autoconfiguration SRV records (RFC 6186). Discovers IMAP, POP3, SMTP submission, and autodiscover SRV records.'
+          tags:
+            - tag: dns_check
+              value: email_srv
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC6186
+        - uuid: 710ebcc8b0364870af7c326f68d5462f
+          name: 'NS Glue Records Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["glue","{$DNS_DOMAIN}"]'
+          delay: 12h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Glue record validation (RFC 9471). Checks for proper glue records for in-bailiwick nameservers.'
+          tags:
+            - tag: dns_check
+              value: glue
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC9471
+        - uuid: f2a3b4c5d6e74f8a9b0c1d2e3f4a5b6c
+          name: 'NS Diversity Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["ns_diversity","{$DNS_DOMAIN}"]'
+          delay: 12h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'Nameserver diversity analysis (RFC 2182). Checks NS distribution across networks, ASNs, and geographic diversity.'
+          tags:
+            - tag: dns_check
+              value: ns_diversity
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC2182
+        - uuid: f023072c31574b53ae6ff3a9aee9e408
+          name: 'SSHFP Records Data'
+          type: EXTERNAL
+          key: 'get_domain_health.py["sshfp","{$DNS_DOMAIN}"]'
+          delay: 6h
+          history: 30d
+          value_type: TEXT
+          trends: '0'
+          description: 'SSH Fingerprint records (RFC 4255). Publishes SSH host key fingerprints in DNS for verification.'
+          tags:
+            - tag: dns_check
+              value: sshfp
+            - tag: integration
+              value: dns_health
+            - tag: rfc
+              value: RFC4255
+      discovery_rules:
+        - uuid: d6920d8abfc94c1ab160dca0fd20f597
+          name: 'DNS Zone Discovery'
+          type: EXTERNAL
+          key: 'dns.discover[{$DNS_DOMAIN}]'
+          delay: 1d
+          filter:
+            conditions:
+              - macro: '{#RECORD_TYPE}'
+                value: .+
+                formulaid: A
+          item_prototypes:
+            - uuid: b4d1109b44d84fb5b8b26514e0231737
+              name: 'DNS {#RECORD_TYPE} Records Count'
+              type: EXTERNAL
+              key: 'dns.records.count[{$DNS_DOMAIN},{#RECORD_TYPE}]'
+              delay: 1h
+              history: 30d
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.count
+              tags:
+                - tag: dns_record_type
+                  value: '{#RECORD_TYPE}'
+                - tag: integration
+                  value: dns_health
+            - uuid: bd253db2173a46aba05e5a26bee0cc91
+              name: 'DNS {#RECORD_TYPE} Records Data'
+              type: EXTERNAL
+              key: 'dns.records[{$DNS_DOMAIN},{#RECORD_TYPE}]'
+              delay: 1h
+              history: 30d
+              value_type: TEXT
+              trends: '0'
+              tags:
+                - tag: dns_record_type
+                  value: '{#RECORD_TYPE}'
+                - tag: integration
+                  value: dns_health
+          graph_prototypes:
+            - uuid: 10c587e23e8c40afb5c2403753def568
+              name: 'DNS {#RECORD_TYPE} Record Count'
+              graph_items:
+                - color: 199C0D
+                  calc_fnc: ALL
+                  item:
+                    host: 'Domain Health'
+                    key: 'dns.records.count[{$DNS_DOMAIN},{#RECORD_TYPE}]'
+        - uuid: e7a31f9bcfa04d2ba271ecb1af00e3cd
+          name: 'DNS Namespace Discovery'
+          type: EXTERNAL
+          key: 'dns.discover_ns[{$DNS_DOMAIN}]'
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#NS_SERVER}'
+                value: .+
+                formulaid: A
+          description: 'Discovers all authoritative nameservers for the domain and monitors their availability and latency.'
+          item_prototypes:
+            - uuid: a9c53bbdeb124f4d8493aed3cb22a5ef
+              name: 'NS Server {#NS_SERVER} Available'
+              type: DEPENDENT
+              key: 'dns.ns.available[{$DNS_DOMAIN},{#NS_SERVER}]'
+              delay: '0'
+              history: 30d
+              description: 'Availability status of NS server {#NS_SERVER}. 1=Available, 0=Unavailable'
+              valuemap:
+                name: 'DNS Check Status'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.available
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'dns.ns_check[{$DNS_DOMAIN},{#NS_SERVER}]'
+              tags:
+                - tag: integration
+                  value: dns_health
+                - tag: ns_server
+                  value: '{#NS_SERVER}'
+              trigger_prototypes:
+                - uuid: cbe75ddfac344b6e86b5caf5ed44c7ab
+                  expression: 'last(/Domain Health/dns.ns.available[{$DNS_DOMAIN},{#NS_SERVER}])=0'
+                  name: 'NS Server {#NS_SERVER} Unavailable on {$DNS_DOMAIN}'
+                  priority: HIGH
+                  description: 'Nameserver {#NS_SERVER} is not responding to DNS queries.'
+                  tags:
+                    - tag: dns_check
+                      value: ns_availability
+                    - tag: ns_server
+                      value: '{#NS_SERVER}'
+            - uuid: bac64ccefb234a5e85a4bfe4dc33b6fa
+              name: 'NS Server {#NS_SERVER} Latency'
+              type: DEPENDENT
+              key: 'dns.ns.latency[{$DNS_DOMAIN},{#NS_SERVER}]'
+              delay: '0'
+              history: 30d
+              value_type: FLOAT
+              units: ms
+              description: 'DNS query latency to NS server {#NS_SERVER} in milliseconds'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.latency_ms
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '-1'
+              master_item:
+                key: 'dns.ns_check[{$DNS_DOMAIN},{#NS_SERVER}]'
+              tags:
+                - tag: integration
+                  value: dns_health
+                - tag: ns_server
+                  value: '{#NS_SERVER}'
+              trigger_prototypes:
+                - uuid: dce86eea0d454c7f87c6dba6fe55d8bc
+                  expression: 'last(/Domain Health/dns.ns.latency[{$DNS_DOMAIN},{#NS_SERVER}])>{$DNS_NS_LATENCY_WARNING}'
+                  name: 'NS Server {#NS_SERVER} High Latency on {$DNS_DOMAIN}'
+                  priority: WARNING
+                  description: 'Nameserver {#NS_SERVER} latency exceeds {$DNS_NS_LATENCY_WARNING}ms threshold.'
+                  dependencies:
+                    - name: 'NS Server {#NS_SERVER} Unavailable on {$DNS_DOMAIN}'
+                      expression: 'last(/Domain Health/dns.ns.available[{$DNS_DOMAIN},{#NS_SERVER}])=0'
+                  tags:
+                    - tag: dns_check
+                      value: ns_latency
+                    - tag: ns_server
+                      value: '{#NS_SERVER}'
+            - uuid: f8b42aacda014e3c8382fdc2ba11f4de
+              name: 'NS Server {#NS_SERVER} Check'
+              type: EXTERNAL
+              key: 'dns.ns_check[{$DNS_DOMAIN},{#NS_SERVER}]'
+              delay: 5m
+              history: 30d
+              value_type: TEXT
+              trends: '0'
+              description: 'Full check data for NS server {#NS_SERVER}'
+              tags:
+                - tag: integration
+                  value: dns_health
+                - tag: ns_server
+                  value: '{#NS_SERVER}'
+          graph_prototypes:
+            - uuid: edf97ffb1e564d8a88d7ecb7af66e9cd
+              name: 'NS Server {#NS_SERVER} Latency'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Domain Health'
+                    key: 'dns.ns.latency[{$DNS_DOMAIN},{#NS_SERVER}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$DNS_DOMAIN}'
+          description: 'The domain name to monitor (e.g., example.com)'
+        - macro: '{$DNS_EXPIRY_INFO}'
+          value: '90'
+          description: 'Days until expiry threshold for info alerts (default: 90)'
+        - macro: '{$DNS_EXPIRY_WARNING}'
+          value: '45'
+          description: 'Days until expiry threshold for warning alerts (default: 45)'
+        - macro: '{$DNS_HEALTH_CRITICAL}'
+          value: '50'
+          description: 'Health score threshold for critical alerts'
+        - macro: '{$DNS_HEALTH_WARNING}'
+          value: '75'
+          description: 'Health score threshold for warning alerts'
+        - macro: '{$DNS_LATENCY_WARNING}'
+          value: '500'
+          description: 'DNS query latency threshold in ms for warning alerts (default: 500)'
+        - macro: '{$DNS_NAMESERVER}'
+          description: 'DNS nameserver to use (blank = system resolver)'
+        - macro: '{$DNS_NS_LATENCY_WARNING}'
+          value: '200'
+          description: 'NS server latency threshold in ms for warning alerts (default: 200)'
+        - macro: '{$DNS_TIMEOUT}'
+          value: '10'
+          description: 'DNS query timeout in seconds (default: 10)'
+      dashboards:
+        - uuid: 2e5c45e5625e48d49134dcb42b9f2b09
+          name: 'Domain Health Overview'
+          display_period: '3600'
+          pages:
+            - name: 'Health Summary'
+              widgets:
+                - type: GAUGE
+                  name: 'Health Score'
+                  width: '6'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.health.score[{$DNS_DOMAIN}]'
+                - type: GRAPH
+                  name: 'Health Score Over Time'
+                  'y': '4'
+                  width: '12'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.health.score[{$DNS_DOMAIN}]'
+                - type: DATA_TABLE
+                  name: 'DNS Check Status'
+                  x: '6'
+                  width: '6'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.caa.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dkim.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dmarc.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.enabled[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.mx.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.ns.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.soa.valid[{$DNS_DOMAIN}]'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.spf.valid[{$DNS_DOMAIN}]'
+            - name: 'Email Authentication'
+              widgets:
+                - type: SINGLE_VALUE
+                  name: 'SPF Status'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.spf.valid[{$DNS_DOMAIN}]'
+                - type: TEXT
+                  name: 'SPF Error'
+                  'y': '3'
+                  width: '6'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.spf.error[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'DMARC Status'
+                  x: '4'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dmarc.valid[{$DNS_DOMAIN}]'
+                - type: TEXT
+                  name: 'DMARC Error'
+                  x: '6'
+                  'y': '3'
+                  width: '6'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dmarc.error[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'DKIM Status'
+                  x: '8'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dkim.valid[{$DNS_DOMAIN}]'
+            - name: 'DNSSEC & Security'
+              widgets:
+                - type: SINGLE_VALUE
+                  name: 'DNSSEC Enabled'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.enabled[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  x: '4'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.valid[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'CAA Records Valid'
+                  x: '8'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.caa.valid[{$DNS_DOMAIN}]'
+            - name: 'Registrar Info'
+              widgets:
+                - type: TEXT
+                  name: 'WHOIS Data'
+                  width: '12'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.whois[{$DNS_DOMAIN}]'
+            - name: 'Active Triggers'
+              widgets:
+                - type: TRIGGER_OVERVIEW
+                  name: 'DNS Health Triggers'
+                  width: '12'
+                  height: '4'
+            - name: 'DNS Performance'
+              widgets:
+                - type: GAUGE
+                  name: 'DNS Query Latency'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.latency.ms[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'Domain Age (Days)'
+                  'y': '3'
+                  width: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.rdap.domain_age[{$DNS_DOMAIN}]'
+                - type: GRAPH
+                  name: 'DNS Latency Trend'
+                  x: '4'
+                  width: '8'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.latency.ms[{$DNS_DOMAIN}]'
+            - name: 'Email Security'
+              widgets:
+                - type: GAUGE
+                  name: 'Email Security Score'
+                  width: '4'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.email_security.score[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: SPF
+                  x: '4'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.spf.valid[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: TLS-RPT
+                  x: '4'
+                  'y': '2'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.tls_rpt.configured[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: DKIM
+                  x: '6'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dkim.valid[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: BIMI
+                  x: '6'
+                  'y': '2'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.bimi.configured[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: DMARC
+                  x: '8'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dmarc.valid[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: MTA-STS
+                  x: '10'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.mta_sts.configured[{$DNS_DOMAIN}]'
+            - name: 'DNSSEC Details'
+              widgets:
+                - type: SINGLE_VALUE
+                  name: 'DNSSEC Enabled'
+                  width: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.enabled[{$DNS_DOMAIN}]'
+                - type: TEXT
+                  name: Algorithms
+                  'y': '2'
+                  width: '6'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.algorithms[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'Chain Valid'
+                  x: '3'
+                  width: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.chain_valid[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'KSK Count'
+                  x: '6'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.ksk_count[{$DNS_DOMAIN}]'
+                - type: TEXT
+                  name: 'Failure Reason'
+                  x: '6'
+                  'y': '2'
+                  width: '6'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.failure_description[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'ZSK Count'
+                  x: '8'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.zsk_count[{$DNS_DOMAIN}]'
+                - type: SINGLE_VALUE
+                  name: 'RRSIG Expiry (Days)'
+                  x: '10'
+                  width: '2'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Domain Health'
+                        key: 'dns.dnssec.rrsig_expiry_days[{$DNS_DOMAIN}]'
+      valuemaps:
+        - uuid: 7e8f9a0b1c2d4e4f8a6b7c8d9e0f1a2b
+          name: 'DNS Check Status'
+          mappings:
+            - value: '0'
+              newvalue: Invalid
+            - value: '1'
+              newvalue: Valid
+        - uuid: 8f9a0b1c2d3e4f5a8b7c8d9e0f1a2b3c
+          name: 'DNSSEC Status'
+          mappings:
+            - value: '0'
+              newvalue: Disabled
+            - value: '1'
+              newvalue: Enabled
+  triggers:
+    - uuid: dfcaadd5e8f74a9cb2b6eaab09d7f5b4
+      expression: 'last(/Domain Health/dns.dane.record_count[{$DNS_DOMAIN}])>0 and last(/Domain Health/dns.dane.valid[{$DNS_DOMAIN}])=0'
+      name: 'DANE TLSA Validation Failed on {$DNS_DOMAIN}'
+      priority: WARNING
+      description: 'DANE TLSA records exist but validation against the server certificate failed. Check certificate or TLSA record configuration.'
+      tags:
+        - tag: dns_check
+          value: dane
+        - tag: rfc
+          value: RFC6698
+    - uuid: ceb99cc4d7e64f8ba1a5d9fab8c6e4a3
+      expression: 'last(/Domain Health/dns.dnssec.enabled[{$DNS_DOMAIN}])=1 and last(/Domain Health/dns.dnssec.chain_valid[{$DNS_DOMAIN}])=0'
+      name: 'DNSSEC Chain Invalid on {$DNS_DOMAIN}'
+      priority: HIGH
+      description: 'DNSSEC is enabled but chain of trust validation failed. DNS lookups may fail for DNSSEC-validating resolvers.'
+      tags:
+        - tag: dns_check
+          value: dnssec
+        - tag: rfc
+          value: RFC4035

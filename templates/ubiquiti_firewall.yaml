@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: 56f842074baf4904a12b5bf3cbafda82
       template: 'Ubiquiti Firewall'
       name: 'Ubiquiti Firewall'
+      vendor:
+        name: 'Ubiquiti'
+        version: '4.x'
       description: |
         Overview
         This template monitors Ubiquiti UniFi Security Gateway (USG), UniFi Dream Machine (UDM), and EdgeRouter series devices using SNMPv2.

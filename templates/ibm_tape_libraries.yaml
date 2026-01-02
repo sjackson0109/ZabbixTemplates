@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: 92000e2973064387852d6dfd83dcbdec
@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: ec9518aebaf9473c8e47c41f56f2f385
       template: 'Tape Libraries'
       name: 'Tape Libraries'
+      vendor:
+        name: 'IBM'
+        version: '8.x'
       description: |
         Overview
         Complete SNMP template for monitoring IBM, Dell, and Tandberg tape libraries.
@@ -53,7 +56,7 @@ zabbix_export:
         Notes
         - Entity discovery uses substring matching on entPhysicalDescr.
         - Device compatibility depends on MIB support in SNMP agent.
-        - Optimized for Zabbix 7.0+ and SNMPv2 environments.
+        - Optimised for Zabbix 7.0+ and SNMPv2 environments.
 
         Author: Simon Jackson / @sjackson0109
       groups:
@@ -157,23 +160,64 @@ zabbix_export:
               expression: '{Tape Libraries:library.door.last()} = 2'
               priority: WARNING
               description: 'Library access door is open'
-        - uuid: 78dce4e7d45541bfbecd86f25fc8c0ad
-          name: 'Drive Alert Summary'
-          type: SNMP_AGENT
-          snmp_oid: 'SNIA-SML-MIB::trapDriveAlertSummary'
-          key: 'drives.alerts'
-          value_type: UNSIGNED
-          tags:
-            - tag: component
-              value: alert
-          triggers:
-            - uuid: 54bd8c24115b42d6aed67ba4e0a1d0a6
-              name: 'Drive alert count > 0'
-              expression: '{Tape Libraries:drives.alerts.last()} > 0'
-              priority: HIGH
-              description: 'One or more drive errors detected'
-
-
+      discovery_rules:
+        - uuid: 41e0dcd7162e486ab0401cf52b9bb176
+          name: 'Fan Discovery'
+          key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
+          delay: 1h
+          lifetime: 7d
+          description: 'Discovers fans in the tape library.'
+          item_prototypes:
+            - uuid: c835e13fe696475cba89f15a0866ba20
+              name: 'Fan {#FAN.ID} Operational State'
+              key: 'fan.state[{#FAN.ID}]'
+              type: DEPENDENT
+              value_type: UNSIGNED
+              master_item:
+                key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
+          trigger_prototypes:
+            - uuid: cd82aa8df39445a2b013cc57da1175c9
+              name: 'Fan {#FAN.ID} Failure'
+              expression: 'last(/Tape Libraries/fan.state[{#FAN.ID}])<>1'
+              priority: AVERAGE
+              description: 'Fan {#FAN.ID} is not operational.'
+        - uuid: 6c4d3ee6ac7642a0a6c3ec17d16489b0
+          name: 'Power Supply Discovery'
+          key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
+          delay: 1h
+          lifetime: 7d
+          description: 'Discovers power supplies in the tape library.'
+          item_prototypes:
+            - uuid: 3afd2c2d33c84e9d98b3ba29b4cbda99
+              name: 'Power Supply {#PSU.ID} Operational State'
+              key: 'psu.state[{#PSU.ID}]'
+              type: DEPENDENT
+              value_type: UNSIGNED
+              master_item:
+                key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
+          trigger_prototypes:
+            - uuid: 25a5ba7598bf41018e94f6581d780308
+              name: 'Power Supply {#PSU.ID} Failure'
+              expression: 'last(/Tape Libraries/psu.state[{#PSU.ID}])<>1'
+              priority: AVERAGE
+              description: 'Power Supply {#PSU.ID} is not operational.'
+        - uuid: 0b667f017d5f4f1194b1a8178d73e0c8
+          name: 'Library Status Discovery'
+          key: 'snmpwalk["DELL-TL2000-MIB::libraryState"]'
+          delay: 1h
+          lifetime: 7d
+          description: 'Discovers library status metrics.'
+          item_prototypes:
+            - uuid: 9112b72f01aa4b6da1535ad0d7733605
+              name: 'Library {#LIBRARY.ID} Status'
+              key: 'library.status[{#LIBRARY.ID}]'
+              type: DEPENDENT
+              value_type: UNSIGNED
+              master_item:
+                key: 'snmpwalk["DELL-TL2000-MIB::libraryState"]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
       valuemaps:
         - uuid: c033100906c040f1b8a56b5e51660d3c
           name: 'TapeLibraryStatus'
@@ -186,3 +230,43 @@ zabbix_export:
               newvalue: 'Standby'
             - value: '0'
               newvalue: 'Unknown'
+  graphs:
+    - uuid: 025438ab54d4458292a83fcd5e161dbe
+      name: 'Drive Alert Summary'
+      graph_items:
+        - color: FF0000
+          drawtype: SINGLE_LINE
+          item:
+            host: 'Tape Libraries'
+            key: 'drives.alerts'
+    - uuid: 2bb6db4979c84e60a742d68da41f33ef
+      name: 'Slot and Drive Count Comparison'
+      graph_items:
+        - sortorder: '0'
+          color: 0000FF
+          drawtype: SINGLE_LINE
+          item:
+            host: 'Tape Libraries'
+            key: 'library.slots'
+        - sortorder: '1'
+          color: 00FF00
+          drawtype: SINGLE_LINE
+          item:
+            host: 'Tape Libraries'
+            key: 'library.drives'
+    - uuid: 9402a79c83d04c379d47a2f4df1af996
+      name: 'Transport Robot Count'
+      graph_items:
+        - color: FFA500
+          drawtype: SINGLE_LINE
+          item:
+            host: 'Tape Libraries'
+            key: 'library.transports'
+    - uuid: 9e56e72a5c1348668b3f251fec0c06fa
+      name: 'Device Uptime'
+      graph_items:
+        - color: '800080'
+          drawtype: SINGLE_LINE
+          item:
+            host: 'Tape Libraries'
+            key: 'sys.uptime'

@@ -1,4 +1,4 @@
-# SIP OPTIONS Check Script
+﻿# SIP OPTIONS Check Script
 
 ### Author: Simon Jackson / sjackson0109  
 ### Created: 2025/02/17
@@ -201,6 +201,6 @@ The script classifies SIP responses into categories:
 - **5xx - Server Error (Critical)**
 - **6xx - Global Failure (Critical)**
 
-## License
-This project is licensed under the **Apache License 2.0**.  
-See the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) for details.
+## Licence
+This project is licensed under the **Apache Licence 2.0**.  
+See the [Apache Licence 2.0](https://www.apache.org/licenses/Licence-2.0) for details.

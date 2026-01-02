@@ -58,7 +58,7 @@ def find_templates(templates_path: Path) -> List[Path]:
     return all_templates
 
 
-def validate_template(python_exe: Path, validator_script: Path, template_path: Path) -> Tuple[bool, str]:
+def validate_template(python_exe: str, validator_script: Path, template_path: Path) -> Tuple[bool, str]:
     """
     Run validation on a single template
     
@@ -67,9 +67,11 @@ def validate_template(python_exe: Path, validator_script: Path, template_path: P
     """
     try:
         result = subprocess.run(
-            [str(python_exe), str(validator_script), str(template_path)],
+            [python_exe, str(validator_script), str(template_path)],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=30
         )
         output = result.stdout + result.stderr
@@ -109,11 +111,19 @@ def main():
         templates_path = repo_root / "templates"
     
     validator_script = script_dir / "validate_zabbix_template.py"
-    python_exe = repo_root / ".venv" / "Scripts" / "python.exe"
     
-    # Handle Unix-style venv path
-    if not python_exe.exists():
-        python_exe = repo_root / ".venv" / "bin" / "python"
+    # Try to find Python executable - prefer venv, fallback to system Python
+    python_exe = None
+    venv_python_win = repo_root / ".venv" / "Scripts" / "python.exe"
+    venv_python_unix = repo_root / ".venv" / "bin" / "python"
+    
+    if venv_python_win.exists():
+        python_exe = str(venv_python_win)
+    elif venv_python_unix.exists():
+        python_exe = str(venv_python_unix)
+    else:
+        # Fallback to system Python (the one running this script)
+        python_exe = sys.executable
     
     # Verify paths exist
     if not templates_path.exists():
@@ -122,11 +132,6 @@ def main():
     
     if not validator_script.exists():
         print(colorize(f"Error: Validator script not found: {validator_script}", Colors.RED), file=sys.stderr)
-        sys.exit(1)
-    
-    if not python_exe.exists():
-        print(colorize(f"Error: Python executable not found: {python_exe}", Colors.RED), file=sys.stderr)
-        print(colorize("Please ensure virtual environment is set up.", Colors.RED), file=sys.stderr)
         sys.exit(1)
     
     # Find all templates

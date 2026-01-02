@@ -81,12 +81,12 @@ LIFETIME = 0x000D
 FINGERPRINT = 0x8028
 
 DEFAULTS = [
-    {"{#TRANSPORT}": "udp", "{#MODE}": "stun", "PORT": 3478},
-    {"{#TRANSPORT}": "tcp", "{#MODE}": "stun", "PORT": 3478},
-    {"{#TRANSPORT}": "tls", "{#MODE}": "stun", "PORT": 5349},
-    {"{#TRANSPORT}": "udp", "{#MODE}": "turn", "PORT": 3478},
-    {"{#TRANSPORT}": "tcp", "{#MODE}": "turn", "PORT": 3478},
-    {"{#TRANSPORT}": "tls", "{#MODE}": "turn", "PORT": 5349},
+    {"{#TRANSPORT}": "udp", "{#MODE}": "stun", "{#PORT}": 3478},
+    {"{#TRANSPORT}": "tcp", "{#MODE}": "stun", "{#PORT}": 3478},
+    {"{#TRANSPORT}": "tls", "{#MODE}": "stun", "{#PORT}": 5349},
+    {"{#TRANSPORT}": "udp", "{#MODE}": "turn", "{#PORT}": 3478},
+    {"{#TRANSPORT}": "tcp", "{#MODE}": "turn", "{#PORT}": 3478},
+    {"{#TRANSPORT}": "tls", "{#MODE}": "turn", "{#PORT}": 5349},
 ]
 
 def build_transaction_id():

@@ -1,4 +1,4 @@
-# Zabbix Template: Ubiquiti Firewall
+﻿# Zabbix Template: Ubiquiti Firewall
 
 ### Author: Simon Jackson / sjackson0109  
 ### Created: 2025/04/29  
@@ -88,6 +88,6 @@ Production-grade SNMPv2-based Zabbix template designed to monitor Ubiquiti EdgeR
 - `ubiquiti_firewall.yaml` – Zabbix Template (YAML 7.0)
 - `README.md` – Template documentation
 
-## License
+## Licence
 
-Distributed under a permissive license. Attribution appreciated.
+Distributed under a permissive Licence. Attribution appreciated.

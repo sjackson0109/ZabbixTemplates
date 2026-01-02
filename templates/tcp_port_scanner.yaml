@@ -7,6 +7,9 @@ zabbix_export:
     - uuid: 4856619639134fd6a4e982c70f4f00e1
       template: 'TCP Port Scanner'
       name: 'TCP Port Scanner'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
       description: |
         Overview:
         This template is designed to detect and monitor the state of commonly used TCP ports.
@@ -34,9 +37,9 @@ zabbix_export:
                 - '$.data[*]'
           item_prototypes:
             - uuid: 243cb38e257b442ca7dc32ec9db9f7ce
-              name: 'TCP Port {$TCPPORT} Status'
+              name: 'TCP Port {#TCPPORT} Status'
               type: EXTERNAL
-              key: 'get_tcp_port_scan.py[''{HOST.IP}'',''--check'',{$TCPPORT}]'
+              key: 'get_tcp_port_scan.py[''{HOST.IP}'',''--check'',{#TCPPORT}]'
               delay: 5m
               value_type: FLOAT
               preprocessing:
@@ -51,10 +54,10 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: d7f60d8652df4e298f4f8d8c93a8f62e
                   expression: |
-                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{$TCPPORT}])=0
+                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}])=0
                     and
-                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{$TCPPORT}],#1),{$PORTSCAN_AUTHORISED_PORTS})=0
-                  name: 'Portscan: TCP/{$TCPPORT} found CLOSED (SanityCheck)'
+                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}],#1),{$PORTSCAN_AUTHORISED_PORTS})=0
+                  name: 'Portscan: TCP/{#TCPPORT} found CLOSED (SanityCheck)'
                   priority: INFO
                   manual_close: 'YES'
                   tags:
@@ -66,10 +69,10 @@ zabbix_export:
                       value: 'IsThisNormal?'
                 - uuid: 3614a177bef744ebaa51b69450e12262
                   expression: |
-                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{$TCPPORT}])=1
+                    last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}])=1
                     and
-                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{$TCPPORT}],#1),{$PORTSCAN_BAD_PRACTICE_PORTS})=1
-                  name: 'Portscan: TCP/{$TCPPORT} found OPEN (bad practice)'
+                    in(last(/TCP Port Scanner/get_tcp_port_scan.py['{HOST.IP}','--check',{#TCPPORT}],#1),{$PORTSCAN_BAD_PRACTICE_PORTS})=1
+                  name: 'Portscan: TCP/{#TCPPORT} found OPEN (bad practice)'
                   priority: HIGH
                   tags:
                     - tag: Portscan

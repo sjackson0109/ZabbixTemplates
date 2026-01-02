@@ -1,4 +1,4 @@
-# Carel pCOWeb Zabbix Template
+﻿# Carel pCOWeb Zabbix Template
 
 ## Overview
 This template provides SNMP-based monitoring for Carel pCOWeb environmental controllers. It is designed for use with Zabbix 7.0+ and supports a wide range of alarms, sensors, and device metrics.
@@ -33,7 +33,7 @@ This template provides SNMP-based monitoring for Carel pCOWeb environmental cont
 ## Notes
 - The template uses SNMP OIDs as per Carel and Denco documentation.
 - Value mapping is included for common alarm and status codes.
-- For customizations or troubleshooting, refer to the technical manuals above.
+- For customisations or troubleshooting, refer to the technical manuals above.
 
-## License
-This template is released under the Apache License 2.0.
+## Licence
+This template is released under the Apache Licence 2.0.

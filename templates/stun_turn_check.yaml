@@ -7,6 +7,9 @@ zabbix_export:
   - uuid: a87a5290e6d04b389e343222f58104ff
     template: STUN and TURN Checks
     name: STUN and TURN Checks
+    vendor:
+      name: 'Simon Jackson'
+      version: '1.0'
     description: 'STUN/TURN monitoring template using get_stun_turn_checks.py external script.
 
       Features:
@@ -24,7 +27,10 @@ zabbix_export:
       Author: Simon Jackson (@sjackson0109)
       '
     groups:
-    - name: Templates/Network
+    - name: "Templates/Applications"
+    tags:
+    - tag: Author 
+      value: 'Simon Jackson'
     macros:
     - macro: '{$PORT}'
       value: '3478'
@@ -52,8 +58,8 @@ zabbix_export:
       lifetime: 7d
       item_prototypes:
       - uuid: 373eb1f980e246869620d11542713b31
-        name: STUN {$TRANSPORT}:{$PORT}
-        key: get_stun_turn_checks.py[{HOST.CONN},--transport,{$TRANSPORT},--port,{$PORT},--check,--timeout,{$STUN_TIMEOUT}]
+        name: STUN {#TRANSPORT}:{#PORT}
+        key: get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{#PORT},--check,--timeout,{$STUN_TIMEOUT}]
         value_type: FLOAT
         delay: 2m
         history: 7d
@@ -61,19 +67,14 @@ zabbix_export:
         description: 'STUN service status: 1=OK, 0=FAIL'
         valuemap:
           name: stun.turn.status
-        filter:
-          conditions:
-          - macro: '{#MODE}'
-            value: stun
-            formulaid: A
         trigger_prototypes:
         - uuid: 01d21617818440538ccc6d0c9f6d8bb2
-          name: STUN {$TRANSPORT}:{$PORT} is down
-          expression: last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{$TRANSPORT},--port,{$PORT},--check,--timeout,{$STUN_TIMEOUT}])=0
+          name: STUN {#TRANSPORT}:{#PORT} is down
+          expression: last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{#PORT},--check,--timeout,{$STUN_TIMEOUT}])=0
           priority: HIGH
       - uuid: 21b7229ee9ec491fa390874b2cbda3fc
-        name: TURN {$TRANSPORT}:{$PORT}
-        key: get_stun_turn_checks.py[{HOST.CONN},--transport,{$TRANSPORT},--port,{$PORT},--check,--turn-mode,--username,{$TURN_USERNAME},--password,{$TURN_PASSWORD},--timeout,{$TURN_TIMEOUT}]
+        name: TURN {#TRANSPORT}:{#PORT}
+        key: get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{#PORT},--check,--turn-mode,--username,{$TURN_USERNAME},--password,{$TURN_PASSWORD},--timeout,{$TURN_TIMEOUT}]
         value_type: FLOAT
         delay: 2m
         history: 7d
@@ -81,20 +82,16 @@ zabbix_export:
         description: 'TURN service status: 1=OK, 0=FAIL'
         valuemap:
           name: stun.turn.status
-        filter:
-          conditions:
-          - macro: '{#MODE}'
-            value: turn
-            formulaid: A
         trigger_prototypes:
         - uuid: bba50316953f4988b04ffae3225a7edb
-          name: TURN {$TRANSPORT}:{$PORT} is down
-          expression: last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{$TRANSPORT},--port,{$PORT},--check,--turn-mode,--username,{$TURN_USERNAME},--password,{$TURN_PASSWORD},--timeout,{$TURN_TIMEOUT}])=0
+          name: TURN {#TRANSPORT}:{#PORT} is down
+          expression: last(/STUN and TURN Checks/get_stun_turn_checks.py[{HOST.CONN},--transport,{#TRANSPORT},--port,{#PORT},--check,--turn-mode,--username,{$TURN_USERNAME},--password,{$TURN_PASSWORD},--timeout,{$TURN_TIMEOUT}])=0
           priority: HIGH
-  valuemaps:
-  - name: stun.turn.status
-    mappings:
-      - value: '0'
-        newvalue: FAIL
-      - value: '1'
-        newvalue: OK
+    valuemaps:
+    - uuid: 4d5e6f7a8b9c4d1e8f3a4b5c6d7e8f9a
+      name: stun.turn.status
+      mappings:
+        - value: '0'
+          newvalue: FAIL
+        - value: '1'
+          newvalue: OK

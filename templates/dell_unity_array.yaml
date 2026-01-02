@@ -1,146 +1,245 @@
 zabbix_export:
   version: '7.0'
-  date: '2023-10-15T12:00:00Z'
-  groups:
-  - uuid: 992e791c595b42b2961294d8a72a4f45
-    name: Storage
+  template_groups:
+    - uuid: 992e791c595b42b2961294d8a72a4f45
+      name: Storage
   templates:
-  - uuid: db5a9c2cdc9040fba8eacb51ab0de67c
-    template: 'Dell Unity Arrays'
-    name: 'Dell Unity Arrays'
-    description: |
-      Monitors Dell Unity storage arrays via REST API using get_unity_array.py external script.
-
-      Features:
-      - Auto-discovery of Unity resources (LUNs, Pools, Disks, Ports, Batteries, etc.)
-      - Health and capacity monitoring
-      - Requires Python script get_unity_array.py in Zabbix externalscripts directory
+    - uuid: db5a9c2cdc9040fba8eacb51ab0de67c
+      template: 'Dell Unity Arrays'
+      name: 'Dell Unity Arrays'
+      description: |
+        Monitors Dell Unity storage arrays via REST API using get_unity_array.py external script.
         
-      Author: Simon Jackson / @sjackson0109
-    groups:
-      - name: Storage
-    discovery_rules:
-    # LLD for each Unity resource type
-    - uuid: 0f45ebfce67a49d5bfe3d261545d3ef4
-      name: "Unity LUN Discovery"
-      type: EXTERNAL
-      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-      delay: 15m
-      lifetime: 7d
-      description: "Discovers Unity LUNs via REST API."
-      item_prototypes:
-        - name: "LUN {#NAME} Health"
-          key: "health.lun.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Health status of LUN {#NAME}"
-        - name: "LUN {#NAME} Size Total"
-          key: "sizeTotal.lun.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Total size of LUN {#NAME}"
-        - name: "LUN {#NAME} Size Allocated"
-          key: "sizeAllocated.lun.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Allocated size of LUN {#NAME}"
-    - uuid: 1f45ebfce67a49d5bfe3d261545d3ef5
-      name: "Unity Pool Discovery"
-      type: EXTERNAL
-      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-      delay: 15m
-      lifetime: 7d
-      description: "Discovers Unity Pools via REST API."
-      item_prototypes:
-        - name: "Pool {#NAME} Health"
-          key: "health.pool.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Health status of Pool {#NAME}"
-        - name: "Pool {#NAME} Size Used"
-          key: "sizeUsedBytes.pool.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Used size of Pool {#NAME}"
-        - name: "Pool {#NAME} Size Total"
-          key: "sizeTotalBytes.pool.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Total size of Pool {#NAME}"
-        - name: "Pool {#NAME} Size Subscribed"
-          key: "sizeSubscribedBytes.pool.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Subscribed size of Pool {#NAME}"
-    - uuid: 2f45ebfce67a49d5bfe3d261545d3ef6
-      name: "Unity Disk Discovery"
-      type: EXTERNAL
-      key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-      delay: 15m
-      lifetime: 7d
-      description: "Discovers Unity Disks via REST API."
-      item_prototypes:
-        - name: "Disk {#NAME} Health"
-          key: "health.disk.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Health status of Disk {#NAME}"
-        - name: "Disk {#NAME} Model"
-          key: "model.disk.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Model of Disk {#NAME}"
-        - name: "Disk {#NAME} Serial"
-          key: "serial.disk.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Serial number of Disk {#NAME}"
-        - name: "Disk {#NAME} Capacity"
-          key: "capacity.disk.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Capacity of Disk {#NAME}"
-        - name: "Disk {#NAME} Firmware"
-          key: "firmware.disk.[{#NAME}]"
-          type: DEPENDENT
-          value_type: TEXT
-          master_item:
-            key: get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery"]
-          description: "Firmware version of Disk {#NAME}"
-    # Add similar discovery_rules for ethernetPort, fcPort, sasPort, battery, etc. as needed
-      
-    macros:
-    - macro: '{$UNITY_PASSWORD}'
-      value: ''
-      description: 'API password for Unity array authentication.'
-    - macro: '{$UNITY_PORT}'
-      value: '443'
-      description: 'API port for Unity array (default 443).'
-    - macro: '{$UNITY_TLS_VERIFY}'
-      value: '0'
-      description: '0 = ignore certs (default, current behavior), 1 = enforce cert check'
-    - macro: '{$UNITY_USER}'
-      value: ''
-      description: 'API username for Unity array authentication.'
+        Features:
+        - Auto-discovery of Unity resources (LUNs, Pools, Disks, Ports, Batteries, etc.)
+        - Health and capacity monitoring
+        - Requires Python script get_unity_array.py in Zabbix externalscripts directory
+          
+        Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: Dell
+        version: 5.x
+      groups:
+        - name: Storage
+      discovery_rules:
+        - uuid: 2f45ebfce67a49d5bfe3d261545d3ef6
+          name: 'Unity Disk Discovery'
+          type: EXTERNAL
+          key: 'get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery","--type=disk"]'
+          delay: 15m
+          description: 'Discovers Unity Disks via REST API.'
+          item_prototypes:
+            - uuid: 5c6d7e8f9a0b4c2d8e4f5a6b7c8d9e0f
+              name: 'Disk {#NAME} Capacity'
+              type: DEPENDENT
+              key: 'capacity.disk[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Capacity of Disk {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.rawSize
+              master_item:
+                key: 'disk.data[{#NAME}]'
+            - uuid: 9eedde192e534956ac588774a8d4e48b
+              name: 'Disk {#NAME} Data'
+              type: EXTERNAL
+              key: 'disk.data[{#NAME}]'
+              delay: 5m
+              value_type: TEXT
+              trends: '0'
+              description: 'Raw data for Disk {#NAME}'
+            - uuid: 6d7e8f9a0b1c4d3e8f5a6b7c8d9e0f1a
+              name: 'Disk {#NAME} Firmware'
+              type: DEPENDENT
+              key: 'firmware.disk[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Firmware version of Disk {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.version
+              master_item:
+                key: 'disk.data[{#NAME}]'
+            - uuid: 2f3a4b5c6d7e4f9a8b1c2d3e4f5a6b7c
+              name: 'Disk {#NAME} Health'
+              type: DEPENDENT
+              key: 'health.disk[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Health status of Disk {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.health
+              master_item:
+                key: 'disk.data[{#NAME}]'
+            - uuid: 3a4b5c6d7e8f4a0b9c2d3e4f5a6b7c8d
+              name: 'Disk {#NAME} Model'
+              type: DEPENDENT
+              key: 'model.disk[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Model of Disk {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.model
+              master_item:
+                key: 'disk.data[{#NAME}]'
+            - uuid: 4b5c6d7e8f9a4b1c8d3e4f5a6b7c8d9e
+              name: 'Disk {#NAME} Serial'
+              type: DEPENDENT
+              key: 'serial.disk[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Serial number of Disk {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.serialNumber
+              master_item:
+                key: 'disk.data[{#NAME}]'
+        - uuid: 0f45ebfce67a49d5bfe3d261545d3ef4
+          name: 'Unity LUN Discovery'
+          type: EXTERNAL
+          key: 'get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery","--type=lun"]'
+          delay: 15m
+          description: 'Discovers Unity LUNs via REST API.'
+          item_prototypes:
+            - uuid: 5e6f7a8b9c0d4e2f8a4b5c6d7e8f9a0b
+              name: 'LUN {#NAME} Health'
+              type: DEPENDENT
+              key: 'health.lun[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Health status of LUN {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.health
+              master_item:
+                key: 'lun.data[{#NAME}]'
+            - uuid: 5dfed71749d24835bf59d4af040ff489
+              name: 'LUN {#NAME} Data'
+              type: EXTERNAL
+              key: 'lun.data[{#NAME}]'
+              delay: 5m
+              value_type: TEXT
+              trends: '0'
+              description: 'Raw data for LUN {#NAME}'
+            - uuid: 7a8b9c0d1e2f4a3b8c6d7e8f9a0b1c2d
+              name: 'LUN {#NAME} Size Allocated'
+              type: DEPENDENT
+              key: 'sizeAllocated.lun[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Allocated size of LUN {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sizeAllocated
+              master_item:
+                key: 'lun.data[{#NAME}]'
+            - uuid: 6f7a8b9c0d1e4f3a8b5c6d7e8f9a0b1c
+              name: 'LUN {#NAME} Size Total'
+              type: DEPENDENT
+              key: 'sizeTotal.lun[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Total size of LUN {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sizeTotal
+              master_item:
+                key: 'lun.data[{#NAME}]'
+        - uuid: 1f45ebfce67a49d5bfe3d261545d3ef5
+          name: 'Unity Pool Discovery'
+          type: EXTERNAL
+          key: 'get_unity_array.py["--api-ip={HOST.IP}","--api-port={$UNITY_PORT}","--api-user={$UNITY_USER}","--api-password={$UNITY_PASSWORD}","--storage-name={HOST.NAME}","--discovery","--type=pool"]'
+          delay: 15m
+          description: 'Discovers Unity Pools via REST API.'
+          item_prototypes:
+            - uuid: 8b9c0d1e2f3a4b5c8d7e8f9a0b1c2d3e
+              name: 'Pool {#NAME} Health'
+              type: DEPENDENT
+              key: 'health.pool[{#NAME}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              description: 'Health status of Pool {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.health
+              master_item:
+                key: 'pool.data[{#NAME}]'
+            - uuid: 6d668113fa57419087df2a529ca11102
+              name: 'Pool {#NAME} Data'
+              type: EXTERNAL
+              key: 'pool.data[{#NAME}]'
+              delay: 5m
+              value_type: TEXT
+              trends: '0'
+              description: 'Raw data for Pool {#NAME}'
+            - uuid: 1e2f3a4b5c6d4e8f9a0b1c2d3e4f5a6b
+              name: 'Pool {#NAME} Size Subscribed'
+              type: DEPENDENT
+              key: 'sizeSubscribedBytes.pool[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Subscribed size of Pool {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sizeSubscribedBytes
+              master_item:
+                key: 'pool.data[{#NAME}]'
+            - uuid: 0d1e2f3a4b5c4d7e8f9a0b1c2d3e4f5a
+              name: 'Pool {#NAME} Size Total'
+              type: DEPENDENT
+              key: 'sizeTotalBytes.pool[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Total size of Pool {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sizeTotalBytes
+              master_item:
+                key: 'pool.data[{#NAME}]'
+            - uuid: 9c0d1e2f3a4b4c5d8e8f9a0b1c2d3e4f
+              name: 'Pool {#NAME} Size Used'
+              type: DEPENDENT
+              key: 'sizeUsedBytes.pool[{#NAME}]'
+              delay: '0'
+              units: B
+              description: 'Used size of Pool {#NAME}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sizeUsedBytes
+              master_item:
+                key: 'pool.data[{#NAME}]'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$UNITY_PASSWORD}'
+          description: 'API password for Unity array authentication.'
+        - macro: '{$UNITY_PORT}'
+          value: '443'
+          description: 'API port for Unity array (default 443).'
+        - macro: '{$UNITY_TLS_VERIFY}'
+          value: '0'
+          description: '0 = ignore certs (default, current behavior), 1 = enforce cert check'
+        - macro: '{$UNITY_USER}'
+          description: 'API username for Unity array authentication.'

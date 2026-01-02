@@ -1,7 +1,7 @@
-# TLS Compliance Checker Zabbix Template Documentation
+﻿# TLS Compliance Checker Zabbix Template Documentation
 
 ## Overview
-The **TLS Compliance Checker** Zabbix template provides automated monitoring and compliance validation for SSL/TLS endpoints. It is designed to help organizations ensure that their public and internal services adhere to security best practices, regulatory requirements, and organizational policies regarding TLS protocol and cipher usage.
+The **TLS Compliance Checker** Zabbix template provides automated monitoring and compliance validation for SSL/TLS endpoints. It is designed to help organisations ensure that their public and internal services adhere to security best practices, regulatory requirements, and organisational policies regarding TLS protocol and cipher usage.
 
 This template leverages an external script (`get_tls_handshake.py`) to perform real-time handshake tests, protocol/cipher enumeration, and compliance checks. It is suitable for monitoring web servers, mail servers, APIs, and any service supporting SSL/TLS.
 
@@ -13,7 +13,7 @@ This template leverages an external script (`get_tls_handshake.py`) to perform r
   - Checks for deprecated/insecure protocols (SSLv2, SSLv3, TLS 1.0/1.1)
   - Detects weak ciphers (RC4, 3DES, export-grade, etc.)
   - Validates certificate expiration, chain, and hostname
-  - Customizable compliance policy via macros
+  - Customisable compliance policy via macros
 - **Dynamic Discovery:**
   - Supports LLD for multiple endpoints per host
   - Auto-discovers new endpoints based on macros or external sources
@@ -100,5 +100,5 @@ This template leverages an external script (`get_tls_handshake.py`) to perform r
 - [Mozilla TLS Configuration Generator](https://ssl-config.mozilla.org/)
 - [Python pyOpenSSL Documentation](https://pyopenssl.org/en/stable/)
 
-## License
-This template and documentation are provided under the **Apache License 2.0**. See the [LICENSE.md](../LICENSE.md) file for details.
+## Licence
+This template and documentation are provided under the **Apache Licence 2.0**. See the [Licence.md](../Licence.md) file for details.
