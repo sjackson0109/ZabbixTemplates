@@ -29,7 +29,7 @@ To ensure optimal Zabbix database performance, use our comprehensive optimisatio
 **Quick Start**:
 ```bash
 # Analyse all templates for optimisation opportunities
-python scripts/analyze_template_optimisation.py
+python scripts/analyse_template_optimisation.py
 ```
 
 **📊 Key Benefits**:
@@ -37,8 +37,6 @@ python scripts/analyze_template_optimisation.py
 - **70-90% fewer database writes** via improved collection frequencies
 - **3-5x faster dashboard performance** through query optimisation
 - **40-60% CPU load reduction** on Zabbix servers
-
-**� Key Benefits**:
 - Detailed optimisation recommendations for each template
 - Implementation strategy with phased approach
 - Risk assessment and testing guidelines
@@ -63,86 +61,52 @@ The validator checks:
 ## Structure
 All custom monitoring scripts reside under this repository. Below are the available scripts with their respective documentation:
 
-### Available Scripts:
-- **[validate_zabbix_template.py](docs/Validate_Template.md)** - Comprehensive Zabbix template validation tool. Validates YAML syntax, schema compliance, UUID formats, item keys, trigger expressions, and cross-references. Catches 95% of import errors before deployment.
-- **[analyze_template_optimisation.py](docs/template_optimisation_analysis.md)** - Database performance optimisation analyser. Identifies storage reduction opportunities, collection frequency improvements, and retention policy optimisations. Delivers 65-85% database storage reduction potential.
-- **[snmp_client.py](docs/SNMP-Client.md)** - Comprehensive SNMPv1/v2c/v3 client with authentication and privacy support. RFC 3414 compliant, supports MD5/SHA authentication and DES/AES encryption. Integrates with Zabbix external scripts for discovery, check, and detailed check modes.
-- **[get_domain_health.py](docs/Domain_Health.md)** - Domain health and compliance monitoring. Performs DNS record checks, DNSSEC/DANE validation, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP data retrieval, ASN lookup, and NS server monitoring. Full RFC compliance checking.
-- **[get_email_health.py](docs/Email_Health.md)** - Comprehensive email infrastructure monitoring and RFC compliance validation. Supports SPF/DKIM/DMARC authentication, MTA-STS/TLS-RPT security protocols, MX connectivity testing, SMTP protocol validation, blacklist monitoring, and deliverability assessment. Covers 14+ email RFCs with detailed health scoring.
-- **get_stun_turn_checks.py** - STUN/TURN monitoring script with full RFC 5389/5766 support. Handles STUN binding requests, TURN allocation with authentication, and UDP/TCP/TLS transports. Optimised for fast monitoring.
-- **[get_tcp_port_scan.py](docs/TCP-Port-Scan.md)** - Multithreaded TCP scanner for service discovery and exposure audits. Designed for Zabbix LLD and interactive CLI use.
-- **get_sip_options.py** - Sends SIP OPTIONS requests to a SIP server and verifies responses. Fully RFC 3261 compliant with extensive argument support.
-- **[get_sip_voip_compliance.py](docs/SIP_VoIP_Compliance.md)** - Comprehensive SIP and VoIP infrastructure compliance monitoring and RFC validation. Integrates STUN/TURN testing, TCP port scanning, TLS compliance, RTP/RTCP validation, codec support analysis, NAT traversal testing, and quality assessment. Covers 13+ VoIP/SIP RFCs with comprehensive scoring and service discovery.
-- **[get_tls_handshake.py](docs/TLS-Handshake.md)** - Tests TLS handshake capabilities of a host. Detects available SSL/TLS protocols and ciphers, and provides a compatibility report.
- - **[get_unity_array.py](docs/Unity_Array.md)** - Dell EMC Unity storage array monitoring and auto-discovery via REST API. Collects inventory, health, capacity, and status metrics for LUNs, pools, disks, ports, and more. See full usage and template details in the linked documentation.
-- **[get_web_scenarios.py](docs/Agent_Checks.md)** - Web scenario monitoring for HTTP/HTTPS endpoints using Zabbix Agents for polling, offers a clear web application availabilty monitoring and alerting facility (cleaner than web-scenarios)
-- **get_php_fpm.py** - PHP-FPM monitoring for process manager performance and health.
-- **[get_alien_vault_otx.py](docs/AlienVault_OTX.md)** - AlienVault OTX (Open Threat Exchange) integration for threat intelligence monitoring. Provides IOC discovery, severity tracking, and robust error handling. See full usage and template details in the linked documentation.
+### Available Scripts
+
+| Script | Documentation | Description |
+|--------|---------------|-------------|
+| **get_alien_vault_otx.py** | [AlienVault_OTX.md](docs/AlienVault_OTX.md) | AlienVault OTX (Open Threat Exchange) integration for threat intelligence monitoring. Provides IOC discovery, severity tracking, and robust error handling. |
+| **get_domain_health.py** | [Domain_Health.md](docs/Domain_Health.md) | Domain health and compliance monitoring. Performs DNS record checks, DNSSEC/DANE validation, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP data retrieval, ASN lookup, and NS server monitoring. Full RFC compliance checking. |
+| **get_email_health.py** | [Email_Health.md](docs/Email_Health.md) | Comprehensive email infrastructure monitoring and RFC compliance validation. Supports SPF/DKIM/DMARC authentication, MTA-STS/TLS-RPT security protocols, MX connectivity testing, SMTP protocol validation, blacklist monitoring, and deliverability assessment. Covers 14+ email RFCs with detailed health scoring. |
+| **get_php_fpm.py** | [PHP_FPM.md](docs/PHP_FPM.md) | PHP-FPM monitoring for process manager performance and health. |
+| **get_sip_health.py** | [SIP_Health.md](docs/SIP_Health.md) | Comprehensive SIP and VoIP infrastructure compliance monitoring and RFC validation. Integrates STUN/TURN testing, TCP port scanning, TLS compliance, RTP/RTCP validation, codec support analysis, NAT traversal testing, and quality assessment. Covers 13+ VoIP/SIP RFCs with comprehensive scoring and service discovery. |
+| **get_tcp_port_scan.py** | [TCP-Port-Scan.md](docs/TCP-Port-Scan.md) | Multithreaded TCP scanner for service discovery and exposure audits. Designed for Zabbix LLD and interactive CLI use. |
+| **template_optimisation_analysis.py** | [template_optimisation_analysis.md](docs/template_optimisation_analysis.md) | Database performance optimisation analyser. Identifies storage reduction opportunities, collection frequency improvements, and retention policy optimisations. Delivers 65-85% database storage reduction potential. |
+| **get_tls_health.py** | [TLS_Health.md](docs/TLS_Health.md) | Tests TLS Health; as capabilities of a host and compliance towards RFC standards. Detects available SSL/TLS protocols and ciphers, and provides a compatibility report. |
+| **get_unity_array.py** | [Unity_Array.md](docs/Unity_Array.md) | Dell EMC Unity storage array monitoring and auto-discovery via REST API. Collects inventory, health, capacity, and status metrics for LUNs, pools, disks, ports, and more. |
+| **get_web_scenarios.py** | [Web_Scenarios.md](docs/Web_Scenarios.md) | Web scenario monitoring for HTTP/HTTPS endpoints using Zabbix Agents for polling, offers a clear web application availability monitoring and alerting facility (cleaner than web-scenarios). |
+| **snmp_client.py** | [SNMP-Client.md](docs/SNMP-Client.md) | Comprehensive SNMPv1/v2c/v3 client with authentication and privacy support. RFC 3414 compliant, supports MD5/SHA authentication and DES/AES encryption. Integrates with Zabbix external scripts for discovery, check, and detailed check modes. |
+| **validate_zabbix_template.py** | [Validate_Template.md](docs/Validate_Template.md) | Comprehensive Zabbix template validation tool. Validates YAML syntax, schema compliance, UUID formats, item keys, trigger expressions, and cross-references. Catches 95% of import errors before deployment. |
 
 Each script is documented individually, providing installation instructions, usage examples, and integration details.
 
 ### Available Templates
 
-- **[Agent Ping Check](docs/Agent_Checks.md)**  
-  ICMP reachability and latency monitoring via PowerShell executed by Zabbix Agent. Uses host macros for destination and thresholds.
-
-- **[Agent Web Check](docs/Agent_Checks.md)**  
-  HTTP(S) endpoint monitoring via PowerShell executed by Zabbix Agent. Supports status, latency, and content validation. Highly configurable with macros.
-
-- **[AlienVault OTX](docs/AlienVault_OTX.md)**  
-  Monitors AlienVault OTX pulses and indicators via the external script. Features automated IOC discovery, severity/confidence tracking, pulse count, robust error handling, macro/env flexibility, and performance optimisation. See [AlienVault_OTX.md](docs/AlienVault_OTX.md) for full documentation and troubleshooting.
-
-- **APC Netbotz**  
-  Comprehensive SNMP-based monitoring for APC NetBotz environmental devices. Supports multiple device families, sensor discovery, and value mapping.
-
-- **[Aruba Wireless](docs/Aruba_Wireless.md)**  
-  Unified SNMP template for Aruba Access Points (APs) and Virtual Controllers (VCs). Automatically detects device role (AP, IAP, or VC), dynamically discovers SSIDs, clients, interfaces, and radios. Monitors client counts, traffic, signal quality, system health, and controller metrics. Includes advanced LLD, SNMP walk items for diagnostics, trap support, and macro-driven configuration. See [Aruba_Wireless.md](docs/Aruba_Wireless.md) for full documentation.
-
-- **[Carel pCOWeb](docs/Carel_pCOWeb.md)**  
-  SNMP monitoring for Carel pCOWeb environmental controllers. Includes alarm and sensor discovery, value mapping, and technical documentation links.
-
-- **Dell Unity Array**  
-  Monitors EMC Unity XT series storage arrays using REST API. Includes discovery, error triggers, and macro configuration.
-
-- **[Domain Health](docs/Domain_Health.md)**  
-  Comprehensive domain health and compliance monitoring. Checks DNS records, DNSSEC, DANE/TLSA, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP, ASN, and NS server availability. Full RFC compliance with health score dashboard.
-
-- **[Email Health & Compliance Monitoring](docs/Email_Health.md)**  
-  Comprehensive email infrastructure monitoring and RFC compliance validation. Covers SPF/DKIM/DMARC authentication, MTA-STS/TLS-RPT security, MX record analysis, SMTP testing, blacklist monitoring, and deliverability assessment. Validates compliance with 14+ email-related RFCs including 5321, 7208, 6376, 7489, 8460, 8461. Provides detailed dashboards and scoring for email health.
-
-- **[Eaton UPS](docs/Eaton_UPS.md)**  
-  Complete SNMP template for Eaton UPS systems. Dynamic discovery of power, battery, load, and environment metrics using XUPS-MIB.
-
-- **PHP-FPM**  
-  Monitors PHP-FPM process manager performance and health metrics.
-
-- **[Sonicwall Firewall](docs/Sonicwall_Firewall.md)**  
-  SNMP-based monitoring for Sonicwall firewalls. Includes MIB-based discovery, custom items, triggers, and dashboards.
-
-- **STUN/TURN Check**  
-  Monitors STUN/TURN servers with auto-discovery. Supports RFC 5389/5766, UDP/TCP/TLS, and authentication.
-
-- **[SIP/VoIP Compliance Monitor](docs/SIP_VoIP_Compliance.md)**  
-  Comprehensive SIP and VoIP infrastructure monitoring with RFC compliance validation. Integrates SIP protocol testing, STUN/TURN NAT traversal, RTP/RTCP media validation, TLS security assessment, codec support analysis, and service discovery. Validates compliance with 13+ VoIP-related RFCs including 3261, 3550, 5389, 5766. Provides comprehensive compliance scoring, performance metrics, and multi-transport monitoring.
-
-- **[TCP Port Scanner](docs/TCP-Port-Scan.md)**  
-  Multithreaded TCP scanner for service discovery and exposure audits. Designed for Zabbix LLD and CLI use.
-
-- **[TLS Compliance Checker](docs/TLS-Compliance-Checker.md)**  
-  Tests TLS handshake capabilities and offers a compliance dashboard for hosts.
-
-- **[Ubiquiti Firewall](docs/Ubiquiti_Firewall.md)**  
-  SNMP monitoring for Ubiquiti UCG/USG devices. Includes MIB-based discovery, custom graphs, triggers, and dashboards.
-
-- **[Watchguard Firebox](docs/Watchguard_Firebox.md)**  
-  Expanded template for Watchguard Firebox. Provides 500+ metrics, full LLD, item triggers, graphs, and dashboards.
-
-- **[Web Scenarios Triggers](docs/Web_Scenarios_Triggers.md)**  
-  Template for advanced web scenario monitoring and trigger management.
+| Template | Documentation | Description |
+|----------|---------------|-------------|
+| **Agent Ping Check** | [Agent_PowerShell_Scripts.md](docs/Agent_PowerShell_Scripts.md) | ICMP reachability and latency monitoring via PowerShell executed by Zabbix Agent. Uses host macros for destination and thresholds. |
+| **Agent Web Check** | [Agent_PowerShell_Scripts.md](docs/Agent_PowerShell_Scripts.md) | HTTP(S) endpoint monitoring via PowerShell executed by Zabbix Agent. Supports status, latency, and content validation. Highly configurable with macros. |
+| **AlienVault OTX** | [AlienVault_OTX.md](docs/AlienVault_OTX.md) | Monitors AlienVault OTX pulses and indicators via the external script. Features automated IOC discovery, severity/confidence tracking, pulse count, robust error handling, macro/env flexibility, and performance optimisation. |
+| **APC NetBotz** | [APC_NetBotz.md](docs/APC_NetBotz.md) | Comprehensive SNMP-based monitoring for APC NetBotz environmental devices. Supports multiple device families, sensor discovery, and value mapping. |
+| **Aruba Wireless** | [Aruba_Wireless.md](docs/Aruba_Wireless.md) | Unified SNMP template for Aruba Access Points (APs) and Virtual Controllers (VCs). Automatically detects device role (AP, IAP, or VC), dynamically discovers SSIDs, clients, interfaces, and radios. Monitors client counts, traffic, signal quality, system health, and controller metrics. Includes advanced LLD, SNMP walk items for diagnostics, trap support, and macro-driven configuration. |
+| **Carel pCOWeb** | [Carel_pCOWeb.md](docs/Carel_pCOWeb.md) | SNMP monitoring for Carel pCOWeb environmental controllers. Includes alarm and sensor discovery, value mapping, and technical documentation links. |
+| **Dell Unity Array** | [Dell_Unity_Array.md](docs/Dell_Unity_Array.md) | Monitors EMC Unity XT series storage arrays using REST API. Includes discovery, error triggers, and macro configuration. |
+| **Domain Health** | [Domain_Health.md](docs/Domain_Health.md) | Comprehensive domain health and compliance monitoring. Checks DNS records, DNSSEC, DANE/TLSA, email authentication (SPF/DKIM/DMARC), WHOIS/RDAP, ASN, NS server availability and much more. Full RFC compliance with health score dashboard. |
+| **Eaton UPS** | [Eaton_UPS.md](docs/Eaton_UPS.md) | Complete SNMP template for Eaton UPS systems. Dynamic discovery of power, battery, load, and environment metrics using XUPS-MIB. |
+| **Email Health** | [Email_Health.md](docs/Email_Health.md) | Comprehensive email infrastructure monitoring and RFC compliance validation. Covers SPF/DKIM/DMARC authentication, MTA-STS/TLS-RPT security, MX record analysis, SMTP testing, blacklist monitoring, and deliverability assessment. Validates compliance with 14+ email-related RFCs including 5321, 7208, 6376, 7489, 8460, 8461. Provides detailed dashboards and scoring for email health. |
+| **PHP-FPM** | [PHP_FPM.md](docs/PHP_FPM.md) | Monitors PHP-FPM process manager performance and health metrics. |
+| **IBM Tape Libraries** | [IBM_Tape_Libraries.md](docs/IBM_Tape_Libraries.md) | Complete SNMP monitoring for IBM, Dell, and Tandberg tape libraries. Features auto-discovery of drives, fans, power supplies, door status monitoring, transport robotics tracking, cleaning alerts, and component fault detection. |
+| **SIP Health** | [SIP_Health.md](docs/SIP_Health.md) | Comprehensive SIP and VoIP infrastructure monitoring with RFC compliance validation. Integrates SIP protocol testing, STUN/TURN NAT traversal, RTP/RTCP media validation, TLS security assessment, codec support analysis, and service discovery. Validates compliance with 13+ VoIP-related RFCs including 3261, 3550, 5389, 5766. Provides comprehensive compliance scoring, performance metrics, and multi-transport monitoring. |
+| **Sonicwall Firewall** | [Sonicwall_Firewall.md](docs/Sonicwall_Firewall.md) | Comprehensive SNMP-based monitoring for Sonicwall firewalls. Features complete BGP4-MIB monitoring (neighbor discovery, session states, route counts, flap detection), VPN tunnel monitoring (policy-based and route-based), interface discovery, security service statistics, and advanced dashboards. |
+| **TCP Port Scanner** | [TCP-Port-Scan.md](docs/TCP-Port-Scan.md) | Multithreaded TCP scanner for service discovery and exposure audits. Designed for Zabbix LLD and CLI use. |
+| **TLS Health** | [TLS_Health.md](TLS_Health.md) | Comprehensive TLS/SSL security auditing and compliance monitoring. Auto-discovers protocol-cipher combinations, performs SEV1-5 severity scoring, validates compliance against PCI DSS v4.0, NIST SP 800-52r2, CIS Controls v8, and BSI TR-02102-2. Includes risk scoring and vulnerability detection (POODLE, FREAK, BEAST, DROWN). |
+| **Ubiquiti Firewall** | [Ubiquiti_Firewall.md](docs/Ubiquiti_Firewall.md) | SNMP monitoring for Ubiquiti UCG/USG devices with comprehensive BGP4-MIB support. Features BGP neighbor discovery, session state monitoring, route tracking, flap detection, interface discovery, system health monitoring, and integrated dashboards. |
+| **Watchguard Firebox** | [Watchguard_Firebox.md](docs/Watchguard_Firebox.md) | Enhanced template for Watchguard Firebox with 500+ metrics. Includes complete BGP4-MIB monitoring (neighbor states, route counts, session tracking), comprehensive LLD for all components, advanced triggers, performance graphs, and executive dashboards. |
+| **Web Scenarios** | [Web_Scenarios.md](docs/Web_Scenarios.md) | Advanced web scenario monitoring with priority-based discovery (P1-P5), custom trigger management, error tracking, and comprehensive alerting for HTTP/HTTPS endpoints. |
 
 
-## Prerequsites
-Your zabbix-proxy docker containers will need pyhon installed, to be able to use any of these plugins.
+## Prerequisites
+Your zabbix-proxy docker containers will need Python installed, to be able to use any of these plugins.
 
 1. Download the build `Dockerfile` in this repo [here](./dockerfile/zabbix_proxy_mysql_alpine_python3), save this adjacent to your docker-compose.yaml file.
 
@@ -208,13 +172,15 @@ Output looks like this:
 ```
 
 ## Installation
-For usage details of each script, refer to the individual README files linked above; generic installation, means cloning the .py script into the externalscripts folder on your proxy. Then importing the template XML file into the Zabbix Condole > Data Collection > Templates > Import.
+For usage details of each script, refer to the individual README files linked above; generic installation means copying the .py script into the externalscripts folder on your proxy, then importing the template YAML file into the Zabbix Console > Data Collection > Templates > Import.
 
 ## Notes
-- Scripts are designed to integrate with **Zabbix Proxy** and **Zabbix Server**.
+- Scripts are designed to integrate with **Zabbix Proxy** and/or **Zabbix Server**.
 - Each script follows best practices for **error handling**, **logging**, and **parameterisation**.
 - Contributions and improvements are welcome.
 
 ## Licence
 This project is licensed under the **Apache Licence 2.0**.  
 See the [LICENSE.md](LICENSE.md) for details.
+
+[def]: docs/TLS_Health.md

@@ -1,0 +1,1079 @@
+﻿zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 8edae225eb6a44648f24368f1e0c0301
+      name: Applications
+  templates:
+    - uuid: d521a999078a4fd8ad95399c0119cfb8
+      template: 'TLS Health'
+      name: 'TLS Health'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
+      description: |
+        Overview:
+        Comprehensive Zabbix template for auditing and tracking TLS protocol and cipher compliance across web services.
+        
+        This template performs periodic TLS handshake testing using an external Python script and parses the supported protocol/cipher pairs via discovery.
+        Each combination is assessed for security posture and grouped into SEV1â€“SEV5 tiers based on known cryptographic weaknesses and real-world exploitability (e.g., POODLE, FREAK, BEAST, DROWN).
+        
+        Features:
+        - Auto-discovery of supported TLS protocol and cipher pairs
+        - Normalised result set via `{#PROTOCOL}` and `{#CIPHER}` LLD macros
+        - Severity-based triggers for SEV5 (critical), SEV4 (high), SEV3 (moderate), SEV2 (low), and SEV1 (informational)
+        - Risk score calculation (weighted)
+        - Compliance scoring aligned to:
+          - PCI DSS v4.0
+          - NIST SP 800-52r2
+          - CIS Controls v8
+          - BSI TR-02102-2 (Germany)
+        - All scoring models include value maps for dashboard visualisation
+        - Designed to detect insecure or non-compliant TLS usage over time
+        
+        Usage Notes:
+        - Requires the external script `get_tls_health.py` in the `externalscripts/` directory
+        - Macro `{$TLS.PORT}` defaults to `443`, but can be overridden per-host
+        - SEV1â€“SEV2 tiers are disabled by default using `^$` regex macros
+        - Score triggers and dashboard widgets can be added per compliance model
+        
+        Author: Simon Jackson / @sjackson0109
+      groups:
+        - name: Applications
+      items:
+        # TLS Discovery Master Item
+        - uuid: 243cb38e257b442ca7dc32ec9db9f7ce
+          name: 'TLS Protocol-Cipher Discovery'
+          type: EXTERNAL
+          key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          delay: 6h
+          history: 1d
+          value_type: TEXT
+          trends: '0'
+          description: 'Discovers all supported TLS protocol-cipher combinations using the refactored script with new CLI syntax'
+          tags:
+            - tag: TLS
+              value: discovery
+            - tag: integration
+              value: tls_compliance
+        # TLS Health Assessment
+        - uuid: ec58f04e11c64b36b6202a4f68189177
+          name: 'TLS Health Score'
+          type: EXTERNAL
+          key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+          delay: 1h
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'Overall TLS health assessment including success rate and security analysis'
+          tags:
+            - tag: TLS
+              value: health
+            - tag: integration
+              value: tls_compliance
+        # Available Protocols
+        - uuid: 85a474d22f2b4a6eb7bda9edad3203bb
+          name: 'Available TLS Protocols'
+          type: EXTERNAL
+          key: 'get_tls_health.py[protocols,{HOST.HOST}]'
+          delay: 12h
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'List of TLS protocols available on the client system'
+          tags:
+            - tag: TLS
+              value: protocols
+            - tag: integration
+              value: tls_compliance
+        # Available Ciphers
+        - uuid: 4450c41adbac495b8ccb0c39c01f65da
+          name: 'Available TLS Ciphers'
+          type: EXTERNAL
+          key: 'get_tls_health.py[ciphers,{HOST.HOST}]'
+          delay: 12h
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'List of cipher suites available on the client system'
+          tags:
+            - tag: TLS
+              value: ciphers
+            - tag: integration
+              value: tls_compliance
+        # TLS Health Score (Processed)
+        - uuid: 5bf3c772f0e64632b785f8584e23d92d
+          name: 'TLS Health Score Value'
+          type: DEPENDENT
+          key: 'tls.health.score'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.health_score'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: health_score
+        # TLS Health Success Rate
+        - uuid: 0293b570f8694faa953bf082cecf7dc1
+          name: 'TLS Health Success Rate'
+          type: DEPENDENT
+          key: 'tls.health.success.rate'
+          delay: '0'
+          value_type: FLOAT
+          units: '%'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.success_rate'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: health_success_rate
+        # TLS Secure Protocol Support
+        - uuid: 11fbc4d39033479587c6057c79316140
+          name: 'TLS Secure Protocol Support'
+          type: DEPENDENT
+          key: 'tls.health.secure.protocols'
+          delay: '0'
+          value_type: FLOAT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.secure_protocol_support'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: health_secure_protocols
+        # TLS Client Cipher Count
+        - uuid: a603c788369e409095e2c5bb5dfcddac
+          name: 'TLS Client Cipher Count'
+          type: DEPENDENT
+          key: 'tls.health.client.cipher.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.client_cipher_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: health_cipher_count
+        # Available Protocol Count (from Supported Configurations)
+        - uuid: 00b1147739994d108be1d5249df66f03
+          name: 'Available Protocol Count'
+          type: DEPENDENT
+          key: 'tls.protocols.count'
+          delay: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var cipherSuites = JSON.parse(value).cipher_suites || {}; return Object.keys(cipherSuites).length;'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: protocol_count
+        # Supported Protocols List (from Discovery)
+        - uuid: dd66036a0def48ff963c57ac527d756d
+          name: 'TLS Supported Protocols'
+          type: DEPENDENT
+          key: 'tls.protocols.list'
+          delay: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var cipherSuites = JSON.parse(value).cipher_suites || {}; return Object.keys(cipherSuites).join(", ");'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'None'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: protocols_list
+        # Supported Cipher Combinations Count
+        - uuid: d05fe01247754200929eb6b6f143bfc3
+          name: 'TLS Supported Cipher Count'
+          type: DEPENDENT
+          key: 'tls.ciphers.supported.count'
+          delay: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var cipherSuites = JSON.parse(value).cipher_suites || {};
+                  var supportedCount = 0;
+                  
+                  for (var protocol in cipherSuites) {
+                    for (var keyExchange in cipherSuites[protocol]) {
+                      for (var cipher in cipherSuites[protocol][keyExchange]) {
+                        if (cipherSuites[protocol][keyExchange][cipher] === 1) {
+                          supportedCount++;
+                        }
+                      }
+                    }
+                  }
+                  
+                  return supportedCount;
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: supported_count
+        # Unsupported Cipher Combinations Count
+        - uuid: 653895fac100490e8bfdbe63852d2d94
+          name: 'TLS Unsupported Cipher Count'
+          type: DEPENDENT
+          key: 'tls.ciphers.unsupported.count'
+          delay: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var cipherSuites = JSON.parse(value).cipher_suites || {};
+                  var unsupportedCount = 0;
+                  
+                  for (var protocol in cipherSuites) {
+                    for (var keyExchange in cipherSuites[protocol]) {
+                      for (var cipher in cipherSuites[protocol][keyExchange]) {
+                        if (cipherSuites[protocol][keyExchange][cipher] === 0) {
+                          unsupportedCount++;
+                        }
+                      }
+                    }
+                  }
+                  
+                  return unsupportedCount;
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: unsupported_count
+        # TLS Risk Tier Counts (SEV1-SEV5)
+        - uuid: 3fb3e55f8b1148f59203370bfdb4c2e3
+          name: 'TLS SEV1 Risk Count'
+          type: DEPENDENT
+          key: 'tls.risk.sev1.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.risk_tiers.sev1_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: risk_sev1
+        - uuid: b513a05f89664ac584ef9de04eaf1d24
+          name: 'TLS SEV2 Risk Count'
+          type: DEPENDENT
+          key: 'tls.risk.sev2.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.risk_tiers.sev2_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: risk_sev2
+        - uuid: 1fdf2d46ed884896900e8613b5fda83c
+          name: 'TLS SEV3 Risk Count'
+          type: DEPENDENT
+          key: 'tls.risk.sev3.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.risk_tiers.sev3_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: risk_sev3
+        - uuid: fbf7a5b82cb64a3c9680370cca96d57f
+          name: 'TLS SEV4 Risk Count'
+          type: DEPENDENT
+          key: 'tls.risk.sev4.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.risk_tiers.sev4_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: risk_sev4
+        - uuid: e76f308e60784b54a152225c78bba80d
+          name: 'TLS SEV5 Risk Count'
+          type: DEPENDENT
+          key: 'tls.risk.sev5.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.risk_tiers.sev5_count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          tags:
+            - tag: TLS
+              value: risk_sev5
+        # Available Cipher Count
+        - uuid: 38fbdd71fb0f439fbea5dc36cd4bd0e1
+          name: 'Available Cipher Count'
+          type: DEPENDENT
+          key: 'tls.ciphers.count'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.count'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[ciphers,{HOST.HOST}]'
+          tags:
+            - tag: TLS
+              value: cipher_count
+        - uuid: e7650c76d5734c1fbc4aa8deafb26466
+          name: 'TLS Risk Score'
+          type: CALCULATED
+          key: tls.compliance.risk.score
+          delay: 5m
+          value_type: FLOAT
+          units: score
+          params: |
+            last(/TLS Health/tls.risk.sev1.count)*1 +
+            last(/TLS Health/tls.risk.sev2.count)*2 +
+            last(/TLS Health/tls.risk.sev3.count)*3 +
+            last(/TLS Health/tls.risk.sev4.count)*4 +
+            last(/TLS Health/tls.risk.sev5.count)*5
+          description: 'Weighted TLS compliance risk score based on protocol/cipher support across severity tiers. Higher values indicate broader support for weak, deprecated, or insecure configurations.'
+          tags:
+            - tag: Score
+              value: Weighted
+            - tag: Security
+              value: TLS
+        - uuid: 1666f7db07514d60adef013610121ca3
+          name: 'TLS Compliance Score (BSI TR-02102-2)'
+          type: CALCULATED
+          key: tls.compliance.score.bsi
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*10 +
+              last(/TLS Health/tls.risk.sev4.count)*10
+            )
+          description: 'Germanyâ€™s BSI guideline TR-02102-2 (2023 revision) specifies minimum cryptographic  standards for TLS communication. This score penalises the use of banned or  discouraged configurations such as TLSv1.0, TLSv1.1, RC4, 3DES, CAMELLIA, SEED,  MD5, and anonymous key exchange. A perfect score of 100% reflects complete  compliance with BSIâ€™s mandatory crypto profile.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: BSI-TR-02102-2
+            - tag: Security
+              value: TLS
+        - uuid: 7a67fe3ad7e942769aa0ca1dfd6c5ee9
+          name: 'TLS Compliance Score (C5:2020)'
+          type: CALCULATED
+          key: tls.compliance.score.c5
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*10 +
+              last(/TLS Health/tls.risk.sev4.count)*10
+            )
+          description: 'TLS compliance score aligned with Germanyâ€™s C5:2020 (Cloud Computing Compliance Criteria Catalogue), which mandates secure transmission of data and refers directly to BSI TR-02102-2 for cryptographic standards. This score deducts points for the presence of insecure protocols or cipher suites such as TLSv1.0/1.1, RC4, NULL, EXPORT, MD5, and anonymous key exchange. A perfect score (100%) indicates full conformance to C5 encryption expectations.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: C5-2020
+            - tag: Security
+              value: TLS
+        - uuid: 1405a8155ae442738dcf6986acc488da
+          name: 'TLS Compliance Score (CIS Controls v8)'
+          type: CALCULATED
+          key: tls.compliance.score.cis
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*15 +
+              last(/TLS Health/tls.risk.sev4.count)*15
+            )
+          description: 'Based on CIS Controls v8 (notably Controls 3.4 and 13.3) which mandate the use  of strong encryption for data in transit and the elimination of weak cipher  suites and outdated TLS protocols. This score penalises the presence of insecure  configurations including SSLv3, TLSv1.0/1.1, RC4, NULL encryption, 3DES, and  anonymous key exchange. A score of 100% indicates full compliance.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: CIS
+            - tag: Security
+              value: TLS
+        - uuid: b156112a043347eab3b49534d4680ace
+          name: 'TLS Compliance Score (NIST SP 800-52r2)'
+          type: CALCULATED
+          key: tls.compliance.score.nist
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*10 +
+              last(/TLS Health/tls.risk.sev4.count)*10
+            )
+          description: 'NIST SP 800-52r2 mandates exclusive use of TLS 1.2 or higher, AEAD cipher suites,  and secure key exchange mechanisms. This score penalises legacy protocols such  as TLSv1.0/1.1 and insecure cipher configurations including NULL, EXPORT, RSA key  exchange, and MD5-based suites. A score of 100% indicates full cryptographic  alignment with NIST.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: NIST-800-52r2
+            - tag: Security
+              value: TLS
+        - uuid: cb559ec9b46d4edb9c3d08132c058804
+          name: 'TLS Compliance Score (PCI DSS)'
+          type: CALCULATED
+          key: tls.compliance.score.pcidss
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*10 +
+              last(/TLS Health/tls.risk.sev4.count)*5
+            )
+          description: 'Compliance score for PCI DSS 4.0 (Requirement 4.2.1). Score starts at 100%. Deductions applied  for presence of known insecure protocols or cipher suites such as SSLv3, TLSv1.0, RC4, NULL,  and export-grade crypto. A perfect score (100%) reflects full PCI-DSS crypto compliance.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: PCI-DSS
+            - tag: Security
+              value: TLS
+        - uuid: 922a368e444345be9805de1da4b5090e
+          name: 'TLS Compliance Score (PCI DSS v4.0)'
+          type: CALCULATED
+          key: tls.compliance.score.pcidssv4
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: |
+            100 - (
+              last(/TLS Health/tls.risk.sev5.count)*10 +
+              last(/TLS Health/tls.risk.sev4.count)*5
+            )
+          description: 'PCI DSS v4.0 Requirement 4.2.1 mandates the use of strong cryptography to secure transmission  of cardholder data. This score penalises weak and deprecated protocols or ciphers such as SSLv3,  TLSv1.0, RC4, NULL encryption, and anonymous key exchange. A perfect score (100%) indicates  full compliance with the encryption standards required by PCI DSS.'
+          valuemap:
+            name: tls.compliance.score.valuemap
+          tags:
+            - tag: Compliance
+              value: PCI-DSS
+            - tag: Security
+              value: TLS
+        - uuid: b0204b56f0a64b5d9c95ac5c1c224cd5
+          name: 'TLS Overall Status'
+          key: tls.compliance.status
+          value_type: FLOAT
+          description: 'Overall TLS compliance status'
+          valuemap:
+            name: tls.compliance.status.valuemap
+          tags:
+            - tag: Security
+              value: TLS
+        
+        # Additional Health Metrics for Complete Alignment
+        - uuid: 4407860a9d2f4f9bba70fc08c08dede1
+          name: 'TLS Tested Combinations'
+          type: DEPENDENT
+          key: 'tls.health.tested_combinations'
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          description: 'Total number of protocol/cipher combinations tested'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.tested_combinations'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+        
+        - uuid: 7e09aa06d7914b84a8e72e98875a8cc4
+          name: 'TLS Successful Combinations'
+          type: DEPENDENT
+          key: 'tls.health.successful_combinations'
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          description: 'Number of protocol/cipher combinations that connected successfully'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.successful_combinations'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+        
+        - uuid: 62db07540d1142d0a9546ea31a37daa9
+          name: 'TLS Available Protocols'
+          type: DEPENDENT
+          key: 'tls.health.available_protocols'
+          delay: '0'
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'List of TLS protocols available on the server'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.available_protocols'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          master_item:
+            key: 'get_tls_health.py[health,{HOST.HOST},{$TLS.PORT}]'
+      discovery_rules:
+        - uuid: f12e81a1b6cc4f978361999fd2c42bdd
+          name: 'TLS Protocol-Cipher Discovery'
+          type: DEPENDENT
+          key: 'tls.protocol.cipher.discovery'
+          delay: '0'
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#CIPHER}'
+                value: '{$TLS.AUTHORISED.CIPHERS}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: A
+              - macro: '{#PROTOCOL}'
+                value: '{$TLS.AUTHORISED.PROTOCOLS}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: B
+          lifetime: 6h
+          description: 'Discovers TLS protocol-cipher combinations from the master discovery item'
+          master_item:
+            key: 'get_tls_health.py[discover,{HOST.HOST},{$TLS.PORT}]'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var cipherSuites = JSON.parse(value).cipher_suites || {};
+                  var data = [];
+                  
+                  for (var protocol in cipherSuites) {
+                    for (var keyExchange in cipherSuites[protocol]) {
+                      for (var cipherAlgo in cipherSuites[protocol][keyExchange]) {
+                        var supportStatus = cipherSuites[protocol][keyExchange][cipherAlgo];
+                        var fullCipher = keyExchange + '_WITH_' + cipherAlgo;
+                        data.push({
+                          '{#PROTOCOL}': protocol,
+                          '{#CIPHER}': fullCipher,
+                          '{#SUPPORT_STATUS}': supportStatus.toString()
+                        });
+                      }
+                    }
+                  }
+                  
+                  return JSON.stringify(data);
+          item_prototypes:
+            - uuid: 118d16135f054fbb81e66b1676155cd1
+              name: 'TLS Support: {#PROTOCOL} with {#CIPHER}'
+              type: EXTERNAL
+              key: 'get_tls_health.py[check,{HOST.HOST},{#PROTOCOL},{#CIPHER},{$TLS.PORT}]'
+              delay: 1h
+              history: 7d
+              value_type: TEXT
+              trends: '0'
+              description: 'Tests support for {#PROTOCOL} with {#CIPHER} cipher using new CLI syntax'
+              tags:
+                - tag: TLS
+                  value: protocol_cipher_test
+                - tag: protocol
+                  value: '{#PROTOCOL}'
+                - tag: cipher
+                  value: '{#CIPHER}'
+            - uuid: 218d16135f054fbb81e66b1676155cd2
+              name: 'TLS Result: {#PROTOCOL} with {#CIPHER}'
+              type: DEPENDENT
+              key: 'tls.result[{#PROTOCOL},{#CIPHER}]'
+              delay: '0'
+              history: 7d
+              description: 'Connection result for {#PROTOCOL} with {#CIPHER} (0=failed, 1=success, 2=unavailable)'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.result'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'get_tls_health.py[check,{HOST.HOST},{#PROTOCOL},{#CIPHER},{$TLS.PORT}]'
+              valuemap:
+                name: tls.connection.result.valuemap
+              tags:
+                - tag: TLS
+                  value: connection_result
+                - tag: protocol
+                  value: '{#PROTOCOL}'
+                - tag: cipher
+                  value: '{#CIPHER}'
+              trigger_prototypes:
+                - uuid: 688d5f1fcfd14b238cda6c14731057da
+                  expression: 'last(/TLS Health/tls.result[{#PROTOCOL},{#CIPHER}])=0'
+                  name: 'TLS Connection Failed: {#PROTOCOL} with {#CIPHER}'
+                  priority: WARNING
+                  description: 'TLS connection failed for {#PROTOCOL} with {#CIPHER} on {HOST.NAME}'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: TLS
+                      value: connection_failure
+                    - tag: protocol
+                      value: '{#PROTOCOL}'
+                    - tag: cipher
+                      value: '{#CIPHER}'
+                - uuid: 789d16135f054fbb81e66b1676155cd3
+                  expression: 'last(/TLS Health/tls.result[{#PROTOCOL},{#CIPHER}])=2'
+                  name: 'TLS Protocol/Cipher Unavailable: {#PROTOCOL} with {#CIPHER}'
+                  priority: INFO
+                  description: 'TLS protocol {#PROTOCOL} or cipher {#CIPHER} is not available on the client system'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: TLS
+                      value: unavailable
+                    - tag: protocol
+                      value: '{#PROTOCOL}'
+                    - tag: cipher
+                      value: '{#CIPHER}'
+            # New item prototype for cipher support status from discovery
+            - uuid: 318d16135f054fbb81e66b1676155cd4
+              name: 'TLS Cipher Support Status: {#PROTOCOL} - {#CIPHER}'
+              type: CALCULATED
+              key: 'tls.cipher.support.status[{#PROTOCOL},{#CIPHER}]'
+              delay: '0'
+              history: 7d
+              params: '{#SUPPORT_STATUS}'
+              description: 'Actual support status for {#PROTOCOL} with {#CIPHER} from discovery (1=supported, 0=not supported)'
+              valuemap:
+                name: tls.connection.result.valuemap
+              tags:
+                - tag: TLS
+                  value: cipher_support_status
+                - tag: protocol
+                  value: '{#PROTOCOL}'
+                - tag: cipher
+                  value: '{#CIPHER}'
+              trigger_prototypes:
+                - uuid: 418d16135f054fbb81e66b1676155cd5
+                  expression: 'last(/TLS Health/tls.cipher.support.status[{#PROTOCOL},{#CIPHER}])={$TLS.CIPHER["{#CIPHER}"]}'
+                  name: 'TLS Cipher Compliance Issue: {#PROTOCOL} - {#CIPHER}'
+                  priority: HIGH
+                  description: 'Cipher {#CIPHER} on protocol {#PROTOCOL} support status does not match policy expectation. Expected: {$TLS.CIPHER["{#CIPHER}"]}, Actual: {ITEM.LASTVALUE}'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: TLS
+                      value: compliance_violation
+                    - tag: protocol
+                      value: '{#PROTOCOL}'
+                    - tag: cipher
+                      value: '{#CIPHER}'
+            - uuid: 519d16135f054fbb81e66b1676155cd6
+              name: 'TLS Connection Status: {#PROTOCOL} with {#CIPHER}'
+              type: DEPENDENT
+              key: 'tls.status[{#PROTOCOL},{#CIPHER}]'
+              delay: '0'
+              history: 7d
+              value_type: TEXT
+              trends: '0'
+              description: 'Human-readable status message for {#PROTOCOL} with {#CIPHER}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.message'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: 'Unknown status'
+              master_item:
+                key: 'get_tls_health.py[check,{HOST.HOST},{#PROTOCOL},{#CIPHER},{$TLS.PORT}]'
+              tags:
+                - tag: TLS
+                  value: status_message
+                - tag: protocol
+                  value: '{#PROTOCOL}'
+                - tag: cipher
+                  value: '{#CIPHER}'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$TLS.AUTHORISED.CIPHERS}'
+          value: ECDHE-RSA|AES128|AES256
+          description: 'Cipher name patterns approved by client policy.'
+        - macro: '{$TLS.AUTHORISED.PROTOCOLS}'
+          value: ^TLS_1\.2|^TLS_1\.3
+          description: 'TLS versions that are allowed by client policy.'
+        - macro: '{$TLS.PORT}'
+          value: '443'
+          description: 'TCP port number bound for the given hosts web-service. Default = 443'
+        - macro: '{$TLS.RISK.SEV1.CIPHERS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV1.PROTOCOLS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV2.CIPHERS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV2.PROTOCOLS}'
+          value: ^$
+          description: RESERVED
+        - macro: '{$TLS.RISK.SEV3.CIPHERS}'
+          value: SHA$|RSA$|ECDSA$
+          description: 'Ciphers relying solely on RSA key exchange or SHA-1/SHA-256 in non-AEAD modes. These are not directly exploitable, but may indicate weak configuration. Included for moderate-risk trending.'
+        - macro: '{$TLS.RISK.SEV3.PROTOCOLS}'
+          value: ^TLS_1\.2$
+          description: 'While still common, TLS_1.2 lacks forward secrecy and modern AEAD requirements in some deployments. Not currently targeted by Metasploit, but becoming non-compliant in high-assurance environments (e.g., FedRAMP, DoD IL5).'
+        - macro: '{$TLS.RISK.SEV4.CIPHERS}'
+          value: 3DES|DES|SEED|IDEA|PSK|CAMELLIA
+          description: 'Weak or legacy ciphers with known cryptographic weaknesses: - 3DES: vulnerable to SWEET32 (CVE-2016-2183), detected via `auxiliary/scanner/ssl/ssl_version` - DES: obsolete 56-bit cipher, trivially brute-forceable - SEED/IDEA: not widely supported, considered weak by NIST - PSK: pre-shared keys reduce identity verification - CAMELLIA: less peer-reviewed; NIST excluded from Suite B'
+        - macro: '{$TLS.RISK.SEV4.PROTOCOLS}'
+          value: ^TLS_1\.1$
+          description: 'TLS_1.1 is deprecated by most major browsers, and subject to downgrade attacks (e.g., CVE-2019-1559). Detected by Metasploit `auxiliary/scanner/http/tls_version`, discouraged in all environments.'
+        - macro: '{$TLS.RISK.SEV5.CIPHERS}'
+          value: RC4|NULL|EXP|ANON|CBC|MD5
+          description: 'Cipher patterns with known practical attacks and Metasploit weaponisation: - RC4: predictable stream cipher, used in BEAST-style attacks - NULL: no encryption - EXP: export-grade 40-/56-bit keys, vulnerable to FREAK (CVE-2015-0204), LOGJAM (CVE-2015-4000) - ANON: no authentication - CBC: vulnerable in TLSv1.0/1.1 to POODLE-like padding oracle attacks (used in metasploit demos) - MD5: broken hashing used in various downgrade and collision attacks'
+        - macro: '{$TLS.RISK.SEV5.PROTOCOLS}'
+          value: ^SSL_2\.0$|^SSL_3\.0$|^TLS_1\.0$
+          description: 'Protocols with known, actively exploited vulnerabilities. Includes: - SSL_3.0: vulnerable to POODLE (CVE-2014-3566), targeted by Metasploit module `auxiliary/scanner/ssl/poodle_ssl` - TLS_1.0: exploitable via BEAST (CVE-2011-3389), has Metasploit scanner `auxiliary/scanner/http/tls_version` - SSL_2.0: vulnerable to DROWN (CVE-2016-0800), detected by Metasploit `auxiliary/scanner/ssl/openssl_drown` Recommended for immediate deactivation in all environments.'
+        - macro: '{$TLS.TIMEOUT}'
+          value: '4'
+          description: 'Timeout to wait whilst establishing a TLS handshake'
+        # TLS Cipher Support Configuration
+        - macro: '{$TLS.CIPHER[*]}'
+          value: '1'
+          description: 'Default expectation for all TLS ciphers (1=should be supported, 0=should not be supported). Can be overridden per cipher.'
+        # Specific Cipher Overrides (examples of weak ciphers that should be disabled)
+        - macro: '{$TLS.CIPHER["TLS_RSA_WITH_3DES_EDE_CBC_SHA"]}'
+          value: '0'
+          description: 'Override for 3DES cipher - should be disabled due to SWEET32 vulnerability'
+        - macro: '{$TLS.CIPHER["TLS_RSA_WITH_RC4_128_SHA"]}'
+          value: '0'
+          description: 'Override for RC4 cipher - should be disabled due to known weaknesses'
+        - macro: '{$TLS.CIPHER["TLS_RSA_WITH_NULL_SHA"]}'
+          value: '0'
+          description: 'Override for NULL cipher - should be disabled (no encryption)'
+        - macro: '{$TLS.CIPHER["TLS_DH_anon_WITH_AES_128_CBC_SHA"]}'
+          value: '0'
+          description: 'Override for anonymous DH cipher - should be disabled (no authentication)'
+        - macro: '{$TLS.CIPHER["TLS_RSA_EXPORT_WITH_DES40_CBC_SHA"]}'
+          value: '0'
+          description: 'Override for export-grade DES40 cipher - should be disabled (FREAK vulnerability)'
+        
+        # HASH Algorithm Severity Macros (for trigger conditions)
+        - macro: '{$TLS.HASH.SEV1}'
+          value: '^$'
+          description: 'RESERVED - SEV1 (Informational) hash algorithms list'
+        - macro: '{$TLS.HASH.SEV2}'
+          value: '^$'
+          description: 'RESERVED - SEV2 (Low) hash algorithms list'
+        - macro: '{$TLS.HASH.SEV3}'
+          value: 'SHA$'
+          description: 'SEV3 (Moderate) hash algorithms - SHA-1 (legacy but not directly exploitable)'
+        - macro: '{$TLS.HASH.SEV4}'
+          value: '^$'
+          description: 'SEV4 (High) hash algorithms - Currently none categorized at this level'
+        - macro: '{$TLS.HASH.SEV5}'
+          value: 'MD5'
+          description: 'SEV5 (Critical) hash algorithms - MD5 (broken cryptographic hash, collision vulnerabilities)'
+        
+        # AUTH (Authentication) Method Severity Macros (for trigger conditions)
+        - macro: '{$TLS.AUTH.SEV1}'
+          value: '^$'
+          description: 'RESERVED - SEV1 (Informational) authentication methods list'
+        - macro: '{$TLS.AUTH.SEV2}'
+          value: '^$'
+          description: 'RESERVED - SEV2 (Low) authentication methods list'
+        - macro: '{$TLS.AUTH.SEV3}'
+          value: 'RSA|ECDH_RSA|ECDH_ECDSA|DH_RSA|DH_DSS'
+          description: 'SEV3 (Moderate) authentication methods - Static key exchange without forward secrecy: RSA, static ECDH/DH variants'
+        - macro: '{$TLS.AUTH.SEV4}'
+          value: 'PSK|DHE_PSK|ECDHE_PSK'
+          description: 'SEV4 (High) authentication methods - Pre-Shared Key variants (PSK, DHE_PSK, ECDHE_PSK) reduce identity verification'
+        - macro: '{$TLS.AUTH.SEV5}'
+          value: 'DH_anon|ECDH_anon|anon'
+          description: 'SEV5 (Critical) authentication methods - Anonymous DH/ECDH variants (no authentication, vulnerable to man-in-the-middle attacks)'
+      valuemaps:
+        - uuid: fbfb75391b3c48a4a6ba8cbb6068eae8
+          name: tls.connection.result.valuemap
+          mappings:
+            - value: '0'
+              newvalue: Failed
+            - value: '1'
+              newvalue: Success
+            - value: '2'
+              newvalue: Unavailable
+        - uuid: 060598ac4a134057bb35cb1935ade015
+          name: tls.compliance.score.valuemap
+          mappings:
+            - value: '0'
+              newvalue: 'Critical (0%)'
+            - value: '25'
+              newvalue: 'Poor (25%)'
+            - value: '50'
+              newvalue: 'Fair (50%)'
+            - value: '75'
+              newvalue: 'Good (75%)'
+            - value: '100'
+              newvalue: 'Excellent (100%)'
+            - value: '90-100'
+              newvalue: '✅ Fully Compliant'
+            - value: '70-89'
+              newvalue: '🟡 Partially Compliant'
+            - value: '0-69'
+              newvalue: '🔴 Non-Compliant'
+        - uuid: 058a9d1f13164e4a987df03665daacaa
+          name: tls.compliance.status.valuemap
+          mappings:
+            - value: '0'
+              newvalue: 'Non-Compliant'
+            - value: '1'
+              newvalue: 'Compliant'
+            - value: '2'
+              newvalue: 'Unknown'
+        - uuid: b5fba154c5ad4c5f81e7bb4c1cbcbfb9
+          name: tls.support.status.valuemap
+          mappings:
+            - value: '0'
+              newvalue: '❌ Unsupported'
+            - value: '1'
+              newvalue: '✅ Supported'
+      dashboards:
+        - uuid: 63aab660bb1e4535993753e57549e68d
+          name: 'TLS Compliance Check'
+          pages:
+            - name: 'TLS Compliance'
+              widgets:
+                - type: problemsbysv
+                  name: 'Active TLS Issues'
+                  width: '37'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: reference
+                      value: NZBJL
+                - type: svggraph
+                  name: 'TLS Risk Trend'
+                  'y': '5'
+                  width: '37'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.aggregate_function
+                      value: '3'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'TLS SEV5 Count'
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.0.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'TLS SEV4 Count'
+                    - type: INTEGER
+                      name: ds.1.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'TLS SEV3 Count'
+                    - type: INTEGER
+                      name: ds.2.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.2.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.2.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'TLS SEV2 Count'
+                    - type: INTEGER
+                      name: ds.3.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.3.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.3.transparency
+                      value: '3'
+                    - type: STRING
+                      name: ds.4.color
+                      value: ED1248
+                    - type: STRING
+                      name: ds.4.items.0
+                      value: 'TLS SEV1 Count'
+                    - type: INTEGER
+                      name: ds.4.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.4.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.4.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_columns
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: STRING
+                      name: reference
+                      value: MSFLV
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'TLS Risk Score'
+                  x: '37'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'TLS Health'
+                        key: tls.compliance.risk.score
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                - type: honeycomb
+                  name: 'TLS Heatmap'
+                  x: '37'
+                  'y': '5'
+                  width: '35'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'tls.check[*.*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{ITEM.NAME}.regsub("^TLS Check: ([^ ]+) - .*", "\1")'
+                    - type: STRING
+                      name: reference
+                      value: PZNHR
+                    - type: STRING
+                      name: secondary_label
+                      value: '{ITEM.NAME}.regsub("^TLS Check: [^ ]+ - (.*)$", "\1")'
+                    - type: INTEGER
+                      name: secondary_label_type
+                      value: '0'
+                - type: piechart
+                  name: 'TLS Severity Breakdown'
+                  x: '55'
+                  width: '17'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: tls.risk.sev5.count
+                    - type: STRING
+                      name: ds.1.color
+                      value: 4000FF
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: tls.risk.sev4.count
+                    - type: STRING
+                      name: ds.2.color
+                      value: 00FFFF
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: tls.risk.sev3.count
+                    - type: STRING
+                      name: ds.3.color
+                      value: BFFF00
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: tls.risk.sev2.count
+                    - type: STRING
+                      name: ds.4.color
+                      value: FFBF00
+                    - type: STRING
+                      name: ds.4.items.0
+                      value: tls.risk.sev1.count
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'

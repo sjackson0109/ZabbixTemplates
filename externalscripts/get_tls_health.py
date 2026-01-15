@@ -23,13 +23,13 @@ Features:
     - Discovery and validation modes for monitoring workflows
 
 USAGE EXAMPLES:
-    python get_tls_handshake.py discover <HOST> [PORT]
-    python get_tls_handshake.py check <HOST> <PROTOCOL> <CIPHER> [PORT]
-    python get_tls_handshake.py protocols
-    python get_tls_handshake.py ciphers
-    python get_tls_handshake.py test <HOST> <PROTOCOL> <CIPHER> [PORT]
-    python get_tls_handshake.py compatibility <HOST> [PORT]
-    python get_tls_handshake.py health <HOST> [PORT]
+    python get_tls_health.py discover <HOST> [PORT]
+    python get_tls_health.py check <HOST> <PROTOCOL> <CIPHER> [PORT]
+    python get_tls_health.py protocols
+    python get_tls_health.py ciphers
+    python get_tls_health.py test <HOST> <PROTOCOL> <CIPHER> [PORT]
+    python get_tls_health.py compatibility <HOST> [PORT]
+    python get_tls_health.py health <HOST> [PORT]
 
 ENVIRONMENT VARIABLES:
     TLS_TIMEOUT (default: 4)
@@ -786,14 +786,14 @@ def main():
         warnings.simplefilter("ignore", category=DeprecationWarning)
         
     if len(sys.argv) < 2:
-        print(json.dumps({'error': 'Usage: get_tls_handshake.py <command> <args>'}))
+        print(json.dumps({'error': 'Usage: get_tls_health.py <command> <args>'}))
         sys.exit(1)
         
     cmd = sys.argv[1].lower()
     
     if cmd == 'discover':
         if len(sys.argv) < 3:
-            print(json.dumps({'error': 'Usage: get_tls_handshake.py discover <HOST> [PORT]'}))
+            print(json.dumps({'error': 'Usage: get_tls_health.py discover <HOST> [PORT]'}))
             sys.exit(1)
         host = sys.argv[2]
         port = sys.argv[3] if len(sys.argv) >= 4 else 443
@@ -801,7 +801,7 @@ def main():
         
     elif cmd == 'check':
         if len(sys.argv) < 5:
-            print(json.dumps({'error': 'Usage: get_tls_handshake.py check <HOST> <PROTOCOL> <CIPHER> [PORT]'}))
+            print(json.dumps({'error': 'Usage: get_tls_health.py check <HOST> <PROTOCOL> <CIPHER> [PORT]'}))
             sys.exit(1)
         host = sys.argv[2]
         protocol = sys.argv[3]
@@ -817,7 +817,7 @@ def main():
         
     elif cmd == 'test':
         if len(sys.argv) < 5:
-            print(json.dumps({'error': 'Usage: get_tls_handshake.py test <HOST> <PROTOCOL> <CIPHER> [PORT]'}))
+            print(json.dumps({'error': 'Usage: get_tls_health.py test <HOST> <PROTOCOL> <CIPHER> [PORT]'}))
             sys.exit(1)
         host = sys.argv[2]
         protocol = sys.argv[3]
@@ -827,7 +827,7 @@ def main():
         
     elif cmd == 'compatibility':
         if len(sys.argv) < 3:
-            print(json.dumps({'error': 'Usage: get_tls_handshake.py compatibility <HOST> [PORT]'}))
+            print(json.dumps({'error': 'Usage: get_tls_health.py compatibility <HOST> [PORT]'}))
             sys.exit(1)
         host = sys.argv[2]
         port = sys.argv[3] if len(sys.argv) >= 4 else 443
@@ -835,7 +835,7 @@ def main():
         
     elif cmd == 'health':
         if len(sys.argv) < 3:
-            print(json.dumps({'error': 'Usage: get_tls_handshake.py health <HOST> [PORT]'}))
+            print(json.dumps({'error': 'Usage: get_tls_health.py health <HOST> [PORT]'}))
             sys.exit(1)
         host = sys.argv[2]
         port = sys.argv[3] if len(sys.argv) >= 4 else 443

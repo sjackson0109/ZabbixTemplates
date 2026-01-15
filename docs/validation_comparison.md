@@ -43,7 +43,7 @@ Based on Zabbix documentation and source code analysis, the following validators
 | `CTimeUnitValidator.php` | Time unit format validation | ✅ **IMPLEMENTED** - Complete s/m/h/d/w validation |
 | `CHostNameValidator.php` | Host/template name validation | ✅ **IMPLEMENTED** - Via reference integrity checks |
 | `CHostGroupNameValidator.php` | Group name validation | ⚠️ **PARTIAL** - Basic structure check only |
-| `CColorValidator.php` | Color code validation | ❌ **NOT NEEDED** - Non-critical, Zabbix handles |
+| `CColorValidator.php` | Colour code validation | ❌ **NOT NEEDED** - Non-critical, Zabbix handles |
 | `CJsonValidator.php` | JSON format validation | ❌ **NOT NEEDED** - YAML parser handles structure |
 | `CXmlValidator.php` | XML format validation | ❌ **NOT APPLICABLE** - We use YAML, not XML |
 | `CEmailValidator.php` | Email format validation | ❌ **NOT NEEDED** - Low priority |
@@ -211,7 +211,7 @@ min(/Linux/net.if.in[{#IFNAME}],5m)*100/last(/Linux/net.if.speed[{#IFNAME}])>90 
 12. **String Length Limits** - Database handles this
 13. **Email/URL Validation** - Low priority fields
 14. **Regex Pattern Validation** - User responsibility
-15. **Color Code Validation** - Non-critical field
+15. **Colour Code Validation** - Non-critical field
 
 ---
 

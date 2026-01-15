@@ -94,7 +94,7 @@ This Zabbix template provides comprehensive web server infrastructure monitoring
 | RFC 7232 | HTTP/1.1 Conditional Requests | ETag, If-Modified-Since validation |
 | RFC 7233 | HTTP/1.1 Range Requests | Partial content support validation |
 | RFC 7234 | HTTP/1.1 Caching | Cache directive compliance |
-| RFC 7235 | HTTP/1.1 Authentication | WWW-Authenticate, Authorization headers |
+| RFC 7235 | HTTP/1.1 Authentication | WWW-Authenticate, Authorisation headers |
 | RFC 6585 | Additional HTTP Status Codes | Extended status code validation |
 | RFC 7725 | HTTP/2 Connection Header | HTTP/2 upgrade mechanism validation |
 
@@ -717,9 +717,9 @@ For enterprise support and custom development:
 - **Email**: Available via GitHub profile
 - **Consultation**: Custom compliance frameworks and integration support
 
-## License
+## Licence
 
-This template and associated scripts are provided under the MIT License. See LICENSE file for details.
+This template and associated scripts are provided under the MIT Licence. See LICENSE file for details.
 python3 get_web_health.py health example.com
 
 # HTTPS security analysis
@@ -806,7 +806,7 @@ python3 get_web_health.py health example.com 8443
 ### Information Triggers
 - **HTTP Only Service**: HTTPS not available or configured
 - **Legacy HTTP Version**: HTTP/1.0 usage detected
-- **Missing Performance Headers**: Cache headers not optimized
+- **Missing Performance Headers**: Cache headers not optimised
 
 ## Troubleshooting
 
@@ -856,7 +856,7 @@ tail -f /var/log/zabbix/zabbix_server.log | grep "get_web_health"
 
 ## Performance Considerations
 
-### Optimization Settings
+### Optimisation Settings
 - **Default Timeout**: 10 seconds (adjustable via macro)
 - **Connection Pooling**: HTTP connections reused when possible
 - **Concurrent Requests**: Multiple checks executed in parallel
@@ -894,7 +894,7 @@ tail -f /var/log/zabbix/zabbix_server.log | grep "get_web_health"
 
 - **v2.0**: Enhanced SSL analysis, OWASP Top 10, compliance frameworks
 - **v1.8**: HTTP/3 detection, CDN identification, proxy analysis
-- **v1.5**: HTTP/2 support, performance optimization
+- **v1.5**: HTTP/2 support, performance optimisation
 - **v1.0**: Initial release with basic HTTP/HTTPS monitoring
 
 ## Support
@@ -909,6 +909,6 @@ tail -f /var/log/zabbix/zabbix_server.log | grep "get_web_health"
 - **Testing**: Comprehensive test suite available
 - **Development**: Modular architecture for easy extension
 
-## License
+## Licence
 
-This monitoring solution is provided under the terms of the original Zabbix project license and contributor agreements.
+This monitoring solution is provided under the terms of the original Zabbix project licence and contributor agreements.

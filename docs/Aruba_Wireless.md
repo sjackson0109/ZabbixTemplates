@@ -6,7 +6,7 @@ The **Aruba Wireless** Zabbix template provides unified SNMP-based monitoring fo
 
 ## Recent Updates (January 2026)
 
-### Template Analysis & Optimization ✅
+### Template Analysis & Optimisation ✅
 - **Comprehensive Template Review**: Deep analysis of 3,641-line template structure and enterprise architecture
 - **Dual-Mode Architecture Understanding**: Validated complex VC (Virtual Controller) vs Standard AP monitoring capabilities
 - **Interface Mapping Verification**: Confirmed 322 interface mappings are specifically selected for diverse Aruba hardware support
@@ -61,7 +61,7 @@ The **Aruba Wireless** Zabbix template provides unified SNMP-based monitoring fo
 
 1. **Import the Template**
    - In Zabbix frontend, go to *Configuration → Templates* and import `aruba_wireless.yaml`
-   - **Template Version**: Latest (January 2026) - analyzed and validated for enterprise deployment
+   - **Template Version**: Latest (January 2026) - analysed and validated for enterprise deployment
    - **Import Status**: Template validates cleanly with no YAML syntax errors
    - **File Size**: 152,568 bytes (3,641 lines) - comprehensive enterprise monitoring solution
 2. **Assign to Hosts**

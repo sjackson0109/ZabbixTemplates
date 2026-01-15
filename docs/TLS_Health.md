@@ -1,9 +1,9 @@
-﻿# TLS Compliance Checker Zabbix Template Documentation
+﻿# TLS Health Zabbix Template Documentation
 
 ## Overview
-The **TLS Compliance Checker** Zabbix template provides automated monitoring and compliance validation for SSL/TLS endpoints. It is designed to help organisations ensure that their public and internal services adhere to security best practices, regulatory requirements, and organisational policies regarding TLS protocol and cipher usage.
+The **TLS Health** Zabbix template provides automated monitoring and compliance validation for SSL/TLS endpoints. It is designed to help organisations ensure that their public and internal services adhere to security best practices, regulatory requirements, and organisational policies regarding TLS protocol and cipher usage.
 
-This template leverages an external script (`get_tls_handshake.py`) to perform real-time handshake tests, protocol/cipher enumeration, and compliance checks. It is suitable for monitoring web servers, mail servers, APIs, and any service supporting SSL/TLS.
+This template leverages an external script (`get_tls_health.py`) to perform real-time handshake tests, protocol/cipher enumeration, and compliance checks. It is suitable for monitoring web servers, mail servers, APIs, and any service supporting SSL/TLS.
 
 ## Features
 - **Automated TLS Handshake Testing:**
@@ -29,8 +29,8 @@ This template leverages an external script (`get_tls_handshake.py`) to perform r
 
 ## Prerequisites
 - **Zabbix Server/Proxy:** Version 6.0 or later (7.0+ recommended)
-- **Python 3:** Required for the `get_tls_handshake.py` script
-- **External Script:** Place `get_tls_handshake.py` in the `externalscripts/` directory of your Zabbix proxy/server
+- **Python 3:** Required for the `get_tls_health.py` script
+- **External Script:** Place `get_tls_health.py` in the `externalscripts/` directory of your Zabbix proxy/server
 - **Network Access:** Zabbix server/proxy must be able to reach monitored endpoints
 
 ## Installation
@@ -40,7 +40,7 @@ This template leverages an external script (`get_tls_handshake.py`) to perform r
    - Go to **Zabbix Console > Data Collection > Templates > Import**
    - Select the template file and import
 3. **Deploy the Script:**
-   - Copy `get_tls_handshake.py` to your Zabbix proxy/server's `externalscripts/` directory
+   - Copy `get_tls_health.py` to your Zabbix proxy/server's `externalscripts/` directory
    - Ensure Python 3 and required dependencies (e.g., `requests`, `pyOpenSSL`) are installed
 4. **Assign to Host:**
    - Link the template to hosts representing your endpoints
