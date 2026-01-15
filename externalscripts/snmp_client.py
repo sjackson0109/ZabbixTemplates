@@ -2,8 +2,8 @@
 """
 Author: Simon Jackson (sjackson0109)
 Created: 2025/04/24
-Updated: 2025/10/15
-Version: 2.0
+Updated: 2026/01/03
+Version: 2.1
 
 Description:
     Comprehensive SNMP client supporting SNMPv1, v2c, and v3 with full authentication and privacy options.
@@ -289,7 +289,6 @@ class SNMPClient:
                         # Try with common SonicWall engine ID patterns
                         # Try multiple SonicWall engine ID patterns
                         try:
-                            import socket
                             ip_addr = socket.gethostbyname(self.host)
                             ip_bytes = socket.inet_aton(ip_addr)
                             

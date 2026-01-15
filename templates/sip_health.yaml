@@ -1,0 +1,1534 @@
+﻿zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: d984fc1f69074abe89d1255ae1b23bb2
+      name: 'Templates/VoIP'
+  templates:
+    - uuid: da0366e63fc9497da6cb646342775076
+      template: 'SIP Health'
+      name: 'SIP Health'
+      description: |
+        SIP and VoIP Infrastructure Compliance Monitoring Template
+        
+        Provides comprehensive monitoring of SIP and VoIP services including:
+        - SIP Protocol Compliance (RFC 3261 and extensions)
+        - RTP/RTCP Media Testing
+        - STUN/TURN NAT Traversal
+        - TLS Security Assessment  
+        - Codec Support Validation
+        - Service Discovery
+        - Quality of Service Metrics
+        - RFC Compliance Scoring
+        
+        Author: Simon Jackson (sjackson0109)
+        Created: 2026/01/02
+        
+        Requirements:
+        - Zabbix 7.0+
+        - Python 3.6+ with standard libraries
+        - Network access to SIP services
+        - External script: get_sip_health.py
+      vendor:
+        name: Simon Jackson
+        version: '1.0'
+      groups:
+        - name: 'Templates/VoIP'
+      items:
+        # SIP Protocol Monitoring
+        - uuid: 7a073d4c9efe4d94a2529f4f1d6195c3
+          name: 'SIP Options Response Time'
+          type: EXTERNAL
+          key: 'get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}]'
+          delay: 5m
+          value_type: FLOAT
+          units: ms
+          description: 'SIP OPTIONS request response time in milliseconds'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.response_time
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: performance
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: sla_component
+              value: latency
+        
+        - uuid: 21ee48dce13a4b99bad7d0e4754285c4
+          name: 'SIP Service Status'
+          type: EXTERNAL
+          key: 'get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT},udp]'
+          delay: 5m
+          value_type: UNSIGNED
+          description: 'SIP service availability status (1=available, 0=unavailable)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: status
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: sla_component
+              value: availability
+        
+        - uuid: 78b27fda46924dd0ad4c591c594cbe1b
+          name: 'SIP Response Code'
+          type: EXTERNAL
+          key: 'get_sip_health.py[comprehensive,{HOST.CONN},detailed]'
+          delay: 6m
+          value_type: UNSIGNED
+          description: 'SIP response code from OPTIONS request'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.sip_testing.options.response_code
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          valuemap:
+            name: 'SIP Response Codes'
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: status
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: medium
+            - tag: troubleshooting_phase
+              value: detection
+            - tag: diagnostic_category
+              value: signaling
+        
+        - uuid: 8a9a289e33d04764a68db0285ee0f085
+          name: 'SIP Supported Methods'
+          type: EXTERNAL
+          key: 'get_sip_health.py[health,{HOST.CONN}]'
+          delay: 30m
+          value_type: TEXT
+          description: 'Supported SIP methods from Allow header'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.sip_testing.options.supported_methods
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '[]'
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: capabilities
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: protocol_compliance
+            - tag: protocol_layer
+              value: application
+        
+        - uuid: 1194be54d1934c0885ebc34a3a5afd11
+          name: 'SIP RFC 3261 Compliance'
+          type: EXTERNAL
+          key: 'get_sip_health.py[rfc_compliance,{HOST.CONN}]'
+          delay: 30m
+          value_type: UNSIGNED
+          description: 'RFC 3261 compliance status (1=compliant, 0=non-compliant)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rfc_compliance.rfc_3261_sip.compliant
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: compliance
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: regulatory_compliance
+              value: required
+        
+        # STUN/NAT Traversal Monitoring
+        - uuid: 5a2ff8aef4e945b68b67da875ae23587
+          name: 'STUN Connectivity Test'
+          type: EXTERNAL
+          key: 'get_sip_health.py[stun_test,{HOST.CONN},{$STUN.PORT}]'
+          delay: 10m
+          value_type: UNSIGNED
+          description: 'STUN connectivity test result (1=success, 0=failure)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: stun
+            - tag: metric_type
+              value: connectivity
+        
+        - uuid: b21c3ac6280b4d229d8612d287d3e85d
+          name: 'STUN Response Time'
+          type: EXTERNAL
+          key: 'get_sip_health.py[comprehensive,{HOST.CONN}]'
+          delay: 10m
+          value_type: FLOAT
+          units: ms
+          description: 'STUN request response time'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.stun_testing.score
+          tags:
+            - tag: component
+              value: stun
+            - tag: metric_type
+              value: performance
+            - tag: rfc_standard
+              value: rfc5389
+            - tag: business_impact
+              value: medium
+            - tag: performance_impact
+              value: call_quality
+            - tag: sla_component
+              value: latency
+        
+        - uuid: 785d55288989497a9fd060bc63ce2111
+          name: 'NAT Traversal Support'
+          type: EXTERNAL
+          key: 'get_sip_health.py[nat_test,{HOST.CONN}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'NAT traversal capability status (1=supported, 0=not supported)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.nat_traversal_support
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: nat
+            - tag: metric_type
+              value: capabilities
+            - tag: rfc_standard
+              value: rfc5389,rfc5766
+            - tag: business_impact
+              value: high
+            - tag: service_dependency
+              value: network,firewall
+            - tag: upstream_impact
+              value: affects_media
+        
+        # RTP Media Testing
+        - uuid: 43ea2dab83cd4d618d6f76fe731c04d7
+          name: 'RTP Service Status'
+          type: EXTERNAL
+          key: 'get_sip_health.py[rtp_test,{HOST.CONN},{$RTP.PORT}]'
+          delay: 15m
+          value_type: UNSIGNED
+          description: 'RTP service availability (1=available, 0=unavailable)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: rtp
+            - tag: metric_type
+              value: status
+            - tag: rfc_standard
+              value: rfc3550
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: protocol_layer
+              value: transport
+            - tag: upstream_impact
+              value: affects_media
+        
+        - uuid: e1bce4c0aa4142f29319a7336242044a
+          name: 'Supported Audio Codecs Count'
+          type: EXTERNAL
+          key: 'get_sip_health.py[codec_test,{HOST.CONN},{$SIP.PORT}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'Number of supported audio codecs'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.supported_audio_codecs
+            - type: JAVASCRIPT
+              parameters:
+                - 'return Array.isArray(value) ? value.length : 0;'
+          tags:
+            - tag: component
+              value: codecs
+            - tag: metric_type
+              value: capabilities
+            - tag: rfc_standard
+              value: rfc3261,rfc3550
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: media_negotiation
+            - tag: performance_impact
+              value: call_quality
+        
+        # TLS Security Assessment
+        - uuid: 3c4ec3e9167e4e46af0ef2f323a95661
+          name: 'SIP TLS Security Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[tls_test,{HOST.CONN},{$SIPS.PORT}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'TLS security assessment score (0-100)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_score
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: component
+              value: security
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc5246,rfc8446
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: important
+            - tag: regulatory_compliance
+              value: required
+            - tag: troubleshooting_phase
+              value: isolation
+        
+        - uuid: 2b369c49d1a24f03884b31b4ab086b0f
+          name: 'TLS Version'
+          type: EXTERNAL
+          key: 'get_sip_health.py[tls_version,{HOST.CONN}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'TLS version used for SIPS connection'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.sip_testing.security.tls_version
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'Not Available'
+          tags:
+            - tag: component
+              value: security
+            - tag: metric_type
+              value: version
+            - tag: rfc_standard
+              value: rfc5246,rfc8446
+            - tag: business_impact
+              value: high
+            - tag: regulatory_compliance
+              value: required
+            - tag: security_assessment
+              value: encryption_protocol
+        
+        # Overall Compliance Assessment
+        - uuid: 229cd07f3ae94787afb073a1a4a64fcb
+          name: 'VoIP Compliance Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[compliance_score,{HOST.CONN}]'
+          delay: 1h
+          value_type: FLOAT
+          units: '%'
+          description: 'Overall VoIP compliance assessment score'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.overall_summary.percentage
+          tags:
+            - tag: component
+              value: compliance
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766,rfc3550
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: sla_component
+              value: availability
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: regulatory_compliance
+              value: mandatory
+        
+        - uuid: 6d114d01536c4dfeab78c147f5f3bb91
+          name: 'SIP Protocol Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[protocol_score,{HOST.CONN}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'SIP protocol compliance component score'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.compliance_results.rfc_3261_sip.score
+          tags:
+            - tag: component
+              value: sip
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: protocol_layer
+              value: application
+            - tag: compliance_domain
+              value: signaling
+        
+        - uuid: a3392931d45246359f184da31e7dd7ec
+          name: 'Security Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[security_score,{HOST.CONN},{$SIPS.PORT}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'Security compliance component score'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_score
+          tags:
+            - tag: component
+              value: security
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc5246,rfc8446,rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: important
+            - tag: regulatory_compliance
+              value: required
+            - tag: security_assessment
+              value: comprehensive
+        
+        - uuid: 5afc60e103784a49963a5d1e8fc34908
+          name: 'NAT Traversal Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[nat_score,{HOST.CONN}]'
+          delay: 1h
+          value_type: UNSIGNED
+          description: 'NAT traversal compliance component score'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.score
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: component
+              value: nat
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc5389,rfc5766
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: network,firewall
+            - tag: compliance_domain
+              value: connectivity
+        
+        # Enhanced Testing Items
+        - uuid: d237968347b84d5eb2429841141fcaac
+          name: 'Comprehensive Test Status'
+          type: EXTERNAL
+          key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT}]'
+          delay: 30m
+          value_type: UNSIGNED
+          description: 'Comprehensive VoIP test including STUN/TURN capabilities'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: voip
+            - tag: metric_type
+              value: status
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: troubleshooting_phase
+              value: detection
+            - tag: test_coverage
+              value: comprehensive
+        
+        - uuid: 0909f7fa85b24416918668a1cbe74ca1
+          name: 'STUN Connectivity Status'
+          type: EXTERNAL
+          key: 'get_sip_health.py[stun_v3,{HOST.CONN}]'
+          delay: 15m
+          value_type: UNSIGNED
+          description: 'STUN connectivity testing for NAT traversal'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: stun
+            - tag: metric_type
+              value: connectivity
+        
+        - uuid: f21ca99c4abd43eb8dcac520641baa29
+          name: 'TURN Allocation Status'
+          type: EXTERNAL
+          key: 'get_sip_health.py[turn_v3,{HOST.CONN}]'
+          delay: 15m
+          value_type: UNSIGNED
+          description: 'TURN relay allocation testing for media traversal'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+            - type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          tags:
+            - tag: component
+              value: turn
+            - tag: metric_type
+              value: allocation
+            - tag: rfc_standard
+              value: rfc5766
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: media_relay
+            - tag: troubleshooting_phase
+              value: isolation
+            - tag: upstream_impact
+              value: affects_media
+        
+        - uuid: dce1aa45cb8648658b48c80ca919353e
+          name: 'Advanced Compliance Score'
+          type: EXTERNAL
+          key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT},true]'
+          delay: 1h
+          value_type: FLOAT
+          units: '%'
+          description: 'Detailed compliance scoring with STUN/TURN assessment'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.compliance_summary.percentage
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          valuemap:
+            name: 'Compliance Grade'
+          tags:
+            - tag: component
+              value: compliance
+            - tag: metric_type
+              value: score
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766,rfc3550
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: regulatory_compliance
+              value: mandatory
+            - tag: test_coverage
+              value: advanced
+        
+        # Enhanced Triggers
+        - uuid: 7fa8d2e11da54ffa99e3e6d831cce9a7
+          expression: 'last(/SIP Health/get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT}],#1)=0'
+          name: 'Comprehensive Test Failed'
+          priority: HIGH
+          description: 'Comprehensive VoIP test has failed on {HOST.NAME}'
+          tags:
+            - tag: component
+              value: voip
+            - tag: scope
+              value: availability
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: escalation_level
+              value: immediate
+            - tag: troubleshooting_phase
+              value: detection
+            - tag: auto_remediation
+              value: restart_service
+        
+        - uuid: 4e99777315434ccd9cd148df8e76228f
+          expression: 'last(/SIP Health/get_sip_health.py[stun_v3,{HOST.CONN}],#1)=0'
+          name: 'STUN Connectivity Failed'
+          priority: AVERAGE
+          description: 'STUN connectivity test failed - NAT traversal may be impacted on {HOST.NAME}'
+          tags:
+            - tag: component
+              value: stun
+            - tag: scope
+              value: connectivity
+            - tag: rfc_standard
+              value: rfc5389
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: network,firewall
+            - tag: troubleshooting_phase
+              value: isolation
+            - tag: diagnostic_category
+              value: connectivity
+        
+        - uuid: ae04d31b55d64ffe9166f0b5937b2ab7
+          expression: 'last(/SIP Health/get_sip_health.py[turn_v3,{HOST.CONN}],#1)=0'
+          name: 'TURN Allocation Failed'
+          priority: AVERAGE
+          description: 'TURN relay allocation failed - media traversal may be compromised on {HOST.NAME}'
+          tags:
+            - tag: component
+              value: turn
+            - tag: scope
+              value: media
+            - tag: rfc_standard
+              value: rfc5766
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: media_relay
+            - tag: troubleshooting_phase
+              value: isolation
+            - tag: upstream_impact
+              value: affects_media
+        
+        - uuid: 342c211d2f4d46e4bb4cce1a2bb4d157
+          expression: 'last(/SIP Health/get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT},true],#1)<{$V3.COMPLIANCE.MIN}'
+          name: 'Advanced Compliance Low Score'
+          priority: WARNING
+          description: 'Advanced compliance score is below minimum threshold on {HOST.NAME}'
+          tags:
+            - tag: component
+              value: compliance
+            - tag: scope
+              value: performance
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766,rfc3550
+            - tag: business_impact
+              value: medium
+            - tag: service_criticality
+              value: important
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: regulatory_compliance
+              value: required
+      
+      discovery_rules:
+        # VoIP Service Discovery
+        - uuid: 45bbad274a1143e28ebfc7826fc68716
+          name: 'VoIP Service Discovery'
+          type: EXTERNAL
+          key: 'get_sip_health.py[discover,{HOST.CONN}]'
+          delay: 1h
+          description: 'Discover available VoIP services and transports'
+          item_prototypes:
+            - uuid: f8ce4464aa81469b9a8af63caf181303
+              name: 'Service {#VOIP_SERVICE} Status'
+              type: EXTERNAL
+              key: 'get_sip_health.py[voip_discovery,{HOST.CONN},{#VOIP_PORT}]'
+              delay: 5m
+              value_type: UNSIGNED
+              description: 'Status of discovered VoIP service {#VOIP_SERVICE}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.success
+                - type: BOOL_TO_DECIMAL
+                  parameters:
+                    - ''
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: component
+                  value: discovery
+            
+            - uuid: 53f0f976a4e94438aa411145f136c002
+              name: 'Service {#VOIP_SERVICE} Response Time'
+              type: EXTERNAL
+              key: 'get_sip_health.py[response_time,{HOST.CONN},{#VOIP_PORT}]'
+              delay: 5m
+              value_type: FLOAT
+              units: ms
+              description: 'Response time for VoIP service {#VOIP_SERVICE}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.response_time
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: component
+                  value: discovery
+          
+          trigger_prototypes:
+            - uuid: 4dd08d832b4743f5941059fd1f023afa
+              expression: 'last(/SIP Health/get_sip_health.py[voip_discovery,{HOST.CONN},{#VOIP_PORT}],#1)=0'
+              name: 'VoIP Service {#VOIP_SERVICE} is down'
+              priority: HIGH
+              description: 'VoIP service {#VOIP_SERVICE} on {HOST.NAME} is not responding'
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: scope
+                  value: availability
+                - tag: rfc_standard
+                  value: rfc3261
+                - tag: business_impact
+                  value: high
+                - tag: discovered_service
+                  value: 'true'
+                - tag: auto_remediation
+                  value: restart_service
+            
+            - uuid: e01ea35a16e8484d91fa1e687b988c33
+              expression: 'last(/SIP Health/get_sip_health.py[response_time,{HOST.CONN},{#VOIP_PORT}],#1)>{$VOIP.RESPONSE.TIME.WARN}'
+              name: 'VoIP Service {#VOIP_SERVICE} high response time'
+              priority: WARNING
+              description: 'VoIP service {#VOIP_SERVICE} response time is too high: {ITEM.LASTVALUE}ms'
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: scope
+                  value: performance
+                - tag: rfc_standard
+                  value: rfc3261
+                - tag: business_impact
+                  value: medium
+                - tag: discovered_service
+                  value: 'true'
+                - tag: sla_component
+                  value: latency
+                - tag: performance_impact
+                  value: user_experience
+        
+        # Enhanced Fast Discovery Rule
+        - uuid: 5e053525ebf64e889fc5313ef82ecdd3
+          name: 'Fast VoIP Service Discovery'
+          type: EXTERNAL
+          key: 'get_sip_health.py[discover.fast,{HOST.CONN}]'
+          delay: 30m
+          description: 'Quick VoIP service discovery with reduced testing overhead'
+          item_prototypes:
+            - uuid: 72c8dfa3511344628fb582e50e1e2c11
+              name: 'Fast Service {#VOIP_SERVICE} Status'
+              type: EXTERNAL
+              key: 'get_sip_health.py[sip_test,{HOST.CONN},{#VOIP_PORT},udp]'
+              delay: 10m
+              value_type: UNSIGNED
+              description: 'Quick status check for discovered VoIP service {#VOIP_SERVICE}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.success
+                - type: BOOL_TO_DECIMAL
+                  parameters:
+                    - ''
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: discovery_type
+                  value: fast
+                - tag: component
+                  value: discovery
+            
+            - uuid: bcf843784dff4ed8a7f2911f016d97d3
+              name: 'Fast Service {#VOIP_SERVICE} Transport'
+              type: EXTERNAL
+              key: 'get_sip_health.py[sip_test,{HOST.CONN},{#VOIP_PORT},{#VOIP_TRANSPORT}]'
+              delay: 15m
+              value_type: TEXT
+              description: 'Transport protocol for discovered service {#VOIP_SERVICE}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.transport
+              tags:
+                - tag: service
+                  value: '{#VOIP_SERVICE_TYPE}'
+                - tag: discovery_type
+                  value: fast
+                - tag: component
+                  value: transport
+      
+      triggers:
+        # SIP Service Triggers
+        - uuid: 1d0c69f56b994fb69cc6d8b6d4b6eb18
+          expression: 'last(/SIP Health/get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}],#1)=0'
+          name: 'SIP service is down'
+          priority: HIGH
+          description: 'SIP service on {HOST.NAME} is not responding to OPTIONS requests'
+          tags:
+            - tag: component
+              value: sip
+            - tag: scope
+              value: availability
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: escalation_level
+              value: immediate
+            - tag: auto_remediation
+              value: restart_service
+            - tag: sla_component
+              value: availability
+        
+        - uuid: 36d13625848e49f2a176ffbb8f72f8ac
+          expression: 'last(/SIP Health/get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}],#1)>{$SIP.RESPONSE.TIME.WARN}'
+          name: 'SIP high response time'
+          priority: WARNING
+          description: 'SIP response time is too high: {ITEM.LASTVALUE}ms'
+          tags:
+            - tag: component
+              value: sip
+            - tag: scope
+              value: performance
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: medium
+            - tag: performance_impact
+              value: user_experience
+            - tag: sla_component
+              value: latency
+            - tag: troubleshooting_phase
+              value: detection
+        
+        - uuid: 736f5d5965ca479aa1821d0997ced5cd
+          expression: 'last(/SIP Health/get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}],#1) not in (200,100,180,183)'
+          name: 'SIP service error response'
+          priority: AVERAGE
+          description: 'SIP service returned error response code: {ITEM.LASTVALUE}'
+          tags:
+            - tag: component
+              value: sip
+            - tag: scope
+              value: availability
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: medium
+            - tag: troubleshooting_phase
+              value: detection
+            - tag: diagnostic_category
+              value: signaling
+            - tag: protocol_layer
+              value: application
+        
+        - uuid: 4f88ca2927c14e82b577631f81ebea7b
+          expression: 'last(/SIP Health/get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}],#1)=0'
+          name: 'SIP RFC 3261 non-compliance'
+          priority: WARNING
+          description: 'SIP service is not compliant with RFC 3261 standard'
+          tags:
+            - tag: component
+              value: sip
+            - tag: scope
+              value: compliance
+            - tag: rfc_standard
+              value: rfc3261
+            - tag: business_impact
+              value: high
+            - tag: regulatory_compliance
+              value: required
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: escalation_level
+              value: standard
+        
+        # Security Triggers
+        - uuid: 0cc4f05b49284fb2a6f6ea78adb16745
+          expression: 'last(/SIP Health/get_sip_health.py[tls_test,{HOST.CONN},{$SIPS.PORT}],#1)<{$SECURITY.SCORE.MIN}'
+          name: 'Low VoIP security score'
+          priority: WARNING
+          description: 'VoIP TLS security score is below acceptable threshold: {ITEM.LASTVALUE}'
+          tags:
+            - tag: component
+              value: security
+            - tag: scope
+              value: compliance
+            - tag: rfc_standard
+              value: rfc5246,rfc8446
+            - tag: business_impact
+              value: high
+            - tag: regulatory_compliance
+              value: required
+            - tag: security_assessment
+              value: encryption
+            - tag: troubleshooting_phase
+              value: validation
+        
+        # Compliance Triggers
+        - uuid: 5d6da7d3405c4211af57c3cf0742d0bc
+          expression: 'last(/SIP Health/get_sip_health.py[comprehensive,{HOST.CONN}],#1)<{$COMPLIANCE.SCORE.MIN}'
+          name: 'Low VoIP compliance score'
+          priority: WARNING
+          description: 'Overall VoIP compliance score is below threshold: {ITEM.LASTVALUE}%'
+          tags:
+            - tag: component
+              value: compliance
+            - tag: scope
+              value: overall
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766,rfc3550
+            - tag: business_impact
+              value: high
+            - tag: regulatory_compliance
+              value: mandatory
+            - tag: troubleshooting_phase
+              value: validation
+            - tag: escalation_level
+              value: standard
+        
+        - uuid: fe279e142601486595c4e856e38b6c35
+          expression: 'last(/SIP Health/get_sip_health.py[comprehensive,{HOST.CONN}],#1)<{$COMPLIANCE.CRITICAL}'
+          name: 'Critical VoIP compliance failure'
+          priority: HIGH
+          description: 'VoIP compliance score is critically low: {ITEM.LASTVALUE}% - immediate attention required'
+          tags:
+            - tag: component
+              value: compliance
+            - tag: scope
+              value: critical
+            - tag: rfc_standard
+              value: rfc3261,rfc5389,rfc5766,rfc3550
+            - tag: business_impact
+              value: high
+            - tag: service_criticality
+              value: core
+            - tag: escalation_level
+              value: immediate
+            - tag: regulatory_compliance
+              value: mandatory
+            - tag: troubleshooting_phase
+              value: resolution
+        
+        # NAT/STUN Triggers
+        - uuid: 5e09a15721f44756afaeee295fd551dd
+          expression: 'last(/SIP Health/get_sip_health.py[stun_test,{HOST.CONN},{$STUN.PORT}],#1)=0'
+          name: 'STUN connectivity failed'
+          priority: WARNING
+          description: 'STUN connectivity test failed - NAT traversal may be affected'
+          tags:
+            - tag: component
+              value: stun
+            - tag: scope
+              value: connectivity
+            - tag: rfc_standard
+              value: rfc5389
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: nat_traversal,firewall
+            - tag: troubleshooting_phase
+              value: isolation
+            - tag: network_context
+              value: firewall_restricted
+        
+        - uuid: a7d6c60e303a45a8b77a549ba089a45f
+          expression: 'last(/SIP Health/get_sip_health.py[nat_test,{HOST.CONN}],#1)=0'
+          name: 'NAT traversal not supported'
+          priority: INFO
+          description: 'NAT traversal mechanisms are not available - may affect call connectivity'
+          tags:
+            - tag: component
+              value: nat
+            - tag: scope
+              value: capabilities
+            - tag: rfc_standard
+              value: rfc5389,rfc5766
+            - tag: business_impact
+              value: medium
+            - tag: service_dependency
+              value: network,firewall
+            - tag: upstream_impact
+              value: affects_media
+            - tag: network_context
+              value: firewall_restricted
+      
+      dashboards:
+        # Main VoIP Overview Dashboard
+        - uuid: 1432bec61571464e963c61b2a2ba9f7f
+          name: 'VoIP Service Overview'
+          display_period: '60'
+          auto_start: '1'
+          pages:
+            - name: 'VoIP Compliance Dashboard'
+              widgets:
+                - type: graph
+                  x: '0'
+                  y: '0'
+                  width: '12'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: source_type
+                      value: '0'
+                    - type: GRAPH
+                      name: graphid
+                      value:
+                        name: 'VoIP Compliance Scores'
+                        host: 'SIP Health'
+                
+                - type: plaintext
+                  x: '12'
+                  y: '0'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: style
+                      value: '1'
+                    - type: STRING
+                      name: content
+                      value: |
+                        **VoIP Service Status**
+                        
+                        Overall Compliance: {sip-voip-compliance-monitor:get_sip_health.py[comprehensive,{HOST.CONN}].last()}%
+                        SIP Status: {sip-voip-compliance-monitor:get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}].last()}
+                        Security Score: {sip-voip-compliance-monitor:get_sip_health.py[tls_test,{HOST.CONN},{$SIPS.PORT}].last()}
+                
+                - type: graph
+                  x: '0'
+                  y: '5'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: source_type
+                      value: '0'
+                    - type: GRAPH
+                      name: graphid
+                      value:
+                        name: 'SIP Response Times'
+                        host: 'SIP Health'
+        
+        # Security Assessment Dashboard
+        - uuid: 60fcfea0aa0f483a82437204aaf7f0a9
+          name: 'VoIP Security Assessment'
+          display_period: '60'
+          auto_start: '1'
+          pages:
+            - name: 'Security Metrics'
+              widgets:
+                - type: gauge
+                  x: '0'
+                  y: '0'
+                  width: '6'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: show
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'TLS Security Score'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[tls_test,{HOST.CONN},{$SIPS.PORT}]'
+                        host: 'SIP Health'
+                
+                - type: gauge
+                  x: '6'
+                  y: '0'
+                  width: '6'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: show
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'Overall Compliance'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[comprehensive,{HOST.CONN}]'
+                        host: 'SIP Health'
+        
+        # Service Discovery Dashboard
+        - uuid: 9be362f53ca4490091882d0ff3e52986
+          name: 'VoIP Service Discovery'
+          display_period: '60'
+          auto_start: '1'
+          pages:
+            - name: 'Discovered Services'
+              widgets:
+                - type: item
+                  x: '0'
+                  y: '0'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: show
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'Discovered VoIP Services'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[discover,{HOST.CONN}]'
+                        host: 'SIP Health'
+        
+        # Performance Monitoring Dashboard
+        - uuid: 60451977ca464f6b8a674515329344a7
+          name: 'VoIP Performance Monitoring'
+          display_period: '60'
+          auto_start: '1'
+          pages:
+            - name: 'Performance Metrics'
+              widgets:
+                - type: graph
+                  x: '0'
+                  y: '0'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: source_type
+                      value: '1'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}]'
+                        host: 'SIP Health'
+                
+                - type: plaintext
+                  x: '0'
+                  y: '5'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: style
+                      value: '1'
+                    - type: STRING
+                      name: content
+                      value: |
+                        **Performance Summary**
+                        
+                        SIP Response Time: {sip-voip-compliance-monitor:get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}].last()}ms
+                        STUN Response Time: {sip-voip-compliance-monitor:get_sip_health.py[stun_test,{HOST.CONN},{$STUN.PORT}].last()}ms
+                        NAT Traversal: {sip-voip-compliance-monitor:get_sip_health.py[nat_test,{HOST.CONN}].last()}
+        
+        # Advanced Monitoring Dashboard
+        - uuid: d48dd67b56d54d68bed6c4784cef8156
+          name: 'VoIP Advanced Monitoring'
+          display_period: '60'
+          auto_start: '1'
+          pages:
+            - name: 'Enhanced Testing'
+              widgets:
+                - type: item
+                  x: '0'
+                  y: '0'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: adv_conf
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'Comprehensive Test Status'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT}]'
+                        host: 'SIP Health'
+                
+                - type: item
+                  x: '6'
+                  y: '0'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: adv_conf
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'STUN Connectivity'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[stun_v3,{HOST.CONN}]'
+                        host: 'SIP Health'
+                
+                - type: item
+                  x: '12'
+                  y: '0'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: adv_conf
+                      value: '1'
+                    - type: STRING
+                      name: description
+                      value: 'TURN Allocation'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[turn_v3,{HOST.CONN}]'
+                        host: 'SIP Health'
+                
+                - type: gauge
+                  x: '0'
+                  y: '3'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Advanced Compliance Score'
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT},true]'
+                        host: 'SIP Health'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: thresholds_0_threshold
+                      value: '75'
+                    - type: STRING
+                      name: thresholds_0_color
+                      value: 'FF465C'
+                    - type: STRING
+                      name: thresholds_1_threshold
+                      value: '85'
+                    - type: STRING
+                      name: thresholds_1_color
+                      value: 'B0AF07'
+                    - type: STRING
+                      name: thresholds_2_threshold
+                      value: '95'
+                    - type: STRING
+                      name: thresholds_2_color
+                      value: '0EC9AC'
+      
+      macros:
+        - macro: '{$SIP.PORT}'
+          value: '5060'
+          description: 'Default SIP port (UDP/TCP)'
+        
+        - macro: '{$SIPS.PORT}'
+          value: '5061'
+          description: 'Default SIPS port (TLS)'
+        
+        - macro: '{$STUN.PORT}'
+          value: '3478'
+          description: 'Default STUN port'
+        
+        - macro: '{$RTP.PORT}'
+          value: '10000'
+          description: 'RTP port for testing'
+        
+        - macro: '{$SIP.RESPONSE.TIME.WARN}'
+          value: '2000'
+          description: 'SIP response time warning threshold (ms)'
+        
+        - macro: '{$VOIP.RESPONSE.TIME.WARN}'
+          value: '3000'
+          description: 'VoIP response time warning threshold (ms)'
+        
+        - macro: '{$SECURITY.SCORE.MIN}'
+          value: '70'
+          description: 'Minimum acceptable security score'
+        
+        - macro: '{$COMPLIANCE.SCORE.MIN}'
+          value: '60'
+          description: 'Minimum acceptable compliance score (%)'
+        
+        - macro: '{$COMPLIANCE.CRITICAL}'
+          value: '30'
+          description: 'Critical compliance score threshold (%)'
+        
+        - macro: '{$V3.COMPLIANCE.MIN}'
+          value: '75'
+          description: 'Minimum acceptable advanced compliance score (%)'
+      
+      valuemaps:
+        - uuid: 8c9320aa40aa42f4bfef34269594c4de
+          name: 'VoIP Service Status'
+          mappings:
+            - value: '0'
+              newvalue: 'Down'
+            - value: '1'
+              newvalue: 'Up'
+        
+        - uuid: 90d80254a9e5483d8fe965399afa149e
+          name: 'Compliance Level'
+          mappings:
+            - value: '0'
+              newvalue: 'Non-compliant'
+            - value: '1'
+              newvalue: 'Compliant'
+        
+        - uuid: 9416c3b5b64d4fe19561dd1f7f961b5c
+          name: 'Security Rating'
+          mappings:
+            - value: '0-30'
+              newvalue: 'Critical'
+            - value: '31-50'
+              newvalue: 'Poor'
+            - value: '51-70'
+              newvalue: 'Fair'
+            - value: '71-85'
+              newvalue: 'Good'
+            - value: '86-100'
+              newvalue: 'Excellent'
+        
+        - uuid: 54a8f099369d4eb39a891fe5dde98498
+          name: 'Compliance Grade'
+          mappings:
+            - value: '0-30'
+              newvalue: 'F - Critical'
+            - value: '31-50'
+              newvalue: 'D - Poor'
+            - value: '51-65'
+              newvalue: 'C - Fair'
+            - value: '66-75'
+              newvalue: 'B - Good'
+            - value: '76-85'
+              newvalue: 'A - Very Good'
+            - value: '86-95'
+              newvalue: 'A+ - Excellent'
+            - value: '96-100'
+              newvalue: 'A++ - Outstanding'
+        
+        - uuid: 9a4f121da0884ce18ab5ba0e097b8511
+          name: 'STUN/TURN Status'
+          mappings:
+            - value: '0'
+              newvalue: 'Failed'
+            - value: '1'
+              newvalue: 'Connected'
+            - value: '2'
+              newvalue: 'Allocated'
+            - value: '3'
+              newvalue: 'Optimized'
+        
+        - uuid: 6cda21a7776f45de84539ce4b94e74a5
+          name: 'Transport Protocol'
+          mappings:
+            - value: 'udp'
+              newvalue: 'UDP'
+            - value: 'tcp'
+              newvalue: 'TCP'
+            - value: 'tls'
+              newvalue: 'TLS'
+            - value: 'ws'
+              newvalue: 'WebSocket'
+            - value: 'wss'
+              newvalue: 'WebSocket Secure'
+        
+        - uuid: 867b6fe94c3540fd92b3f363347edfda
+          name: 'SIP Response Codes'
+          mappings:
+            - value: '200'
+              newvalue: '200 OK'
+            - value: '302'
+              newvalue: '302 Moved Temporarily'
+            - value: '400'
+              newvalue: '400 Bad Request'
+            - value: '401'
+              newvalue: '401 Unauthorized'
+            - value: '403'
+              newvalue: '403 Forbidden'
+            - value: '404'
+              newvalue: '404 Not Found'
+            - value: '408'
+              newvalue: '408 Request Timeout'
+            - value: '480'
+              newvalue: '480 Temporarily Unavailable'
+            - value: '486'
+              newvalue: '486 Busy Here'
+            - value: '500'
+              newvalue: '500 Server Internal Error'
+            - value: '503'
+              newvalue: '503 Service Unavailable'
+        
+        - uuid: 436dc2988d0747158ae06d0e26a59910
+          name: 'NAT Traversal Capability'
+          mappings:
+            - value: '0'
+              newvalue: 'Not Supported'
+            - value: '1'
+              newvalue: 'Basic NAT'
+            - value: '2'
+              newvalue: 'STUN Supported'
+            - value: '3'
+              newvalue: 'TURN Supported'
+            - value: '4'
+              newvalue: 'ICE Supported'
+            - value: '5'
+              newvalue: 'Full Support'
+
+  graphs:
+    - uuid: dd7e33bcc1334bee97df02b1dd1d80ee
+      name: 'VoIP Compliance Scores'
+      width: '900'
+      height: '200'
+      graph_items:
+        - color: '1A7C11'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[comprehensive,{HOST.CONN}]'
+        - color: 'F63100'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT},true]'
+        - color: '2774A4'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[rfc_compliance,{HOST.CONN}]'
+    
+    - uuid: b1cfcbb7563a4fc796ae8a759aac19f3
+      name: 'SIP Response Times'
+      width: '900'
+      height: '200'
+      graph_items:
+        - color: '1A7C11'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[sip_test,{HOST.CONN},{$SIP.PORT}]'
+        - color: '2774A4'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[stun_test,{HOST.CONN},{$STUN.PORT}]'
+        - color: 'F63100'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT}]'
+    
+    - uuid: aaafc7c393244e159e1a030fd963c8a6
+      name: 'Enhanced Monitoring'
+      width: '900'
+      height: '200'
+      graph_items:
+        - color: '1A7C11'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT}]'
+        - color: 'F63100'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[stun_v3,{HOST.CONN}]'
+        - color: '2774A4'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[turn_v3,{HOST.CONN}]'
+    
+    - uuid: 8d7545d58dd04d4f8430b4e7ff9258ea
+      name: 'STUN/TURN Connectivity Status'
+      width: '900'
+      height: '200'
+      graph_items:
+        - color: '1A7C11'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[stun_v3,{HOST.CONN}]'
+        - color: 'F63100'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[turn_v3,{HOST.CONN}]'
+        - color: '2774A4'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[nat_test,{HOST.CONN}]'
+    
+    - uuid: f9755de23038479fb4a1610ccd57db66
+      name: 'Security and Compliance Metrics'
+      width: '900'
+      height: '200'
+      graph_items:
+        - color: '1A7C11'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[tls_test,{HOST.CONN},{$SIPS.PORT}]'
+        - color: 'F63100'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[security_score,{HOST.CONN},{$SIPS.PORT}]'
+        - color: '2774A4'
+          item:
+            host: 'SIP Health'
+            key: 'get_sip_health.py[v3,{HOST.CONN},{$SIP.PORT},true]'

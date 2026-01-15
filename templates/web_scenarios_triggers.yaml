@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   templates:
     - uuid: c1b937bd6e904eb4bc3ea91e6abbd830
@@ -48,7 +48,7 @@ zabbix_export:
               value_type: TEXT
               trends: '0'
               delay: 1m
-          trigger_prototypes:
+              trigger_prototypes:
             - uuid: c9bf329fd6bf42c8974d9038ba487b33
               name: 'Web Scenario "{#SCENARIO}" failed'
               expression: |

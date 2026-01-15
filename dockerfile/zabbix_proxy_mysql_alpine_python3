@@ -1,17 +1,25 @@
-FROM zabbix/zabbix-proxy-mysql:alpine-7.0-latest
+FROM zabbix/zabbix-server-pgsql:alpine-7.0-latest
 
 # Switch to root to install additional packages
 USER root
 
-# Install Python 3, pip, and necessary build dependencies
-RUN apk add --no-cache python3 py3-pip
+# Install Python 3, pip, SNMP tools, and DNS utilities
+RUN apk add --no-cache python3 py3-pip net-snmp-tools bind-tools
+
+# Create python symlink for scripts that expect 'python' command
+RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install Python libraries
 RUN pip3 install --break-system-packages \
     requests \
     urllib3 \
     py-zabbix \
-    pycryptodome
+    pycryptodome \
+    psutil \
+    dnspython \
+    cryptography \
+    pyopenssl \
+    httpx[http2]
 
 # Verify installation
 RUN python3 --version && \
@@ -19,7 +27,21 @@ RUN python3 --version && \
     python3 -m pip show requests && \
     python3 -m pip show urllib3 && \
     python3 -m pip show py-zabbix && \
-    python3 -m pip show pycryptodome
+    python3 -m pip show pycryptodome && \
+    python3 -m pip show httpx
+
+# Ensure proper permissions and ownership for zabbix user access
+RUN chmod 755 /usr/bin/python3.12 /usr/bin/python3 /usr/bin/python
+RUN chown root:root /usr/bin/python3.12 /usr/bin/python3 /usr/bin/python
+
+# Add python to zabbix user's PATH and create additional symlinks
+RUN mkdir -p /usr/local/zabbix/bin
+RUN ln -sf /usr/bin/python3 /usr/local/zabbix/bin/python3
+RUN ln -sf /usr/bin/python3 /usr/local/zabbix/bin/python
+RUN chown -R zabbix:zabbix /usr/local/zabbix
 
 # Switch back to the default user
 USER zabbix
+
+# Set PATH for zabbix user
+ENV PATH="/usr/local/zabbix/bin:${PATH}"

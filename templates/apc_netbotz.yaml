@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: edec55083af745beaed7cdb51656da0e
@@ -469,7 +469,7 @@ zabbix_export:
               key: 'netbotz.dewpoint[{#DEWPOINT_LABEL}]'
               value_type: FLOAT
               units: C
-              description: 'Dew point temperature (in °C) detected by sensor ''{#DEWPOINT_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              description: 'Dew point temperature (in Â°C) detected by sensor ''{#DEWPOINT_LABEL}''. Multiplied by 0.1 for correct scaling.'
               preprocessing:
                 - type: MULTIPLIER
                   parameters:
@@ -955,7 +955,7 @@ zabbix_export:
               key: 'netbotz.temperature[{#TEMP_LABEL}]'
               value_type: FLOAT
               units: C
-              description: 'Temperature (in °C) detected by sensor ''{#TEMP_LABEL}''. Multiplied by 0.1 for correct scaling.'
+              description: 'Temperature (in Â°C) detected by sensor ''{#TEMP_LABEL}''. Multiplied by 0.1 for correct scaling.'
               preprocessing:
                 - type: MULTIPLIER
                   parameters:
@@ -1047,7 +1047,7 @@ zabbix_export:
               key: 'powernet.sensor.temp[{#SENSOR_LABEL}]'
               value_type: FLOAT
               units: C
-              description: 'Temperature (in °C) detected by newer PowerNet sensor ''{#SENSOR_LABEL}''.'
+              description: 'Temperature (in Â°C) detected by newer PowerNet sensor ''{#SENSOR_LABEL}''.'
               tags:
                 - tag: Component
                   value: Sensors

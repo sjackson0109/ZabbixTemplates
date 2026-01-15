@@ -175,12 +175,12 @@
               value_type: UNSIGNED
               master_item:
                 key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
-          trigger_prototypes:
-            - uuid: cd82aa8df39445a2b013cc57da1175c9
-              name: 'Fan {#FAN.ID} Failure'
-              expression: 'last(/Tape Libraries/fan.state[{#FAN.ID}])<>1'
-              priority: AVERAGE
-              description: 'Fan {#FAN.ID} is not operational.'
+              trigger_prototypes:
+                - uuid: cd82aa8df39445a2b013cc57da1175c9
+                  name: 'Fan {#FAN.ID} Failure'
+                  expression: 'last(/Tape Libraries/fan.state[{#FAN.ID}])<>1'
+                  priority: AVERAGE
+                  description: 'Fan {#FAN.ID} is not operational.'
         - uuid: 6c4d3ee6ac7642a0a6c3ec17d16489b0
           name: 'Power Supply Discovery'
           key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
@@ -195,12 +195,12 @@
               value_type: UNSIGNED
               master_item:
                 key: 'snmpwalk["ENTITY-MIB::entPhysicalDescr"]'
-          trigger_prototypes:
-            - uuid: 25a5ba7598bf41018e94f6581d780308
-              name: 'Power Supply {#PSU.ID} Failure'
-              expression: 'last(/Tape Libraries/psu.state[{#PSU.ID}])<>1'
-              priority: AVERAGE
-              description: 'Power Supply {#PSU.ID} is not operational.'
+              trigger_prototypes:
+                - uuid: 25a5ba7598bf41018e94f6581d780308
+                  name: 'Power Supply {#PSU.ID} Failure'
+                  expression: 'last(/Tape Libraries/psu.state[{#PSU.ID}])<>1'
+                  priority: AVERAGE
+                  description: 'Power Supply {#PSU.ID} is not operational.'
         - uuid: 0b667f017d5f4f1194b1a8178d73e0c8
           name: 'Library Status Discovery'
           key: 'snmpwalk["DELL-TL2000-MIB::libraryState"]'

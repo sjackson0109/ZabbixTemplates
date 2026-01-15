@@ -1,0 +1,42 @@
+# Git attributes for Zabbix Templates repository
+# Ensure consistent line endings and proper handling of binary files
+
+# Text files should use LF line endings
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# JSON files
+*.json text eol=lf
+
+# Configuration files
+*.conf text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+
+# XML files (some legacy Zabbix templates)
+*.xml text eol=lf
+
+# Binary files
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.exe binary
+*.dll binary
+*.so binary
+
+# Documentation
+README* text eol=lf
+LICENSE* text eol=lf
+CHANGELOG* text eol=lf

@@ -3,6 +3,54 @@ import re
 import io
 import yaml  # PyYAML for proper YAML parsing
 
+# Valid widget field types based on Zabbix 6.4+ documentation
+VALID_WIDGET_FIELD_TYPES = {
+    # Common field types
+    'ITEM', 'STRING', 'INTEGER', 'DECIMAL', 'BOOLEAN',
+    
+    # Graph widget fields
+    'GRAPH', 'GRAPH_ITEM', 'GRAPH_PROTOTYPE',
+    
+    # Problem widget fields  
+    'SEVERITIES', 'PROBLEM_TAGS',
+    
+    # Data table fields
+    'COLUMNS', 'COLUMN',
+    
+    # Host/Group fields
+    'HOST', 'HOST_GROUP', 'HOST_GROUPS',
+    
+    # Time/refresh fields
+    'TIME_PERIOD', 'REFRESH_INTERVAL',
+    
+    # Display fields
+    'OVERRIDE', 'ADVANCED_CONFIG',
+    
+    # Map fields
+    'MAP',
+    
+    # URL fields
+    'URL',
+    
+    # Text fields
+    'TEXT', 'HTML'
+}
+
+# Widget types that support specific field types
+WIDGET_FIELD_COMPATIBILITY = {
+    'GAUGE': {'ITEM', 'STRING', 'DECIMAL', 'BOOLEAN'},
+    'GRAPH': {'ITEM', 'GRAPH_ITEM', 'STRING', 'INTEGER', 'BOOLEAN'},
+    'DATA_TABLE': {'ITEM', 'COLUMNS', 'COLUMN', 'STRING', 'BOOLEAN'},
+    'SINGLE_VALUE': {'ITEM', 'STRING', 'DECIMAL', 'BOOLEAN'},
+    'TEXT': {'ITEM', 'STRING', 'HTML'},
+    'PROBLEMS': {'ITEM', 'STRING', 'SEVERITIES', 'PROBLEM_TAGS', 'BOOLEAN'},
+    'PROBLEMS_BY_SEVERITY': {'ITEM', 'STRING', 'SEVERITIES', 'PROBLEM_TAGS', 'BOOLEAN'},
+    'TOP_HOSTS': {'ITEM', 'STRING', 'INTEGER', 'BOOLEAN'},
+    'TRIGGER_OVERVIEW': {'HOST_GROUP', 'HOST_GROUPS', 'STRING', 'BOOLEAN'},
+    'HONEYCOMB': {'ITEM', 'STRING', 'BOOLEAN'},
+    'GRAPH_PROTOTYPE': {'STRING', 'BOOLEAN', 'GRAPH_PROTOTYPE'},  # Include GRAPH_PROTOTYPE field type
+}
+
 
 def load_yaml(content):
     """
@@ -1515,6 +1563,93 @@ VALID_TRIGGER_FUNCTIONS = {
 }
 
 
+def validate_duplicate_keys_in_same_object(file_content):
+    """
+    Check for duplicate keys within the same YAML object by parsing line by line.
+    This detects real duplicate keys like having two 'description:' in the same object.
+    
+    Returns: list of (line_number, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    # Use a simple approach: detect when we have the same key at the same indentation level
+    # within what appears to be the same object context
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        
+        # Skip empty lines and comments
+        if not stripped or stripped.startswith('#'):
+            i += 1
+            continue
+            
+        current_indent = len(line) - len(line.lstrip())
+        
+        # Look for key: value pairs that are not list items
+        if ':' in stripped and not stripped.startswith('- '):
+            key_match = re.match(r'^([^:]+):\s*', stripped)
+            if key_match:
+                key = key_match.group(1).strip()
+                
+                # Skip complex keys
+                if ' ' in key or '[' in key or '{' in key:
+                    i += 1
+                    continue
+                
+                # Look ahead for duplicate keys at same indentation level within same object
+                j = i + 1
+                keys_seen = {key: i + 1}  # key -> line number
+                
+                while j < len(lines):
+                    next_line = lines[j]
+                    next_stripped = next_line.strip()
+                    
+                    # Skip empty lines and comments
+                    if not next_stripped or next_stripped.startswith('#'):
+                        j += 1
+                        continue
+                    
+                    next_indent = len(next_line) - len(next_line.lstrip())
+                    
+                    # If indentation is less than current, we've exited this object
+                    if next_indent < current_indent:
+                        break
+                    
+                    # If indentation is same and it's a key:value pair (not list item)
+                    if next_indent == current_indent and ':' in next_stripped and not next_stripped.startswith('- '):
+                        next_key_match = re.match(r'^([^:]+):\s*', next_stripped)
+                        if next_key_match:
+                            next_key = next_key_match.group(1).strip()
+                            
+                            # Skip complex keys
+                            if ' ' in next_key or '[' in next_key or '{' in next_key:
+                                j += 1
+                                continue
+                            
+                            # Check for duplicate
+                            if next_key in keys_seen:
+                                original_line = keys_seen[next_key]
+                                errors.append((
+                                    j + 1,
+                                    f"Duplicate key '{next_key}' detected. First occurrence at line {original_line}, duplicate at line {j + 1}."
+                                ))
+                            else:
+                                keys_seen[next_key] = j + 1
+                    
+                    # If we hit a list item at same level, we might be in a new object context
+                    elif next_indent == current_indent and next_stripped.startswith('- '):
+                        break
+                    
+                    j += 1
+        
+        i += 1
+    
+    return errors
+
+
 def validate_duplicate_attributes(file_content):
     """
     Check for duplicate attribute names within YAML structures.
@@ -2278,6 +2413,18 @@ def validate_zabbix_schema(yaml_data, file_content):
     for line_num, msg in dependency_errors:
         errors.append(f"Line {line_num}: {msg}")
 
+    # === ENHANCED VALIDATION CHECKS ===
+    
+    # Check for deprecated external script formats (JSON-style with quotes)
+    external_script_errors = validate_external_script_format(yaml_data, file_content)
+    for msg in external_script_errors:
+        errors.append(msg)
+
+    # Enhanced trigger expression validation (includes deprecated format detection)
+    enhanced_trigger_errors = validate_trigger_references(yaml_data, file_content)
+    for msg in enhanced_trigger_errors:
+        errors.append(msg)
+
     # Check for duplicate UUIDs
     duplicate_uuid_errors = find_duplicate_uuids(yaml_data, file_content)
     for line_num, msg in duplicate_uuid_errors:
@@ -2288,11 +2435,10 @@ def validate_zabbix_schema(yaml_data, file_content):
     for line_num, msg in duplicate_key_errors:
         errors.append(f"Line {line_num}: {msg}")
 
-    # TODO: Fix duplicate attribute detection - currently too aggressive
-    # # Check for duplicate attribute names in YAML structures
-    # duplicate_attribute_errors = validate_duplicate_attributes(file_content)
-    # for line_num, msg in duplicate_attribute_errors:
-    #     errors.append(f"Line {line_num}: {msg}")
+    # Check for duplicate attribute names within same YAML objects
+    duplicate_attribute_errors = validate_duplicate_keys_in_same_object(file_content)
+    for line_num, msg in duplicate_attribute_errors:
+        errors.append(f"Line {line_num}: {msg}")
 
     # Check required top-level structure
     if 'zabbix_export' not in yaml_data:
@@ -3175,6 +3321,619 @@ def validate_duplicate_macros(yaml_data, file_content):
     return errors
 
 
+def validate_widget_field_types(yaml_data, file_content):
+    """
+    Validate all dashboard widget field types against Zabbix schema.
+    Returns list of (line_num, error_message) tuples for invalid widget field types.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_widget_field(widget_name, field_name, field_type):
+        """Find line number for a specific widget field type."""
+        in_widget = False
+        widget_found = False
+        field_found = False
+        
+        for i, line in enumerate(lines, 1):
+            line_stripped = line.strip()
+            
+            # Look for widget by name
+            if f"name: '{widget_name}'" in line or f'name: "{widget_name}"' in line or f"name: {widget_name}" in line:
+                widget_found = True
+                in_widget = True
+                continue
+            
+            # If we're in the right widget and find the field
+            if in_widget and widget_found:
+                # Check for field name match
+                if f"name: {field_name}" in line or f"name: '{field_name}'" in line or f'name: "{field_name}"' in line:
+                    field_found = True
+                    continue
+                
+                # If we found the field and now see the type, return this line
+                if field_found and f"type: {field_type}" in line:
+                    return i
+                
+                # Reset if we hit another widget
+                if line_stripped.startswith('- type:') and 'widget' not in line.lower():
+                    in_widget = False
+                    widget_found = False
+                    field_found = False
+        
+        # Fallback: search for type occurrence
+        for i, line in enumerate(lines, 1):
+            if f"type: {field_type}" in line:
+                return i
+        
+        return 0
+    
+    def suggest_widget_field_fix(widget_type, invalid_type, field_name):
+        """Suggest fixes for common widget field type errors."""
+        if invalid_type == 'PROTOTYPE_NAME':
+            return "Remove PROTOTYPE_NAME field - not valid for any widget type"
+        elif invalid_type == 'TAG_FILTER':
+            return "Replace with STRING fields: 'tags.tag.0' and 'tags.value.0'"
+        elif invalid_type == 'ITEM_TAG':
+            return "Replace with STRING fields: 'tags.tag.0' and 'tags.value.0'"
+        elif invalid_type == 'SHOW_TAGS':
+            return "Remove SHOW_TAGS field - not a valid field type"
+        elif 'tag' in field_name.lower() and widget_type in ['PROBLEMS', 'PROBLEMS_BY_SEVERITY']:
+            return "Use STRING type with name 'tags.tag.0' or 'tags.value.0'"
+        elif widget_type in ['GRAPH_PROTOTYPE'] and invalid_type not in ['STRING', 'BOOLEAN']:
+            return f"Replace {invalid_type} with STRING or BOOLEAN for GRAPH_PROTOTYPE widgets"
+        else:
+            return f"Replace {invalid_type} with valid field type for {widget_type} widget"
+    
+    # Navigate to templates -> dashboards
+    templates = yaml_data.get('zabbix_export', {}).get('templates', [])
+    
+    for template_idx, template in enumerate(templates):
+        if not isinstance(template, dict):
+            continue
+            
+        dashboards = template.get('dashboards', [])
+        
+        for dash_idx, dashboard in enumerate(dashboards):
+            if not isinstance(dashboard, dict):
+                continue
+                
+            pages = dashboard.get('pages', [])
+            
+            for page_idx, page in enumerate(pages):
+                if not isinstance(page, dict):
+                    continue
+                    
+                widgets = page.get('widgets', [])
+                
+                for widget_idx, widget in enumerate(widgets):
+                    if not isinstance(widget, dict):
+                        continue
+                        
+                    widget_type = widget.get('type', 'UNKNOWN')
+                    widget_name = widget.get('name', f'widget({widget_idx + 1})')
+                    fields = widget.get('fields', [])
+                    
+                    for field_idx, field in enumerate(fields):
+                        if not isinstance(field, dict):
+                            continue
+                            
+                        field_type = field.get('type', '')
+                        field_name = field.get('name', f'field({field_idx + 1})')
+                        
+                        # Check if field type is valid
+                        if field_type not in VALID_WIDGET_FIELD_TYPES:
+                            xpath = f"/zabbix_export/templates/template({template_idx + 1})/dashboards/dashboard({dash_idx + 1})/pages/page({page_idx + 1})/widgets/widget({widget_idx + 1})/fields/field({field_idx + 1})/type"
+                            line_num = find_line_for_widget_field(widget_name, field_name, field_type)
+                            suggestion = suggest_widget_field_fix(widget_type, field_type, field_name)
+                            
+                            errors.append((
+                                line_num,
+                                f"Invalid widget field type '{field_type}' in {widget_type} widget '{widget_name}' field '{field_name}' at {xpath}. {suggestion}"
+                            ))
+                        
+                        # Check widget-specific field compatibility
+                        elif widget_type in WIDGET_FIELD_COMPATIBILITY:
+                            valid_types = WIDGET_FIELD_COMPATIBILITY[widget_type]
+                            if field_type not in valid_types:
+                                xpath = f"/zabbix_export/templates/template({template_idx + 1})/dashboards/dashboard({dash_idx + 1})/pages/page({page_idx + 1})/widgets/widget({widget_idx + 1})/fields/field({field_idx + 1})/type"
+                                line_num = find_line_for_widget_field(widget_name, field_name, field_type)
+                                
+                                errors.append((
+                                    line_num,
+                                    f"Incompatible widget field type '{field_type}' in {widget_type} widget '{widget_name}' field '{field_name}' at {xpath}. Valid types: {', '.join(sorted(valid_types))}"
+                                ))
+    
+    return errors
+
+
+def validate_trigger_indentation(yaml_data, file_content):
+    """
+    Validate proper indentation for trigger sections in items and discovery rules.
+    Returns a list of (line_num, error_message) tuples for indentation errors.
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def get_indentation(line):
+        """Get the indentation level (number of spaces) for a line."""
+        return len(line) - len(line.lstrip(' '))
+    
+    def find_triggers_section_indent(start_line, context):
+        """Find proper indentation for triggers section based on context."""
+        # Look backward to find the parent item indentation
+        for i in range(start_line - 1, -1, -1):
+            line = lines[i].strip()
+            if line.startswith('- uuid:') or line.startswith('uuid:'):
+                parent_indent = get_indentation(lines[i])
+                # triggers: should be indented same as other item fields (uuid, name, type, etc.)
+                return parent_indent + 2  # Standard YAML 2-space indentation
+        return None
+    
+    # Check items section
+    in_items_section = False
+    in_triggers_section = False
+    expected_trigger_indent = None
+    current_item_indent = None
+    
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.strip()
+        current_indent = get_indentation(line)
+        
+        # Track section changes
+        if stripped == 'items:':
+            in_items_section = True
+            continue
+        elif stripped in ['discovery_rules:', 'tags:', 'macros:', 'dashboards:', 'valuemaps:']:
+            in_items_section = False
+            in_triggers_section = False
+            continue
+        
+        if not in_items_section:
+            continue
+            
+        # Detect item boundaries
+        if stripped.startswith('- uuid:'):
+            current_item_indent = current_indent
+            in_triggers_section = False
+            
+        # Detect triggers section
+        if stripped == 'triggers:':
+            in_triggers_section = True
+            expected_trigger_indent = find_triggers_section_indent(line_num, 'items')
+            
+            if expected_trigger_indent is not None and current_indent != expected_trigger_indent:
+                errors.append((
+                    line_num,
+                    f"Incorrect indentation for 'triggers:' section. "
+                    f"Expected {expected_trigger_indent} spaces, found {current_indent} spaces. "
+                    f"Triggers should align with other item fields (uuid, name, type, etc.)"
+                ))
+                
+        # Check trigger list items
+        elif in_triggers_section and stripped.startswith('- uuid:'):
+            if expected_trigger_indent is not None:
+                expected_trigger_item_indent = expected_trigger_indent + 2
+                if current_indent != expected_trigger_item_indent:
+                    errors.append((
+                        line_num,
+                        f"Incorrect indentation for trigger item. "
+                        f"Expected {expected_trigger_item_indent} spaces, found {current_indent} spaces. "
+                        f"Trigger list items should be indented 2 spaces from 'triggers:'"
+                    ))
+    
+    # Check discovery_rules section for trigger_prototypes
+    in_discovery_section = False
+    in_trigger_prototypes_section = False
+    
+    for line_num, line in enumerate(lines, 1):
+        stripped = line.strip()
+        current_indent = get_indentation(line)
+        
+        # Track section changes
+        if stripped == 'discovery_rules:':
+            in_discovery_section = True
+            continue
+        elif stripped in ['tags:', 'macros:', 'dashboards:', 'valuemaps:']:
+            in_discovery_section = False
+            in_trigger_prototypes_section = False
+            continue
+            
+        if not in_discovery_section:
+            continue
+            
+        # Detect discovery rule boundaries
+        if stripped.startswith('- uuid:'):
+            in_trigger_prototypes_section = False
+            
+        # Detect trigger_prototypes section
+        if stripped == 'trigger_prototypes:':
+            in_trigger_prototypes_section = True
+            expected_proto_indent = find_triggers_section_indent(line_num, 'discovery_rules')
+            
+            if expected_proto_indent is not None and current_indent != expected_proto_indent:
+                errors.append((
+                    line_num,
+                    f"Incorrect indentation for 'trigger_prototypes:' section. "
+                    f"Expected {expected_proto_indent} spaces, found {current_indent} spaces. "
+                    f"Trigger prototypes should align with other discovery rule fields"
+                ))
+                
+        # Check trigger prototype list items
+        elif in_trigger_prototypes_section and stripped.startswith('- uuid:'):
+            if expected_proto_indent is not None:
+                expected_proto_item_indent = expected_proto_indent + 2
+                if current_indent != expected_proto_item_indent:
+                    errors.append((
+                        line_num,
+                        f"Incorrect indentation for trigger prototype item. "
+                        f"Expected {expected_proto_item_indent} spaces, found {current_indent} spaces. "
+                        f"Trigger prototype list items should be indented 2 spaces from 'trigger_prototypes:'"
+                    ))
+    
+    return errors
+
+
+def validate_master_item_references(yaml_data, file_content):
+    """
+    Validate that DEPENDENT items reference master items that:
+    1. Exist in the correct scope
+    2. Are defined BEFORE the dependent item
+    3. Are not themselves DEPENDENT (no chains allowed)
+    
+    Returns: list of (line_num, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_for_item(item_name, item_key):
+        """Find line number for an item by name or key."""
+        for i, line in enumerate(lines, 1):
+            if item_name and (f"name: '{item_name}'" in line or f"name: \"{item_name}\"" in line or f"name: {item_name}" in line):
+                return i
+            if item_key and (f"key: '{item_key}'" in line or f"key: \"{item_key}\"" in line):
+                return i
+        return 0
+    
+    def find_line_for_master_item_key(master_key):
+        """Find line number for a master_item key reference."""
+        for i, line in enumerate(lines, 1):
+            if f"key: '{master_key}'" in line or f"key: \"{master_key}\"" in line:
+                # Check if this is in a master_item context
+                if i > 1 and ('master_item:' in lines[i-2] or 'master_item:' in lines[i-1]):
+                    continue
+                return i
+        return 0
+    
+    # Process each template
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', f'template({t_idx + 1})')
+            
+            # === VALIDATE REGULAR ITEMS ===
+            items = template.get('items', [])
+            if isinstance(items, list):
+                # Track defined items in order - build complete list first
+                defined_keys = {}  # key -> (line_num, item_type, item_name)
+                dependent_items = []  # Store dependent items for later validation
+                
+                # First pass: collect all item definitions
+                for i_idx, item in enumerate(items):
+                    if not isinstance(item, dict):
+                        continue
+                    
+                    item_name = item.get('name', f'item({i_idx + 1})')
+                    item_key = item.get('key', '')
+                    item_type = item.get('type', '')
+                    line_num = find_line_for_item(item_name, item_key)
+                    
+                    # Track this item as defined
+                    if item_key:
+                        defined_keys[item_key] = (line_num, item_type, item_name)
+                    
+                    # If this is a DEPENDENT item, store for validation
+                    if item_type == 'DEPENDENT' or item_type == '18':
+                        dependent_items.append((i_idx, item, item_name, item_key, item_type, line_num))
+                
+                # Second pass: validate all dependent items
+                for i_idx, item, item_name, item_key, item_type, line_num in dependent_items:
+                    master_item = item.get('master_item', {})
+                    if isinstance(master_item, dict):
+                        master_key = master_item.get('key', '')
+                        
+                        if not master_key:
+                            errors.append((
+                                line_num,
+                                f"DEPENDENT item '{item_name}' at templates/{template_name}/items/item({i_idx + 1}) "
+                                f"is missing required 'master_item.key' field"
+                            ))
+                        elif master_key not in defined_keys:
+                            errors.append((
+                                line_num,
+                                f"DEPENDENT item '{item_name}' (key: {item_key}) references master item "
+                                f"key '{master_key}' which does not exist in this template. "
+                                f"Add the master item or check for typos in the key name."
+                            ))
+                        else:
+                            master_line, master_type, master_name = defined_keys[master_key]
+                            # Check if master is also DEPENDENT (circular)
+                            if master_type == 'DEPENDENT' or master_type == '18':
+                                errors.append((
+                                    line_num,
+                                    f"DEPENDENT item '{item_name}' (key: {item_key}) references master item "
+                                    f"'{master_name}' (key: {master_key}) which is also DEPENDENT. "
+                                    f"Circular or chained dependencies are not supported. "
+                                    f"The master item must be EXTERNAL, TRAP, or another collector type."
+                                ))
+            
+            # === VALIDATE DISCOVERY RULES AND ITEM PROTOTYPES ===
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if not isinstance(dr, dict):
+                        continue
+                    
+                    dr_name = dr.get('name', f'discovery_rule({dr_idx + 1})')
+                    dr_key = dr.get('key', '')
+                    dr_type = dr.get('type', '')
+                    
+                    # Track defined items in this discovery rule scope
+                    proto_defined_keys = {}
+                    
+                    # Add discovery rule itself as a potential master
+                    if dr_key:
+                        dr_line = find_line_for_item(dr_name, dr_key)
+                        proto_defined_keys[dr_key] = (dr_line, dr_type, dr_name)
+                    
+                    # Process item prototypes
+                    item_prototypes = dr.get('item_prototypes', [])
+                    if isinstance(item_prototypes, list):
+                        # Track defined items in this discovery rule scope
+                        dependent_prototypes = []  # Store for later validation
+                        
+                        # First pass: collect all item prototype definitions
+                        for ip_idx, ip in enumerate(item_prototypes):
+                            if not isinstance(ip, dict):
+                                continue
+                            
+                            ip_name = ip.get('name', f'item_prototype({ip_idx + 1})')
+                            ip_key = ip.get('key', '')
+                            ip_type = ip.get('type', '')
+                            ip_line = find_line_for_item(ip_name, ip_key)
+                            
+                            # Track this item prototype as defined
+                            if ip_key:
+                                proto_defined_keys[ip_key] = (ip_line, ip_type, ip_name)
+                            
+                            # If this is a DEPENDENT item prototype, store for validation
+                            if ip_type == 'DEPENDENT' or ip_type == '18':
+                                dependent_prototypes.append((ip_idx, ip, ip_name, ip_key, ip_type, ip_line))
+                        
+                        # Second pass: validate all dependent item prototypes
+                        for ip_idx, ip, ip_name, ip_key, ip_type, ip_line in dependent_prototypes:
+                            master_item = ip.get('master_item', {})
+                            if isinstance(master_item, dict):
+                                master_key = master_item.get('key', '')
+                                
+                                if not master_key:
+                                    errors.append((
+                                        ip_line,
+                                        f"DEPENDENT item prototype '{ip_name}' in discovery rule '{dr_name}' "
+                                        f"is missing required 'master_item.key' field"
+                                    ))
+                                elif master_key not in proto_defined_keys:
+                                    # Only flag as error if the master key doesn't exist anywhere in the template
+                                    if master_key not in defined_keys:
+                                        errors.append((
+                                            ip_line,
+                                            f"DEPENDENT item prototype '{ip_name}' (key: {ip_key}) references master "
+                                            f"key '{master_key}' which does not exist in template. "
+                                            f"Add the missing master item or correct the key reference."
+                                        ))
+                                elif master_key in proto_defined_keys:
+                                    master_line, master_type, master_name = proto_defined_keys[master_key]
+                                    # Check circular dependency
+                                    if master_type == 'DEPENDENT' or master_type == '18':
+                                        errors.append((
+                                            ip_line,
+                                            f"DEPENDENT item prototype '{ip_name}' (key: {ip_key}) references master "
+                                            f"'{master_name}' (key: {master_key}) which is also DEPENDENT. "
+                                            f"Circular or chained dependencies are not supported."
+                                        ))
+    
+    return errors
+
+
+def validate_all_template_references(yaml_data, file_content):
+    """
+    Comprehensive validation of ALL template references that could cause
+    "No permissions to referred object or it does not exist!" errors during import.
+    
+    Checks:
+    1. Graph item references
+    2. Trigger item references  
+    3. Dashboard widget item references
+    4. Item prototype references in discovery rules
+    5. Host template name consistency
+    
+    Returns: list of (line_num, error_message) tuples
+    """
+    errors = []
+    lines = file_content.splitlines()
+    
+    def find_line_containing(text, context_lines=3):
+        """Find line number containing specific text with some context."""
+        for i, line in enumerate(lines, 1):
+            if text in line:
+                return i
+        return 0
+    
+    # Process each template
+    export_data = yaml_data.get('zabbix_export', {})
+    templates = export_data.get('templates', [])
+    
+    if isinstance(templates, list):
+        for t_idx, template in enumerate(templates):
+            if not isinstance(template, dict):
+                continue
+            
+            template_name = template.get('template', f'template({t_idx + 1})')
+            
+            # Collect all available item keys in this template
+            all_item_keys = set()
+            
+            # Regular items
+            items = template.get('items', [])
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict) and item.get('key'):
+                        all_item_keys.add(item['key'])
+            
+            # Item prototypes from discovery rules
+            discovery_rules = template.get('discovery_rules', [])
+            if isinstance(discovery_rules, list):
+                for dr in discovery_rules:
+                    if isinstance(dr, dict):
+                        # Add discovery rule key
+                        if dr.get('key'):
+                            all_item_keys.add(dr['key'])
+                        
+                        # Add item prototype keys
+                        item_prototypes = dr.get('item_prototypes', [])
+                        if isinstance(item_prototypes, list):
+                            for ip in item_prototypes:
+                                if isinstance(ip, dict) and ip.get('key'):
+                                    all_item_keys.add(ip['key'])
+            
+            # === CHECK GRAPH REFERENCES ===
+            # Check graph_prototypes in discovery rules
+            if isinstance(discovery_rules, list):
+                for dr_idx, dr in enumerate(discovery_rules):
+                    if isinstance(dr, dict):
+                        dr_name = dr.get('name', f'discovery_rule({dr_idx})')
+                        graph_prototypes = dr.get('graph_prototypes', [])
+                        if isinstance(graph_prototypes, list):
+                            for gp_idx, gp in enumerate(graph_prototypes):
+                                if isinstance(gp, dict):
+                                    graph_items = gp.get('graph_items', [])
+                                    if isinstance(graph_items, list):
+                                        for gi_idx, gi in enumerate(graph_items):
+                                            if isinstance(gi, dict):
+                                                item_ref = gi.get('item', {})
+                                                if isinstance(item_ref, dict):
+                                                    ref_host = item_ref.get('host', '')
+                                                    ref_key = item_ref.get('key', '')
+                                                    
+                                                    # Check if host matches template name
+                                                    if ref_host and ref_host != template_name and ref_host != '{HOST.NAME}':
+                                                        line_num = find_line_containing(f"host: '{ref_host}'" if "'" in str(ref_host) else f"host: {ref_host}")
+                                                        errors.append((
+                                                            line_num,
+                                                            f"Graph prototype in discovery rule '{dr_name}' references "
+                                                            f"host '{ref_host}' but template name is '{template_name}'. "
+                                                            f"Update host reference to match template name or use '{{HOST.NAME}}'."
+                                                        ))
+                                                    
+                                                    # Check if referenced item key exists
+                                                    if ref_key and ref_key not in all_item_keys:
+                                                        line_num = find_line_containing(f"key: '{ref_key}'" if "'" in ref_key else f"key: {ref_key}")
+                                                        errors.append((
+                                                            line_num,
+                                                            f"Graph prototype in discovery rule '{dr_name}' references "
+                                                            f"item key '{ref_key}' which does not exist in this template. "
+                                                            f"Add the missing item or correct the key reference."
+                                                        ))
+            
+            # === CHECK TRIGGER REFERENCES ===
+            # Check trigger expressions for item references
+            if isinstance(items, list):
+                for item_idx, item in enumerate(items):
+                    if isinstance(item, dict):
+                        triggers = item.get('triggers', [])
+                        if isinstance(triggers, list):
+                            for trigger_idx, trigger in enumerate(triggers):
+                                if isinstance(trigger, dict):
+                                    expression = trigger.get('expression', '')
+                                    if expression:
+                                        # Extract item references from trigger expression
+                                        # Pattern: last(/Template Name/item.key[params])
+                                        import re
+                                        pattern = r'last\(/([^/]+)/([^\)]+)\)'
+                                        matches = re.findall(pattern, expression)
+                                        for host_ref, key_ref in matches:
+                                            # Check if host matches template name
+                                            if host_ref != template_name and host_ref != '{HOST.NAME}':
+                                                line_num = find_line_containing(expression)
+                                                errors.append((
+                                                    line_num,
+                                                    f"Trigger expression references host '{host_ref}' "
+                                                    f"but template name is '{template_name}'. "
+                                                    f"Update trigger expression to use correct template name."
+                                                ))
+                                            
+                                            # Check if referenced item key exists
+                                            # Strip historical value references like ,#1, ,#2, etc.
+                                            base_key = re.sub(r',#\d+$', '', key_ref)
+                                            if base_key not in all_item_keys:
+                                                line_num = find_line_containing(expression)
+                                                errors.append((
+                                                    line_num,
+                                                    f"Trigger expression references item key '{key_ref}' "
+                                                    f"which does not exist in template '{template_name}'. "
+                                                    f"Add the missing item or correct the key reference."
+                                                ))
+            
+            # === CHECK DASHBOARD WIDGET REFERENCES ===
+            dashboards = template.get('dashboards', [])
+            if isinstance(dashboards, list):
+                for dash_idx, dashboard in enumerate(dashboards):
+                    if isinstance(dashboard, dict):
+                        pages = dashboard.get('pages', [])
+                        if isinstance(pages, list):
+                            for page in pages:
+                                if isinstance(page, dict):
+                                    widgets = page.get('widgets', [])
+                                    if isinstance(widgets, list):
+                                        for widget in widgets:
+                                            if isinstance(widget, dict):
+                                                fields = widget.get('fields', [])
+                                                if isinstance(fields, list):
+                                                    for field in fields:
+                                                        if isinstance(field, dict) and field.get('type') == 'ITEM':
+                                                            value = field.get('value', {})
+                                                            if isinstance(value, dict):
+                                                                ref_host = value.get('host', '')
+                                                                ref_key = value.get('key', '')
+                                                                
+                                                                # Check if host reference is valid
+                                                                if ref_host and ref_host != template_name and ref_host != '{HOST.NAME}':
+                                                                    line_num = find_line_containing(f"host: '{ref_host}'" if "'" in str(ref_host) else f"host: {ref_host}")
+                                                                    errors.append((
+                                                                        line_num,
+                                                                        f"Dashboard widget references host '{ref_host}' "
+                                                                        f"but template name is '{template_name}'. "
+                                                                        f"Update host reference to match template name or use '{{HOST.NAME}}'."
+                                                                    ))
+                                                                
+                                                                # Check if referenced item key exists
+                                                                if ref_key and ref_key not in all_item_keys:
+                                                                    line_num = find_line_containing(f"key: '{ref_key}'" if "'" in ref_key else f"key: {ref_key}")
+                                                                    errors.append((
+                                                                        line_num,
+                                                                        f"Dashboard widget references item key '{ref_key}' "
+                                                                        f"which does not exist in template '{template_name}'. "
+                                                                        f"Add the missing item or correct the key reference."
+                                                                    ))
+    
+    return errors
+
+
 def validate_comprehensive_zabbix_schema(yaml_data, file_content):
     """
     Comprehensive Zabbix template validation combining all checks.
@@ -3210,7 +3969,232 @@ def validate_comprehensive_zabbix_schema(yaml_data, file_content):
         prefix = f"Line {line_num}: " if line_num else ""
         all_errors.append(f"{prefix}{msg}")
     
+    # Check widget field types in dashboards
+    widget_field_errors = validate_widget_field_types(yaml_data, file_content)
+    for line_num, msg in widget_field_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    # Check trigger indentation
+    trigger_indent_errors = validate_trigger_indentation(yaml_data, file_content)
+    for line_num, msg in trigger_indent_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    # Check master item references (DEPENDENT items)
+    master_item_errors = validate_master_item_references(yaml_data, file_content)
+    for line_num, msg in master_item_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
+    # Check all template references (graphs, triggers, dashboards)
+    reference_errors = validate_all_template_references(yaml_data, file_content)
+    for line_num, msg in reference_errors:
+        prefix = f"Line {line_num}: " if line_num else ""
+        all_errors.append(f"{prefix}{msg}")
+    
     return all_errors, all_warnings, version
+
+
+def validate_external_script_format(yaml_data, file_content):
+    """
+    Validate external script key formats to detect deprecated JSON-style format.
+    Reports EXTERNAL items using deprecated ["param1","param2"] syntax.
+    """
+    errors = []
+    
+    def find_line_for_item_key(item_key):
+        lines = file_content.split('\n')
+        for line_no, line in enumerate(lines, 1):
+            if item_key in line and 'key:' in line:
+                return line_no
+        return None
+    
+    def check_items_for_script_format(items_list, location_name, template_name):
+        if not isinstance(items_list, list):
+            return
+            
+        for i_idx, item in enumerate(items_list):
+            if not isinstance(item, dict):
+                continue
+                
+            item_type = item.get('type', '')
+            item_key = item.get('key', '')
+            item_name = item.get('name', f'{location_name}({i_idx + 1})')
+            
+            if item_type == 'EXTERNAL' or item_type == '10':
+                # Check for deprecated JSON-style format with quoted parameters
+                if re.search(r'\.py\["[^"]*"', item_key):
+                    line_num = find_line_for_item_key(item_key)
+                    line_ref = f"line {line_num}" if line_num else f"templates/{template_name}/{location_name}/item({i_idx + 1})"
+                    errors.append((
+                        f"EXTERNAL item '{item_name}' at {line_ref} "
+                        f"uses deprecated JSON-style external script format: {item_key}. "
+                        f"Use unquoted parameters: script.py[param1,param2,param3]"
+                    ))
+                
+                # Check for general external script format validity
+                elif '.py' in item_key and not re.match(r'^[^.]+\.py\[[^\]]*\]$', item_key):
+                    line_num = find_line_for_item_key(item_key)
+                    line_ref = f"line {line_num}" if line_num else f"templates/{template_name}/{location_name}/item({i_idx + 1})"
+                    errors.append((
+                        f"EXTERNAL item '{item_name}' at {line_ref} "
+                        f"may have invalid external script format: {item_key}"
+                    ))
+    
+    if 'zabbix_export' not in yaml_data or 'templates' not in yaml_data['zabbix_export']:
+        return errors
+    
+    for template in yaml_data['zabbix_export']['templates']:
+        if not isinstance(template, dict):
+            continue
+            
+        template_name = template.get('template', 'UNKNOWN')
+        
+        # Check regular items
+        items = template.get('items', [])
+        if isinstance(items, list):
+            check_items_for_script_format(items, 'items', template_name)
+        
+        # Check discovery rule item prototypes
+        discovery_rules = template.get('discovery_rules', [])
+        if isinstance(discovery_rules, list):
+            for dr_idx, dr in enumerate(discovery_rules):
+                if not isinstance(dr, dict):
+                    continue
+                    
+                item_prototypes = dr.get('item_prototypes', [])
+                if isinstance(item_prototypes, list):
+                    check_items_for_script_format(item_prototypes, f'discovery_rules/discovery_rule({dr_idx + 1})/item_prototypes', template_name)
+    
+    return errors
+
+
+def validate_trigger_references(yaml_data, file_content):
+    """
+    Enhanced trigger expression validation including deprecated external script format detection.
+    Validates that trigger expressions reference existing items and don't use deprecated JSON-style formats.
+    """
+    errors = []
+    
+    def extract_item_refs(expression):
+        """Extract all possible item references from trigger expression"""
+        refs = []
+        patterns = [
+            r'last\(/[^/]+/([^)]+)\)',
+            r'min\(/[^/]+/([^),]+)',
+            r'max\(/[^/]+/([^),]+)',
+            r'avg\(/[^/]+/([^),]+)',
+            r'sum\(/[^/]+/([^),]+)',
+            r'count\(/[^/]+/([^),]+)',
+            r'nodata\(/[^/]+/([^),]+)',
+            r'change\(/[^/]+/([^)]+)\)',
+            r'diff\(/[^/]+/([^)]+)\)',
+            r'find\(/[^/]+/([^),]+)',
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, expression)
+            refs.extend(matches)
+        
+        return list(set(refs))
+    
+    def find_line_for_trigger_name(trigger_name):
+        lines = file_content.split('\n')
+        for line_no, line in enumerate(lines, 1):
+            if trigger_name in line and 'name:' in line:
+                return line_no
+        return None
+    
+    def check_triggers_for_refs(triggers_list, location_name, template_name, rule_name=None):
+        if not isinstance(triggers_list, list):
+            return
+            
+        for t_idx, trigger in enumerate(triggers_list):
+            if not isinstance(trigger, dict):
+                continue
+                
+            trigger_name = trigger.get('name', f'{location_name}({t_idx + 1})')
+            expression = trigger.get('expression', '')
+            
+            # Check for deprecated JSON-style external script format in trigger expressions
+            if re.search(r'\.py\["[^"]*"', expression):
+                line_num = find_line_for_trigger_name(trigger_name)
+                location = f"{location_name} in {rule_name}" if rule_name else location_name
+                line_ref = f"line {line_num}" if line_num else f"templates/{template_name}/{location}/trigger({t_idx + 1})"
+                errors.append((
+                    f"Trigger '{trigger_name}' at {line_ref} "
+                    f"uses deprecated JSON-style external script format in expression: {expression}. "
+                    f"Update to use unquoted parameters."
+                ))
+            
+            # Extract and validate item references
+            item_refs = extract_item_refs(expression)
+            for item_ref in item_refs:
+                # Check if the extracted item reference uses JSON style
+                if re.search(r'\.py\["[^"]*"', item_ref):
+                    line_num = find_line_for_trigger_name(trigger_name)
+                    location = f"{location_name} in {rule_name}" if rule_name else location_name
+                    line_ref = f"line {line_num}" if line_num else f"templates/{template_name}/{location}/trigger({t_idx + 1})"
+                    errors.append((
+                        f"Trigger '{trigger_name}' at {line_ref} "
+                        f"references item with deprecated JSON-style external script format: {item_ref}. "
+                        f"Update to use unquoted parameters."
+                    ))
+    
+    if 'zabbix_export' not in yaml_data or 'templates' not in yaml_data['zabbix_export']:
+        return errors
+    
+    for template in yaml_data['zabbix_export']['templates']:
+        if not isinstance(template, dict):
+            continue
+            
+        template_name = template.get('template', 'UNKNOWN')
+        
+        # Template-level triggers
+        triggers = template.get('triggers', [])
+        if isinstance(triggers, list):
+            check_triggers_for_refs(triggers, 'triggers', template_name)
+        
+        # Item triggers
+        items = template.get('items', [])
+        if isinstance(items, list):
+            for i_idx, item in enumerate(items):
+                if isinstance(item, dict) and 'triggers' in item:
+                    check_triggers_for_refs(item['triggers'], f'items/item({i_idx + 1})/triggers', template_name)
+        
+        # Discovery rule trigger prototypes
+        discovery_rules = template.get('discovery_rules', [])
+        if isinstance(discovery_rules, list):
+            for dr_idx, rule in enumerate(discovery_rules):
+                if not isinstance(rule, dict):
+                    continue
+                    
+                rule_name = rule.get('name', f'discovery_rule({dr_idx + 1})')
+                
+                # Direct trigger prototypes under discovery rule
+                if 'trigger_prototypes' in rule:
+                    check_triggers_for_refs(
+                        rule['trigger_prototypes'], 
+                        f'discovery_rules/discovery_rule({dr_idx + 1})/trigger_prototypes', 
+                        template_name, 
+                        rule_name
+                    )
+                
+                # Trigger prototypes inside item prototypes
+                item_prototypes = rule.get('item_prototypes', [])
+                if isinstance(item_prototypes, list):
+                    for ip_idx, item_proto in enumerate(item_prototypes):
+                        if isinstance(item_proto, dict) and 'trigger_prototypes' in item_proto:
+                            item_name = item_proto.get('name', f'item_prototype({ip_idx + 1})')
+                            check_triggers_for_refs(
+                                item_proto['trigger_prototypes'],
+                                f'discovery_rules/discovery_rule({dr_idx + 1})/item_prototypes/item_prototype({ip_idx + 1})/trigger_prototypes',
+                                template_name,
+                                f"{rule_name}/{item_name}"
+                            )
+    
+    return errors
 
 
 if __name__ == "__main__":
@@ -3228,6 +4212,12 @@ if __name__ == "__main__":
         print("  ✓ Item reference integrity (graphs and triggers)")
         print("  ✓ Enhanced trigger expression parsing")
         print("  ✓ Multi-line string validation")
+        print("  ✓ Dashboard widget field type validation")
+        print("  ✓ Widget-specific field compatibility checking")
+        print("  ✓ Trigger section indentation validation")
+        print("  ✓ Master item reference validation (DEPENDENT items)")
+        print("  ✓ Circular dependency detection")
+        print("  ✓ Cross-scope reference validation")
         sys.exit(1)
     
     file_path = sys.argv[1]

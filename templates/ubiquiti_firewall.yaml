@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: c5381dc540504dbba10e2d300554e4cd
@@ -377,7 +377,7 @@ zabbix_export:
               key: 'ubiquiti.fs.total.bytes[{#HRSTORAGEINDEX}]'
               delay: 5m
               units: B
-              description: 'Total available storage space for {#HRSTORAGEDESCR}, derived from hrStorageSize × hrStorageAllocationUnits.'
+              description: 'Total available storage space for {#HRSTORAGEDESCR}, derived from hrStorageSize Ã— hrStorageAllocationUnits.'
               tags:
                 - tag: Component
                   value: FileSystem
@@ -616,7 +616,7 @@ zabbix_export:
               key: 'ubiquiti.memory.total.bytes[{#HRSTORAGEINDEX}]'
               delay: 5m
               units: B
-              description: 'Total available storage memory for {#HRSTORAGEDESCR}, derived from hrStorageSize × hrStorageAllocationUnits.'
+              description: 'Total available storage memory for {#HRSTORAGEDESCR}, derived from hrStorageSize Ã— hrStorageAllocationUnits.'
               tags:
                 - tag: Component
                   value: Memory

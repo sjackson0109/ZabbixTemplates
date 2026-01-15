@@ -7,9 +7,6 @@
     - uuid: fb23d8d3752b4d4e8d19afe70b430993
       template: 'Sonicwall Firewall'
       name: 'Sonicwall Firewall'
-      vendor:
-        name: 'SonicWall'
-        version: '6.x-7.x'
       description: |
         Overview
         Complete template for monitoring SonicWALL firewalls.
@@ -62,6 +59,9 @@
         - Suitable for HA deployments, VPN-heavy environments, and security-focused monitoring.
         
         Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: SonicWall
+        version: 6.x-7.x
       groups:
         - name: Firewall
       items:
@@ -78,6 +78,8 @@
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
           tags:
             - tag: Component
               value: Feature
@@ -113,6 +115,8 @@
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
           tags:
             - tag: Component
               value: Feature
@@ -132,6 +136,8 @@
               parameters:
                 - '3600'
             - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
           tags:
             - tag: Component
               value: Feature
@@ -139,6 +145,77 @@
               value: Security
             - tag: Service
               value: ASW
+        - uuid: b18b32590676472e94da25b71e73be36
+          name: 'BGP: Total Messages Received'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.15.3.1.12]'
+          key: bgp.messages.total.received
+          delay: 5m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            SNMP walk of total BGP messages received per neighbor (BGP4-MIB::bgpPeerInTotalMessages).
+            
+            Tracks overall BGP protocol activity and session health.
+          tags:
+            - tag: Component
+              value: BGP
+        - uuid: d78a610c542642788c01af4a1109d91a
+          name: 'BGP: Neighbor States'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.15.3.1.2]'
+          key: bgp.neighbors.states
+          delay: 5m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            SNMP walk of BGP neighbor states (BGP4-MIB::bgpPeerState).
+            
+            States:
+            1=idle, 2=connect, 3=active, 4=opensent, 5=openconfirm, 6=established
+            
+            This provides visibility into BGP session stability and convergence issues.
+          tags:
+            - tag: Component
+              value: BGP
+        - uuid: e89f720d643745fa9d12bf5b2209e82b
+          name: 'BGP: Received Routes Count'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.15.3.1.10]'
+          key: bgp.routes.received
+          delay: 5m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            SNMP walk of BGP update messages received per neighbor (BGP4-MIB::bgpPeerInUpdates).
+            
+            Monitors route updates and detects:
+            - Route flapping
+            - Routing table changes
+            - BGP session activity
+            - Convergence problems
+          tags:
+            - tag: Component
+              value: BGP
+        - uuid: f9a0831e754846fb8e23c06c3309f93c
+          name: 'BGP: Session Uptime'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.15.3.1.16]'
+          key: bgp.session.uptime
+          delay: 5m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            SNMP walk of BGP session uptime per neighbor (BGP4-MIB::bgpPeerFsmEstablishedTime).
+            
+            Tracks BGP session stability and detects frequent reconnections.
+          tags:
+            - tag: Component
+              value: BGP
         - uuid: 230a69f6142c4499a605bced9bf6e7e3
           name: 'GAV Scan Count'
           type: SNMP_AGENT
@@ -317,6 +394,26 @@
               value: Security
             - tag: Service
               value: Mail
+        - uuid: 0ab1942f865947fc9f34d17d4409004d
+          name: 'Routing: IP Route Table'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.4.21.1.7,1.3.6.1.2.1.4.21.1.1,1.3.6.1.2.1.4.21.1.11]'
+          key: routing.table.ip
+          delay: 10m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: |
+            SNMP walk of IP routing table showing next hops, destinations, and metrics.
+            
+            Monitors:
+            - Route convergence
+            - Next-hop changes
+            - Route metrics
+            - Tunnel failover detection
+          tags:
+            - tag: Component
+              value: Routing
         - uuid: ab8294f669e54a40acd47663fafb1a27
           name: 'Connections - Active'
           type: SNMP_AGENT
@@ -377,7 +474,13 @@
           delay: 5m
           history: 1w
           value_type: CHAR
+          trends: '0'
           description: 'Device Administrator'
+          inventory_link: CONTACT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
           tags:
             - tag: Component
               value: System
@@ -463,6 +566,7 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'Firmware version currently running on the SonicWall device.'
           inventory_link: SOFTWARE
           preprocessing:
@@ -478,6 +582,9 @@
               parameters:
                 - 'Enhanced '
                 - ''
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -489,6 +596,10 @@
           value_type: FLOAT
           valuemap:
             name: sonicwall.ha.status.valuemap
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
           tags:
             - tag: Component
               value: HA
@@ -502,6 +613,10 @@
           value_type: FLOAT
           valuemap:
             name: sonicwall.ha.status.valuemap
+          preprocessing:
+            - type: DISCARD_UNCHANGED
+              parameters:
+                - ''
           tags:
             - tag: Component
               value: HA
@@ -515,8 +630,13 @@
           delay: 1h
           history: 1w
           value_type: CHAR
+          trends: '0'
           description: 'Location currently running on the SonicWall device.'
           inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
           tags:
             - tag: Component
               value: System
@@ -528,6 +648,7 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'Model name or identifier of the SonicWall hardware.'
           inventory_link: MODEL
           preprocessing:
@@ -535,6 +656,9 @@
               parameters:
                 - '^(.*?)\s?\(.*\)$'
                 - \1
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -546,8 +670,31 @@
           delay: 1h
           history: 1w
           value_type: CHAR
+          trends: '0'
           description: 'An administratively-assigned name for this managed node.'
           inventory_link: NAME
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: Component
+              value: System
+        - uuid: 2bf7e3a5c8d94f2eb1a6d9e4f7c2b8a5
+          name: 'Device Primary MAC Address'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.2.2.1.6.1
+          key: sonicwall.primary.mac
+          delay: 1h
+          history: 1w
+          value_type: TEXT
+          trends: '0'
+          description: 'Primary interface MAC address (typically X0/management interface)'
+          inventory_link: MACADDRESS_A
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -559,8 +706,13 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'Primary Serial Number'
           inventory_link: SERIALNO_A
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -601,7 +753,31 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'ROM version currently running on the SonicWall device.'
+          inventory_link: HARDWARE
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          tags:
+            - tag: Component
+              value: System
+        - uuid: 8d4f6a2b9e5c47f8a3b7e6d1c4f9a2e5
+          name: 'Device Secondary MAC Address'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.2.2.1.6.2
+          key: sonicwall.secondary.mac
+          delay: 1h
+          history: 1w
+          value_type: TEXT
+          trends: '0'
+          description: 'Secondary interface MAC address (typically X1/WAN interface)'
+          inventory_link: MACADDRESS_B
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -613,8 +789,13 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'Secondary Serial Number'
           inventory_link: SERIALNO_B
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
           tags:
             - tag: Component
               value: System
@@ -626,11 +807,15 @@
           delay: 5m
           history: 1w
           value_type: TEXT
+          trends: '0'
           description: 'Physical port assignments for WAN zone (e.g., "X1,X2")'
           preprocessing:
             - type: TRIM
               parameters:
                 - '"'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 4h
           tags:
             - tag: Component
               value: Zone
@@ -642,24 +827,27 @@
           snmp_oid: 1.3.6.1.2.1.99.1.1.1.4.4.0
           key: temperature
           delay: 5m
-          units: °C
+          status: DISABLED
+          units: Â°C
           tags:
             - tag: Component
               value: Temperature
           triggers:
             - uuid: 0d47b9c4560942a6a4ffd37a2b56f777
               expression: 'last(/Sonicwall Firewall/temperature) > {$SONICWALL_TEMP_ERROR}'
-              name: 'Device Temperature Critical (>{$SONICWALL_TEMP_ERROR}°C)'
+              name: 'Device Temperature Critical (>{$SONICWALL_TEMP_ERROR}Â°C)'
+              status: DISABLED
               priority: HIGH
-              description: 'Device temperature ({ITEM.LASTVALUE}°C) exceeded critical threshold ({$SONICWALL_TEMP_ERROR}°C)'
+              description: 'Device temperature ({ITEM.LASTVALUE}Â°C) exceeded critical threshold ({$SONICWALL_TEMP_ERROR}Â°C)'
               tags:
                 - tag: Condition
                   value: Threshold
             - uuid: 183528caeae54f58a5c4b3f086a412bd
               expression: 'last(/Sonicwall Firewall/temperature) > {$SONICWALL_TEMP_WARNING}'
-              name: 'Device Temperature Warning (>{$SONICWALL_TEMP_WARNING}°C)'
+              name: 'Device Temperature Warning (>{$SONICWALL_TEMP_WARNING}Â°C)'
+              status: DISABLED
               priority: WARNING
-              description: 'Device temperature ({ITEM.LASTVALUE}°C) exceeded warning threshold ({$SONICWALL_TEMP_WARNING}°C)'
+              description: 'Device temperature ({ITEM.LASTVALUE}Â°C) exceeded warning threshold ({$SONICWALL_TEMP_WARNING}Â°C)'
               tags:
                 - tag: Condition
                   value: Threshold
@@ -677,7 +865,164 @@
           tags:
             - tag: Component
               value: System
+        - uuid: 776cea823ebd460dac46fed8a3338894
+          name: 'VPN Policy: SA Table'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.8741.1.3.2.1.1]'
+          key: vpn.policy.sa.table
+          delay: 5m
+          history: 1h
+          value_type: TEXT
+          trends: '0'
+          description: |
+            An SNMP walk of the ACTIVE policy-based VPN Security Associations table
+            
+            Notice:
+            VPN Security Associations (SAs) are frequently renegotiated or re-keyed, which causes the SA index to change. For this reason, the polling interval is set to 5 minutes - so if our discovery rule runs, it will have up-to-date SA data to begin with. Polling less frequently increases the risk of missing statistics for active policy-based tunnels, while polling more frequently may be considered overly aggressive.
+          tags:
+            - tag: Component
+              value: VPN
+            - tag: VPN
+              value: Policy
       discovery_rules:
+        - uuid: 1bc2053096a548fd8045e28e5509115e
+          name: 'BGP Neighbors'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#BGP_NEIGHBOR},1.3.6.1.2.1.15.3.1.7,{#BGP_STATE},1.3.6.1.2.1.15.3.1.2]'
+          key: bgp.neighbors.discovery
+          delay: 10m
+          filter:
+            conditions:
+              - macro: '{#BGP_STATE}'
+                value: '^[1-6]$'
+                formulaid: A
+          description: |
+            Discover BGP neighbors and their current states.
+            
+            Provides per-neighbor monitoring for:
+            - Session state changes
+            - Route count monitoring
+            - Flap detection
+            - Convergence tracking
+          item_prototypes:
+            - uuid: 3de4275b99c64aff9267049b7709337f
+              name: 'BGP Neighbor: {#BGP_NEIGHBOR} Routes Received'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.15.3.1.10.{#BGP_NEIGHBOR}'
+              key: 'bgp.neighbor.routes[{#BGP_NEIGHBOR}]'
+              delay: 5m
+              history: 30d
+              trends: 90d
+              description: 'Number of routes received from BGP neighbor'
+              tags:
+                - tag: 'BGP Neighbor'
+                  value: '{#BGP_NEIGHBOR}'
+                - tag: Component
+                  value: BGP
+              trigger_prototypes:
+                - uuid: 71286c9f8df94e229b9b489da109779f
+                  expression: 'last(/Sonicwall Firewall/bgp.neighbor.routes[{#BGP_NEIGHBOR}]) < {$SONICWALL_BGP_ROUTE_THRESHOLD_CRITICAL}'
+                  name: 'BGP Neighbor: {#BGP_NEIGHBOR} Route Count Critical'
+                  priority: HIGH
+                  description: |
+                    BGP neighbor {#BGP_NEIGHBOR} has fewer than {$SONICWALL_BGP_ROUTE_THRESHOLD_CRITICAL} routes.
+                    
+                    This may indicate:
+                    - Routing table corruption
+                    - Upstream BGP issues
+                    - Route-map misconfigurations
+                    - Network partitioning
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: BGP
+                    - tag: Condition
+                      value: 'Route Loss'
+                - uuid: 8239ed9f9ef94f339c8c59aea20988af
+                  expression: |
+                    last(/Sonicwall Firewall/bgp.neighbor.routes[{#BGP_NEIGHBOR}]) < {$SONICWALL_BGP_ROUTE_THRESHOLD_WARNING}
+                    and last(/Sonicwall Firewall/bgp.neighbor.routes[{#BGP_NEIGHBOR}]) >= {$SONICWALL_BGP_ROUTE_THRESHOLD_CRITICAL}
+                  name: 'BGP Neighbor: {#BGP_NEIGHBOR} Route Count Low'
+                  priority: WARNING
+                  description: |
+                    BGP neighbor {#BGP_NEIGHBOR} has fewer than {$SONICWALL_BGP_ROUTE_THRESHOLD_WARNING} routes.
+                    
+                    Monitor for potential routing issues or upstream changes.
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: BGP
+                    - tag: Condition
+                      value: 'Route Warning'
+            - uuid: 2cd3164198b549fe9156f39f6609226f
+              name: 'BGP Neighbor: {#BGP_NEIGHBOR} State'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.15.3.1.2.{#BGP_NEIGHBOR}'
+              key: 'bgp.neighbor.state[{#BGP_NEIGHBOR}]'
+              delay: 2m
+              history: 30d
+              trends: 90d
+              description: 'BGP neighbor state: 1=idle, 2=connect, 3=active, 4=opensent, 5=openconfirm, 6=established'
+              valuemap:
+                name: bgp.neighbor.state.valuemap
+              tags:
+                - tag: 'BGP Neighbor'
+                  value: '{#BGP_NEIGHBOR}'
+                - tag: Component
+                  value: BGP
+              trigger_prototypes:
+                - uuid: 60175b8e9ce84d119a8a379ca009669f
+                  expression: '(change(/Sonicwall Firewall/bgp.neighbor.state[{#BGP_NEIGHBOR}]) > 0 and count(/Sonicwall Firewall/bgp.neighbor.state[{#BGP_NEIGHBOR}],{$SONICWALL_FLAPPING_TIMEFRAME}) > {$SONICWALL_FLAPPING_CHANGE_THRESHOLD})'
+                  name: 'BGP Neighbor: {#BGP_NEIGHBOR} Flapping Detected'
+                  priority: WARNING
+                  description: |
+                    BGP neighbor {#BGP_NEIGHBOR} has changed state more than {$SONICWALL_FLAPPING_CHANGE_THRESHOLD} times in {$SONICWALL_FLAPPING_TIMEFRAME}.
+                    
+                    This indicates BGP session instability that can cause:
+                    - Route flapping
+                    - Convergence delays
+                    - Tunnel failover issues
+                    - Traffic black-holing
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: BGP
+                    - tag: Condition
+                      value: Flapping
+                - uuid: 5f064a7e9bd84c009489269b9909559f
+                  expression: |
+                    last(/Sonicwall Firewall/bgp.neighbor.state[{#BGP_NEIGHBOR}]) <> 6
+                    and nodata(/Sonicwall Firewall/bgp.neighbor.state[{#BGP_NEIGHBOR}],{$SONICWALL_BGP_NEIGHBOR_TIMEOUT}) = 0
+                  name: 'BGP Neighbor: {#BGP_NEIGHBOR} Session Down'
+                  priority: HIGH
+                  description: |
+                    BGP neighbor {#BGP_NEIGHBOR} is not in Established state (6).
+                    
+                    Current states:
+                    1=idle, 2=connect, 3=active, 4=opensent, 5=openconfirm, 6=established
+                    
+                    This indicates BGP routing issues that may affect tunnel failover and convergence.
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: BGP
+                    - tag: Condition
+                      value: 'Session Down'
+            - uuid: 4ef5386d8ad74bf09378159d8809448f
+              name: 'BGP Neighbor: {#BGP_NEIGHBOR} Uptime'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.15.3.1.16.{#BGP_NEIGHBOR}'
+              key: 'bgp.neighbor.uptime[{#BGP_NEIGHBOR}]'
+              delay: 5m
+              history: 30d
+              trends: 90d
+              units: uptime
+              description: 'BGP neighbor session uptime in seconds'
+              tags:
+                - tag: 'BGP Neighbor'
+                  value: '{#BGP_NEIGHBOR}'
+                - tag: Component
+                  value: BGP
         - uuid: 58ebb24e494d4e7eb3437d95f9abfe58
           name: Processors
           type: SNMP_AGENT
@@ -734,25 +1079,28 @@
               - macro: '{#IFDESCR}'
                 value: '.*HA-Link*'
                 operator: NOT_MATCHES_REGEX
+                formulaid: A
               - macro: '{#IFDESCR}'
                 value: '^.*\(Unassigned\)$'
                 operator: NOT_MATCHES_REGEX
+                formulaid: B
               - macro: '{#IFTYPE}'
                 value: ^(6|117|127|128|161|560|561|800)$
+                formulaid: C
           description: |
             Discover physical Ethernet interfaces on the firewall.
             
             This includes standard RJ-45 interfaces and some vendor-specific virtual Ethernet types.
             Interface detection is based on:
              - `ifType = 6` (ethernetCsmacd)
-             - Extended types such as `117`, `127`, `128`, `161`, `560–561`, `800` (used on various SonicWall models)
+             - Extended types such as `117`, `127`, `128`, `161`, `560â€“561`, `800` (used on various SonicWall models)
             
             Filtering is applied to:
              - Exclude HA-link interfaces
              - Exclude unassigned or "Portshield(ed) To Host" pseudo-interfaces
             
             Note:
-             - This rule does not detect LAG (Link Aggregation) interfaces — see `Interfaces (LAG/Bonded)` for that.
+             - This rule does not detect LAG (Link Aggregation) interfaces â€” see `Interfaces (LAG/Bonded)` for that.
              - SonicWall sometimes reports bonded or VLAN-tagged interfaces under `ifType=6`; rely on `ifDescr` + interface naming to classify appropriately.
           item_prototypes:
             - uuid: ea03a12ce8ce47b0aa0cf8d91ebb623a
@@ -763,6 +1111,8 @@
               description: 'Inbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -796,6 +1146,8 @@
               description: 'Incoming traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -814,6 +1166,8 @@
               description: 'Outbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -839,6 +1193,8 @@
               description: 'Outgoing traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -907,14 +1263,18 @@
               - macro: '{#IFDESCR}'
                 value: '.*HA-Link*'
                 operator: NOT_MATCHES_REGEX
+                formulaid: A
               - macro: '{#IFDESCR}'
                 value: '.*Portshield(ed)? (To|Host).*'
                 operator: NOT_MATCHES_REGEX
+                formulaid: B
               - macro: '{#IFDESCR}'
                 value: '^.*\(Unassigned\)$'
                 operator: NOT_MATCHES_REGEX
+                formulaid: C
               - macro: '{#IFTYPE}'
                 value: ^(39|48|56|195|243|244|559|562)$
+                formulaid: D
           description: |
             Discover fibre-optic or high-speed physical interfaces, typically SFP/SFP+ ports, used for WAN uplinks, interconnects, or high-throughput LAN segments.
             
@@ -929,7 +1289,7 @@
              - Unassigned ports
             
             Note:
-             - SonicWall does not consistently separate copper vs fibre via `ifType` — verify against `ifDescr` when interface mapping is critical.
+             - SonicWall does not consistently separate copper vs fibre via `ifType` â€” verify against `ifDescr` when interface mapping is critical.
              - Some bonded fibre interfaces may appear here if not caught by the LAG discovery rule.
           item_prototypes:
             - uuid: 80a6509934c042d18d44c2321c7029a6
@@ -940,6 +1300,8 @@
               description: 'Inbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -973,6 +1335,8 @@
               description: 'Incoming traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -991,6 +1355,8 @@
               description: 'Outbound errors on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1016,6 +1382,8 @@
               description: 'Outgoing traffic on interface {#IFDESCR}'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1083,8 +1451,10 @@
             conditions:
               - macro: '{#INDEX}'
                 value: ^1$
+                formulaid: A
               - macro: '{#MODEL}'
                 value: '^(?!.*NSa|NSA).*$'
+                formulaid: B
           lifetime: 1d
           description: 'Collects scalar firewall metrics from sonicwallFwStats using synthetic discovery. Only available on some models of firewall'
           item_prototypes:
@@ -1203,12 +1573,13 @@
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(161|166)$
+                formulaid: A
           description: |
             Discover bonded or aggregated interfaces on the firewall, such as Link Aggregation Groups (LAGs) or PortChannel interfaces.
               
             This rule targets interfaces with:
              - `ifType = 161` (IEEE 802.3ad Link Aggregation)
-             - `ifType = 166` (MPLS Tunnel — occasionally used for VPN encapsulation in LAG contexts)
+             - `ifType = 166` (MPLS Tunnel â€” occasionally used for VPN encapsulation in LAG contexts)
               
             These interfaces:
              - Represent logical bundles of physical links
@@ -1216,7 +1587,7 @@
             
              Note:
              - LAG interfaces may coexist with Ethernet or Fibre entries; no deduplication is applied.
-             - SonicWall interface naming is inconsistent across models — validate `ifDescr` labels per deployment.
+             - SonicWall interface naming is inconsistent across models â€” validate `ifDescr` labels per deployment.
           item_prototypes:
             - uuid: c72f0151f79c418e89c8838f2d961678
               name: 'LAG: {#IFDESCR} Errors In'
@@ -1225,6 +1596,8 @@
               key: 'lag.ifInErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1251,6 +1624,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1268,6 +1643,8 @@
               key: 'lag.ifOutErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1294,6 +1671,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1324,7 +1703,7 @@
                   value: State
               trigger_prototypes:
                 - uuid: e9c18edffa4f4676a9326199a9f828c6
-                  expression: 'count(/Sonicwall Firewall/lag.status[{#IFDESCR}],5m,"ne")>2 and nodata(/Sonicwall Firewall/lag.status[{#IFDESCR}],120s)=0'
+                  expression: '(count(/Sonicwall Firewall/lag.status[{#IFDESCR}],{$SONICWALL_FLAPPING_TIMEFRAME})>1 or change(/Sonicwall Firewall/lag.status[{#IFDESCR}])>0) and nodata(/Sonicwall Firewall/lag.status[{#IFDESCR}],120s)=0'
                   name: 'LAG {#IFDESCR} status changed'
                   priority: WARNING
                   manual_close: 'YES'
@@ -1371,12 +1750,13 @@
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(53|135)$
+                formulaid: A
           description: |
             Discover VLAN-tagged interfaces, including both Layer 2 and Layer 3 subinterfaces configured on physical or virtual ports.
             
             This rule targets:
-             - `ifType = 53` (propVirtual — common for VLAN-tagged Layer 2)
-             - `ifType = 135` (l3ipvlan — Layer 3 subinterface with VLAN ID)
+             - `ifType = 53` (propVirtual â€” common for VLAN-tagged Layer 2)
+             - `ifType = 135` (l3ipvlan â€” Layer 3 subinterface with VLAN ID)
             
             These interfaces typically appear as:
              - `X0.V10`, `X2.V50`, etc. (e.g., `interface.vlan`)
@@ -1385,7 +1765,7 @@
             Notes:
              - SonicWall reports some VLANs as independent `ifIndex` values, allowing direct SNMP polling
              - If these interfaces are not routable, traffic counters may show zero despite being active
-             - This rule does not apply to VLANs on VTI tunnels or PortShield bridges — use dedicated discovery rules for those
+             - This rule does not apply to VLANs on VTI tunnels or PortShield bridges â€” use dedicated discovery rules for those
           item_prototypes:
             - uuid: 2a15151dc9bb4deaab667f5e44dc963b
               name: 'VLAN: {#IFDESCR} Errors In'
@@ -1394,6 +1774,8 @@
               key: 'vlan.ifInErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1418,6 +1800,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1444,6 +1828,8 @@
               key: 'vlan.ifOutErrors[{#IFDESCR}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -1468,6 +1854,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1534,209 +1922,234 @@
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vlan.ifOutErrors[{#IFDESCR}]'
-        - uuid: 138687730455496a870eace2a5994848
+        - uuid: ed64d4de43794fc68c4b7d0f8d1455b9
           name: 'VPN Tunnels (Policy Based)'
           type: SNMP_AGENT
-          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.8741.1.3.2.1.1.1.1,{#VPNNAME},1.3.6.1.4.1.8741.1.3.2.1.1.1.14,{#LOCALONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.3,{#LOCALTWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.4,{#REMOTEONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.5,{#REMOTETWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.6]'
+          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.8741.1.3.2.1.1.1.1,{#LOCALONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.3,{#LOCALTWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.4,{#REMOTEONE},1.3.6.1.4.1.8741.1.3.2.1.1.1.5,{#REMOTETWO},1.3.6.1.4.1.8741.1.3.2.1.1.1.6,{#VPNSTATUS},1.3.6.1.4.1.8741.1.3.2.1.1.1.7,{#VPNNAME},1.3.6.1.4.1.8741.1.3.2.1.1.1.14]'
           key: vpn.policy.discovery
-          delay: 15m
-          status: DISABLED
+          delay: 5m
           filter:
             evaltype: AND
             conditions:
               - macro: '{#LOCALONE}'
                 value: '^((?!0\.0\.0\.0).)*$'
+                formulaid: A
               - macro: '{#REMOTEONE}'
                 value: '^((?!0\.0\.0\.0).)*$'
+                formulaid: B
               - macro: '{#VPNNAME}'
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
+                formulaid: C
           description: |
-            Discover active IPsec Phase-2 Security Associations (SAs) for policy-based VPNs.
-              
-            Each discovered entity corresponds to a live SA, indexed by a dynamic SNMP index ({#VPNINDEX}), with an associated tunnel identifier ({#VPNNAME}) pulled from `sonicSAStatUserName`.
+            Discovers VPN tunnels directly via SNMP using stable subnet-pair approach.
             
-            Policy-based VPNs:
-             - Define explicit encryption domains (local/remote subnets)
-             - Do not create interface representations in SNMP
-             - Are represented only while an SA is active
-              
-            Important:
-             - SonicWall does not expose static VPN definitions via SNMP
-             - SAs expire and rekey frequently — this discovery can yield hundreds of short-lived entries
-             - Use strict regex filters and reduced retention to control template scale and history growth
+            This simplified approach:
+            - Uses direct SNMP discovery without complex preprocessing
+            - Monitors bytes in/out directly via SNMP OIDs using SA index
+            - Eliminates external script dependency
+            - Provides stable subnet-pair based item keys
+            
+            Benefits:
+            - Simpler architecture with direct SNMP monitoring
+            - No external script dependencies
+            - Uses discovered SA index for direct OID queries
+            - Maintains stable subnet-pair identifiers
+            
+            Notice:
+            VPN Security Associations (SAs) are frequently renegotiated or re-keyed, which causes the SA index to change. For this reason, the polling interval is set to 5 minutes. Polling less frequently increases the risk of missing statistics for active policy-based tunnels, while polling more frequently may be considered overly aggressive.
           item_prototypes:
-            - uuid: ddd196ba48194cf0a8c5e66222ef3e5d
-              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Bytes In'
+            - uuid: c7c78b549316466cb3bb4ddd21048476
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) Bytes In'
               type: SNMP_AGENT
               snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.9.{#SNMPINDEX}'
-              key: 'vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
-              history: 1d
-              trends: 1d
-              units: bps
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-              tags:
-                - tag: Component
-                  value: VPN
-                - tag: Metrics
-                  value: Traffic
-                - tag: VPN
-                  value: Policy
-            - uuid: 9882b0fbcf2c42daa1a030cf75c97b28
-              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Bytes Out'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#SNMPINDEX}'
-              key: 'vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
-              history: 1d
-              trends: 1d
-              units: bps
-              preprocessing:
-                - type: CHANGE_PER_SECOND
-                - type: MULTIPLIER
-                  parameters:
-                    - '8'
-              tags:
-                - tag: Component
-                  value: VPN
-                - tag: Metrics
-                  value: Traffic
-                - tag: VPN
-                  value: Policy
-            - uuid: c1669e15dc4a4f379b3d7e854c699a9d
-              name: 'VPN Policy: {#VPNNAME} [{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}] Status'
-              type: CALCULATED
-              key: 'vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]'
+              key: 'vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}]'
+              delay: 5m
               history: 7d
               trends: 90d
-              params: 'max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1m)>0 or max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1m)>0'
+              units: bps
+              description: 'Inbound bytes for VPN tunnel ({#LOCALSUBNET} to {#REMOTESUBNET})'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALSUBNET}-{#REMOTESUBNET}'
+                - tag: 'VPN Type'
+                  value: Policy
+            - uuid: 8359fd27a05146d99f5955ba2f494b8b
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) Bytes Out'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.11.{#SNMPINDEX}'
+              key: 'vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}]'
+              delay: 5m
+              history: 7d
+              trends: 90d
+              units: bps
+              description: 'Outbound bytes for VPN tunnel ({#LOCALSUBNET} to {#REMOTESUBNET})'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Component
+                  value: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALSUBNET}-{#REMOTESUBNET}'
+                - tag: 'VPN Type'
+                  value: Policy
+            - uuid: a9b5c8e2d41f4c6eb7a38f5921046d8a
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.8741.1.3.2.1.1.1.8.{#SNMPINDEX}'
+              key: 'vpn.policy.status[{#LOCALSUBNET}-{#REMOTESUBNET}]'
+              delay: 5m
+              history: 7d
+              description: 'Status for VPN tunnel ({#LOCALSUBNET} to {#REMOTESUBNET})'
               valuemap:
                 name: sonicwall.vpn.policy.status.valuemap
               tags:
                 - tag: Component
                   value: VPN
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALSUBNET}-{#REMOTESUBNET}'
+                - tag: 'VPN Type'
                   value: Policy
           trigger_prototypes:
-            - uuid: a0ea00382b334bedb5483277d7aab49f
+            - uuid: 1a669e15dc4a4f379b3d7e854c699a20
               expression: |
-                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
-                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 1 hour'
+                max(/Sonicwall Firewall/vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}],1d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}],1d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) - Idle for 1 day'
               status: DISABLED
               description: |
-                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 1-hour period.
+                This trigger monitors policy-based VPN tunnel "{#VPNNAME}" ({#LOCALSUBNET}-{#REMOTESUBNET}).
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-day period.
                   
-                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
-                This trigger is for debugging purposes and intended to highlight short-term idle SAs for review.
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is for debugging purposes and intended to highlight short-term idle tunnels for review.
                 
                 This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
-            - uuid: c2669e15dc4a4f379b3d7e854c699a9f
+                  value: 'Suspected Idle'
+            - uuid: 2b669e15dc4a4f379b3d7e854c699a21
               expression: |
-                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
-                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 7 days'
+                max(/Sonicwall Firewall/vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) - Idle for 1 month'
               status: DISABLED
               priority: WARNING
               description: |
-                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 7-day period.
+                This trigger monitors policy-based VPN tunnel "{#VPNNAME}" ({#LOCALSUBNET}-{#REMOTESUBNET}).
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 30-day period.
                   
-                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
-                This trigger is intended to highlight weekly idle SAs for review and potential decommissioning.
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is for debugging purposes and intended to highlight daily idle tunnels for review.
                 
                 This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
-            - uuid: b1669e15dc4a4f379b3d7e854c699a9e
+                  value: 'Long Term Idle'
+            - uuid: 3c669e15dc4a4f379b3d7e854c699a22
               expression: |
-                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
-                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 24 hours'
-              status: DISABLED
-              description: |
-                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 24-hour period.
-                  
-                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
-                This trigger is for debugging purposes and intended to highlight daily idle SAs for review.
-                
-                This trigger requires consistent data - it will not fire if there are gaps in data collection.
-              manual_close: 'YES'
-              tags:
-                - tag: Condition
-                  value: Idle
-            - uuid: d3669e15dc4a4f379b3d7e854c699a90
-              expression: |
-                last(/Sonicwall Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}]) = 0 and
-                max(/Sonicwall Firewall/vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}-{#REMOTEONE}/{#REMOTETWO}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Policy: {#VPNNAME} ({#VPNINDEX}) - Idle for 30 days'
-              status: DISABLED
+                max(/Sonicwall Firewall/vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                nodata(/Sonicwall Firewall/vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}],7d) = 0 and
+                nodata(/Sonicwall Firewall/vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}],7d) = 0
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) - Idle for 1 week'
               priority: INFO
               description: |
-                This trigger monitors individual Phase-2 IPsec Security Associations (SAs) under the VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic for this SA have been below the threshold for a continuous 30-day period.
+                This trigger monitors policy-based VPN tunnel "{#VPNNAME}" ({#LOCALSUBNET}-{#REMOTESUBNET}).
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-week period.
                   
-                Note: Some tunnels may be configured with keepalives or rekey intervals that do not generate traffic. 
-                This trigger is informational and intended to highlight long-term idle SAs for review and potential decommissioning.
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is intended to highlight weekly idle tunnels for review and potential decommissioning.
+                
+                This trigger requires 7 days of consistent data collection before it can fire, preventing false alarms on newly monitored tunnels.
+              manual_close: 'YES'
+              tags:
+                - tag: Condition
+                  value: Idle
+            - uuid: 4d669e15dc4a4f379b3d7e854c699a23
+              expression: |
+                max(/Sonicwall Firewall/vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}],365d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}],365d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) - Idle for 1 year'
+              status: DISABLED
+              priority: AVERAGE
+              description: |
+                This trigger monitors policy-based VPN tunnel "{#VPNNAME}" ({#LOCALSUBNET}-{#REMOTESUBNET}).
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 30-day period.
+                  
+                Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
+                This trigger is informational and intended to highlight long-term idle tunnels for review and potential decommissioning.
                 
                 This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
+                  value: 'No Longer Used'
+          graph_prototypes:
+            - uuid: 08086b07da6b4c23933ab5fb2dfc9d5e
+              name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) Traffic'
+              graph_items:
+                - color: 00FF00
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'vpn.policy.bytes.in[{#LOCALSUBNET}-{#REMOTESUBNET}]'
+                - sortorder: '1'
+                  color: 0080FF
+                  item:
+                    host: 'Sonicwall Firewall'
+                    key: 'vpn.policy.bytes.out[{#LOCALSUBNET}-{#REMOTESUBNET}]'
           preprocessing:
             - type: JAVASCRIPT
               parameters:
                 - |
-                  function ipToInt(ip) {
-                      var parts = ip.split('.');
-                      return ((+parts[0] << 24) >>> 0) + ((+parts[1] << 16) >>> 0) + ((+parts[2] << 8) >>> 0) + (+parts[3]);
-                  }
+                  // Create SUBNETPAIR macro from existing LLD data
+                  var data = JSON.parse(value);
                   
-                  function getPrefixLength(network, broadcast) {
-                      var n = ipToInt(network);
-                      var b = ipToInt(broadcast);
-                      var mask = ~(n ^ b);
-                      var count = 0;
-                      for (var i = 31; i >= 0; i--) {
-                          if ((mask >>> i) & 1) count++;
+                  for (var i = 0; i < data.length; i++) {
+                      var item = data[i];
+                      var localone = item["{#LOCALONE}"] || "";
+                      var remoteone = item["{#REMOTEONE}"] || "";
+                      var vpnname = item["{#VPNNAME}"] || "";
+                      
+                      // Create CIDR subnet format
+                      if (localone && remoteone) {
+                          item["{#LOCALSUBNET}"] = localone + "/24";
+                          item["{#REMOTESUBNET}"] = remoteone + "/24";
                       }
-                      return count.toString();
-                  }
-                  
-                  var obj = JSON.parse(value);
-                  
-                  for (var i = 0; i < obj.length; i++) {
-                      var lnet = obj[i]["{#LOCALONE}"];
-                      var lbcast = obj[i]["{#LOCALTWO}"];
-                      var rnet = obj[i]["{#REMOTEONE}"];
-                      var rbcast = obj[i]["{#REMOTETWO}"];
-                  
-                      if (lnet && lbcast) {
-                          obj[i]["{#LOCALTWO}"] = getPrefixLength(lnet, lbcast);
-                      }
-                  
-                      if (rnet && rbcast) {
-                          obj[i]["{#REMOTETWO}"] = getPrefixLength(rnet, rbcast);
+                      
+                      // Pass through tunnel name
+                      if (vpnname) {
+                          item["{#VPNNAME}"] = vpnname;
                       }
                   }
                   
-                  return JSON.stringify(obj);
+                  return JSON.stringify(data);
         - uuid: 5b8828f520044cb4aee1248934790d9b
           name: 'VPN Tunnels (Route Based)'
           type: SNMP_AGENT
@@ -1748,11 +2161,14 @@
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^131$
+                formulaid: A
               - macro: '{#VPNADMINSTATE}'
                 value: ^1$
+                formulaid: B
               - macro: '{#VPNNAME}'
                 value: '{$SONICWALL_VPN_IGNORE_REGEX}'
                 operator: NOT_MATCHES_REGEX
+                formulaid: C
           description: |
             Discover dynamically instantiated route-based VPN TUNNEL interfaces (ifType=131).
               
@@ -1776,6 +2192,8 @@
               description: 'Errors In counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1784,7 +2202,9 @@
                   value: VPN
                 - tag: Metrics
                   value: Errors
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
                   value: Route
             - uuid: 4a06318935bd4a8d803dd9109db9ba7e
               name: 'VPN Route: {#VPNNAME} Bytes In'
@@ -1794,6 +2214,8 @@
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1802,7 +2224,9 @@
                   value: VPN
                 - tag: Metrics
                   value: Traffic
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
                   value: Route
             - uuid: d203b3c848c04e94aaa799ba6af8dac0
               name: 'VPN Route: {#VPNNAME} Errors Out'
@@ -1812,6 +2236,8 @@
               units: bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1820,7 +2246,9 @@
                   value: VPN
                 - tag: Metrics
                   value: Errors
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
                   value: Route
             - uuid: 5c4f71c24d51433fa572275b0726f2f1
               name: 'VPN Route: {#VPNNAME} Bytes Out'
@@ -1831,6 +2259,8 @@
               description: 'Bytes Out counter not exposed during testing - Bug in the Sonicwall Firmware?'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -1839,7 +2269,9 @@
                   value: VPN
                 - tag: Metrics
                   value: Traffic
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
                   value: Route
             - uuid: 803ca2150a6940d38363649cfa3e019d
               name: 'VPN Route: {#VPNNAME} Status'
@@ -1848,49 +2280,55 @@
               key: 'vpn.route.status[{#VPNNAME}]'
               valuemap:
                 name: sonicwall.vpn.route.status.valuemap
+              preprocessing:
+                - type: DISCARD_UNCHANGED
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: VPN
-                - tag: VPN
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
                   value: Route
               trigger_prototypes:
                 - uuid: 7e5b193f9d734c2ea2745793eebfe8fc
                   expression: |
-                    count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
+                    (count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],{$SONICWALL_FLAPPING_TIMEFRAME})>1 and change(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}])>0)
                     and nodata(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],120s)=0
                   name: 'VPN Route: {#VPNNAME} Flapping Detected'
                   priority: WARNING
                   description: |
-                    The VTI reports DOWN, but traffic is actively flowing. Possible tunnel flap, or incorrect operational state.
-                    Investigate VPN tunnel stability and SonicWall firmware behaviour, BGP/Static Route configuration etc.
+                    The VPN route tunnel "{#VPNNAME}" has changed status more than {$SONICWALL_FLAPPING_CHANGE_THRESHOLD} times in the last {$SONICWALL_FLAPPING_TIMEFRAME}.
+                    This indicates tunnel instability and requires investigation.
+                    
+                    Possible causes:
+                    - Network connectivity issues
+                    - SonicWall firmware bugs
+                    - BGP/routing configuration problems
+                    - Hardware issues
+                    - Authentication/certificate problems
+                    
+                    Check tunnel logs and network connectivity to the remote endpoint.
                   manual_close: 'YES'
                   tags:
                     - tag: Component
                       value: VPN
-                    - tag: VPN
-                      value: Route
-                - uuid: 5e016d178d42463da36607da2c11536a
-                  expression: |
-                    count(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],300,"ne")>2
-                    and nodata(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}],120s)=0
-                  name: 'VPN Route: {#VPNNAME} Status changed'
-                  priority: AVERAGE
-                  description: 'Status counter not exposed during testing - Bug in the Sonicwall Firmware?'
-                  manual_close: 'YES'
-                  tags:
                     - tag: Condition
-                      value: Threshold
+                      value: Flapping
+                    - tag: 'VPN Type'
+                      value: Route
           trigger_prototypes:
             - uuid: 1a669e15dc4a4f379b3d7e854c699a10
               expression: |
                 last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
-                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],1h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Route: {#VPNNAME} - Idle for 1 hour'
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],1d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],1d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 1 day'
               status: DISABLED
               description: |
                 This trigger monitors route-based VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-hour period while the tunnel status is Active.
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-day period while the tunnel status is Active.
                   
                 Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
                 This trigger is for debugging purposes and intended to highlight short-term idle tunnels for review.
@@ -1899,40 +2337,44 @@
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
-            - uuid: 3c669e15dc4a4f379b3d7e854c699a12
+                  value: 'Suspected Idle'
+            - uuid: 2b669e15dc4a4f379b3d7e854c699a11
               expression: |
                 last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
-                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Route: {#VPNNAME} - Idle for 7 days'
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 1 month'
               status: DISABLED
               priority: WARNING
               description: |
                 This trigger monitors route-based VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic have been below the threshold for a continuous 7-day period while the tunnel status is Active.
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 30-day period while the tunnel status is Active.
                   
                 Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
-                This trigger is intended to highlight weekly idle tunnels for review and potential decommissioning.
+                This trigger is for debugging purposes and intended to highlight daily idle tunnels for review.
                 
                 This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
-            - uuid: 2b669e15dc4a4f379b3d7e854c699a11
+                  value: 'Long Term Idle'
+            - uuid: 3c669e15dc4a4f379b3d7e854c699a12
               expression: |
                 last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
-                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],24h) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Route: {#VPNNAME} - Idle for 24 hours'
-              status: DISABLED
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],7d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                nodata(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],7d) = 0 and
+                nodata(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],7d) = 0
+              name: 'VPN Route: {#VPNNAME} - Idle for 1 week'
+              priority: INFO
               description: |
                 This trigger monitors route-based VPN tunnel "{#VPNNAME}".
-                It fires when both inbound and outbound traffic have been below the threshold for a continuous 24-hour period while the tunnel status is Active.
+                It fires when both inbound and outbound traffic have been below the threshold for a continuous 1-week period while the tunnel status is Active.
                   
                 Note: Some tunnels may be configured with keepalives or routing protocols that do not generate significant traffic. 
-                This trigger is for debugging purposes and intended to highlight daily idle tunnels for review.
+                This trigger is intended to highlight weekly idle tunnels for review and potential decommissioning.
+                
+                This trigger requires 7 days of consistent data collection before it can fire, preventing false alarms on newly monitored tunnels.
                 
                 This trigger requires consistent data - it will not fire if there are gaps in data collection.
               manual_close: 'YES'
@@ -1942,11 +2384,11 @@
             - uuid: 4d669e15dc4a4f379b3d7e854c699a13
               expression: |
                 last(/Sonicwall Firewall/vpn.route.status[{#VPNNAME}]) = 1 and
-                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
-                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],30d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
-              name: 'VPN Route: {#VPNNAME} - Idle for 30 days'
+                max(/Sonicwall Firewall/vpn.route.ifInOctets[{#VPNNAME}],365d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD} and
+                max(/Sonicwall Firewall/vpn.route.ifOutOctets[{#VPNNAME}],365d) <= {$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}
+              name: 'VPN Route: {#VPNNAME} - Idle for 1 year'
               status: DISABLED
-              priority: INFO
+              priority: AVERAGE
               description: |
                 This trigger monitors route-based VPN tunnel "{#VPNNAME}".
                 It fires when both inbound and outbound traffic have been below the threshold for a continuous 30-day period while the tunnel status is Active.
@@ -1958,7 +2400,7 @@
               manual_close: 'YES'
               tags:
                 - tag: Condition
-                  value: Idle
+                  value: 'No Longer Used'
             - uuid: b2f59c886b324cd88518d38dca6c0244
               expression: |
                 avg(/Sonicwall Firewall/vpn.route.ifInErrors[{#VPNNAME}],5m) > {$SONICWALL_VPN_CRITICAL_THRESHOLD} and
@@ -2050,6 +2492,152 @@
                   item:
                     host: 'Sonicwall Firewall'
                     key: 'vpn.route.ifOutErrors[{#VPNNAME}]'
+        - uuid: 934a1ea08f044e449d8d69bba309a9bf
+          name: 'VPN Tunnel Pairs'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#VPNNAME},1.3.6.1.2.1.2.2.1.2,{#VPNADMINSTATE},1.3.6.1.2.1.2.2.1.7,{#IFTYPE},1.3.6.1.2.1.2.2.1.3,{#VPNOPERSTATE},IF-MIB::ifOperStatus]'
+          key: vpn.tunnel.pairs.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFTYPE}'
+                value: ^131$
+                formulaid: A
+              - macro: '{#VPNADMINSTATE}'
+                value: ^1$
+                formulaid: B
+              - macro: '{#VPNNAME}'
+                value: '.*(TUN[0-9]+|_PRI|_SEC|PRIMARY|BACKUP|[0-9]+).*'
+                formulaid: C
+          description: |
+            Discovers VPN tunnels with redundancy pair naming patterns.
+            
+            Identifies tunnels with names containing:
+            - TUN followed by numbers (TUN0, TUN1, TUN2, etc.)
+            - _PRI or _SEC suffixes  
+            - PRIMARY or BACKUP suffixes
+            - Numeric suffixes
+            
+            This enables monitoring of individual tunnels in redundancy pairs.
+          item_prototypes:
+            - uuid: a45b2fb190154f559e8e7abcb409c9cf
+              name: 'VPN Tunnel Pair: {#VPNPAIR} Status Monitor'
+              type: CALCULATED
+              key: 'vpn.tunnel.pair.status[{#VPNPAIR}]'
+              delay: 5m
+              history: 7d
+              trends: 90d
+              params: 'last(//vpn.route.status[{#VPNNAME}])'
+              description: |
+                Individual tunnel status from discovered VPN tunnel pairs.
+                
+                This monitors the operational status of each tunnel that matches
+                the redundancy pair naming patterns, providing visibility into
+                tunnel availability for failover scenarios.
+              tags:
+                - tag: Component
+                  value: VPN
+                - tag: 'Pair Name'
+                  value: '{#VPNPAIR}'
+                - tag: 'Tunnel Type'
+                  value: 'Redundancy Pair'
+              trigger_prototypes:
+                - uuid: b56c30c291264f669f8f8bccb509dadf
+                  expression: 'last(/Sonicwall Firewall/vpn.tunnel.pair.status[{#VPNPAIR}]) = 0'
+                  name: 'VPN Tunnel Pair: {#VPNPAIR} - All Tunnels Down'
+                  priority: DISASTER
+                  description: |
+                    Both tunnels in pair {#VPNPAIR} are down, indicating complete connectivity loss.
+                    
+                    This is a critical failover scenario requiring immediate attention.
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: VPN
+                    - tag: Condition
+                      value: 'Complete Failure'
+                    - tag: 'Pair Name'
+                      value: '{#VPNPAIR}'
+                - uuid: c67d41d392374c779080acecc609ebef
+                  expression: |
+                    (last(/Sonicwall Firewall/vpn.tunnel.pair.status[{#VPNPAIR}]) = 1 or last(/Sonicwall Firewall/vpn.tunnel.pair.status[{#VPNPAIR}]) = 10)
+                    and change(/Sonicwall Firewall/vpn.tunnel.pair.status[{#VPNPAIR}]) <> 0
+                  name: 'VPN Tunnel Pair: {#VPNPAIR} - Failover Detected'
+                  priority: WARNING
+                  description: |
+                    Tunnel failover detected in pair {#VPNPAIR}.
+                    
+                    Status meanings:
+                    - 1 = Primary only (secondary failed)
+                    - 10 = Secondary only (primary failed)
+                    - 11 = Both active (normal)
+                    
+                    Investigate the failed tunnel and BGP convergence.
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Component
+                      value: VPN
+                    - tag: Condition
+                      value: Failover
+                    - tag: 'Pair Name'
+                      value: '{#VPNPAIR}'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  // Group tunnel names into pairs based on naming patterns
+                  var data = JSON.parse(value);
+                  var pairs = {};
+                  
+                  for (var i = 0; i < data.length; i++) {
+                      var item = data[i];
+                      var vpnname = item["{#VPNNAME}"] || "";
+                      
+                      // Skip if no VPN name
+                      if (!vpnname) continue;
+                      
+                      var pairBase = "";
+                      
+                      // Handle TUNx patterns (TUN0->TUN, TUN1->TUN, etc.)
+                      if (vpnname.match(/TUN[0-9]+/)) {
+                          pairBase = vpnname.replace(/TUN[0-9]+/, "TUN");
+                      }
+                      // Handle _PRI/_SEC patterns
+                      else if (vpnname.match(/_PRI$|_SEC$/)) {
+                          pairBase = vpnname.replace(/_PRI$|_SEC$/, "");
+                      }
+                      // Handle PRIMARY/BACKUP patterns
+                      else if (vpnname.match(/PRIMARY$|BACKUP$/)) {
+                          pairBase = vpnname.replace(/PRIMARY$|BACKUP$/, "");
+                      }
+                      // Handle numeric suffixes (SITE1->SITE, SITE2->SITE)
+                      else if (vpnname.match(/[0-9]+$/)) {
+                          pairBase = vpnname.replace(/[0-9]+$/, "");
+                      }
+                      
+                      // Only add if we found a valid pair pattern
+                      if (pairBase) {
+                          var pairKey = pairBase + "_PAIR";
+                          if (!pairs[pairKey]) {
+                              pairs[pairKey] = {
+                                  "{#VPNPAIR}": pairBase,
+                                  "{#TUNNELS}": []
+                              };
+                          }
+                          pairs[pairKey]["{#TUNNELS}"].push(vpnname);
+                      }
+                  }
+                  
+                  // Convert to array and filter pairs with 2+ members
+                  var result = [];
+                  for (var key in pairs) {
+                      if (pairs[key]["{#TUNNELS}"].length >= 2) {
+                          result.push(pairs[key]);
+                      }
+                  }
+                  
+                  return JSON.stringify(result);
         - uuid: f6bb4d46dd22461c83472971b98a07c2
           name: 'Interfaces (VTI)'
           type: SNMP_AGENT
@@ -2060,10 +2648,11 @@
             conditions:
               - macro: '{#IFTYPE}'
                 value: ^(131)$
+                formulaid: A
           description: |
             Discover route-based VPN interfaces (ifType=131).
               
-            These interfaces represent Virtual Tunnel Interfaces (VTI) — persistent Layer-3 interfaces configured with IPs and routed using static or dynamic protocols (e.g., BGP).
+            These interfaces represent Virtual Tunnel Interfaces (VTI) â€” persistent Layer-3 interfaces configured with IPs and routed using static or dynamic protocols (e.g., BGP).
               
             VTIs are the configuration layer and always exist. However, traffic counters may be idle if tunnels are unused.
               
@@ -2078,6 +2667,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -2096,6 +2687,8 @@
               units: Bps
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
@@ -2113,6 +2706,8 @@
               key: 'vti.errorsIn[{#VTINAME}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -2142,6 +2737,8 @@
               key: 'vti.errorsOut[{#VTINAME}]'
               preprocessing:
                 - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
               tags:
                 - tag: Component
                   value: Interface
@@ -2184,7 +2781,7 @@
                   value: State
               trigger_prototypes:
                 - uuid: f094bd2abb4a40a48fdfdf1aa71cb382
-                  expression: 'count(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],5m,"ne")>2 and nodata(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],120s)=0'
+                  expression: '(count(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],{$SONICWALL_FLAPPING_TIMEFRAME})>1 or change(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}])>0) and nodata(/Sonicwall Firewall/vti.ifOperStatus[{#VTINAME}],120s)=0'
                   name: 'VTI: {#VTINAME} status changed'
                   priority: AVERAGE
                   manual_close: 'YES'
@@ -2226,12 +2823,36 @@
         - tag: Vendor
           value: Sonicwall
       macros:
+        - macro: '{$SNMP_AUTH_KEY}'
+          description: 'SNMPv3 authentication key for secure SNMP communication'
+        - macro: '{$SNMP_AUTH_METHOD}'
+          value: SHA
+          description: 'SNMPv3 authentication method (SHA, MD5)'
+        - macro: '{$SNMP_AUTH_TYPE}'
+          value: AUTH+PRIV
+          description: 'SNMPv3 authentication type (AUTH+PRIV for maximum security)'
+        - macro: '{$SNMP_AUTH_USER}'
+          description: 'SNMPv3 username for authentication'
+        - macro: '{$SNMP_PRIV_KEY}'
+          description: 'SNMPv3 privacy key for encryption'
+        - macro: '{$SNMP_PRIV_METHOD}'
+          value: AES
+          description: 'SNMPv3 privacy method (AES, DES)'
         - macro: '{$SONICWALL_ASW_SCAN_TIME_THRESHOLD}'
           value: '30'
           description: 'Trigger threshold for Gateway Anti-Spyware scan time (seconds).'
         - macro: '{$SONICWALL_ASW_THREAT_THRESHOLD}'
           value: '10'
           description: 'Threshold for detected Gateway Anti-Spyware threat count.'
+        - macro: '{$SONICWALL_BGP_NEIGHBOR_TIMEOUT}'
+          value: '180'
+          description: 'Time in seconds before considering BGP neighbor down/unreachable.'
+        - macro: '{$SONICWALL_BGP_ROUTE_THRESHOLD_CRITICAL}'
+          value: '10'
+          description: 'Critical minimum BGP routes per neighbor (possible routing table corruption).'
+        - macro: '{$SONICWALL_BGP_ROUTE_THRESHOLD_WARNING}'
+          value: '50'
+          description: 'Minimum expected BGP routes per neighbor before warning (route flap protection).'
         - macro: '{$SONICWALL_CONN_USAGE_WARN}'
           value: '90'
           description: 'Warning threshold for connection table usage percentage. Trigger activates if usage exceeds this value.'
@@ -2253,6 +2874,12 @@
         - macro: '{$SONICWALL_DPISSL_USAGE_WARN}'
           value: '95'
           description: 'Warning threshold for DPI SSL usage percentage. Trigger activates if usage exceeds this value.'
+        - macro: '{$SONICWALL_FLAPPING_CHANGE_THRESHOLD}'
+          value: '3'
+          description: 'Number of state changes within the flapping detection timeframe before triggering flapping alerts.'
+        - macro: '{$SONICWALL_FLAPPING_TIMEFRAME}'
+          value: 15m
+          description: 'Timeframe for detecting BGP/VPN flapping behavior (e.g., 15m, 30m, 1h).'
         - macro: '{$SONICWALL_GAV_VIRUS_THRESHOLD}'
           value: '5'
           description: 'Threshold for detected viruses by Gateway Anti-Virus before triggering an alert.'
@@ -2282,10 +2909,13 @@
           description: 'Swap usage (%) that triggers a warning-level alert.'
         - macro: '{$SONICWALL_TEMP_ERROR}'
           value: '70'
-          description: 'Temperature (°C) that triggers an error-level alert.'
+          description: 'Temperature (Â°C) that triggers an error-level alert.'
         - macro: '{$SONICWALL_TEMP_WARNING}'
           value: '60'
-          description: 'Temperature (°C) that triggers a warning-level alert.'
+          description: 'Temperature (Â°C) that triggers a warning-level alert.'
+        - macro: '{$SONICWALL_TUNNEL_FAILOVER_DETECTION}'
+          value: '300'
+          description: 'Time in seconds to detect tunnel failover scenarios between TUN0/TUN1 pairs.'
         - macro: '{$SONICWALL_VLAN_ERROR}'
           value: '10'
           description: 'Threshold for input/output errors on VLAN interfaces.'
@@ -2304,6 +2934,9 @@
         - macro: '{$SONICWALL_VPN_TRAFFIC_IDLE_THRESHOLD}'
           value: '1'
           description: 'Minimum expected average VPN traffic (bps) over 3 hours before considering a tunnel idle.'
+        - macro: '{$SONICWALL_VPN_TRAFFIC_IDLE_TIMEFRAME}'
+          value: 7d
+          description: 'Timeframe for monitoring VPN tunnel idle status. Adjust based on business requirements (e.g., 1h, 7d, 30d).'
         - macro: '{$SONICWALL_VPN_WARNING_THRESHOLD}'
           value: '100'
           description: 'Threshold for VPN tunnel error rate (errors per second) that triggers a warning alert.'
@@ -2486,7 +3119,7 @@
                 - type: honeycomb
                   name: 'Important Info'
                   x: '36'
-                  width: '30'
+                  width: '20'
                   fields:
                     - type: STRING
                       name: items.0
@@ -2612,62 +3245,16 @@
                     - type: INTEGER
                       name: show.2
                       value: '5'
-                - type: gauge
-                  name: 'Temperature (unsupported)'
-                  x: '56'
-                  'y': '2'
-                  width: '10'
-                  fields:
-                    - type: ITEM
-                      name: itemid.0
-                      value:
-                        host: 'Sonicwall Firewall'
-                        key: temperature
-                    - type: STRING
-                      name: max
-                      value: '80'
-                    - type: STRING
-                      name: min
-                      value: '20'
-                    - type: INTEGER
-                      name: show.0
-                      value: '2'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: 0080FF
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '25'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: 00FF00
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '45'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '70'
             - name: Interfaces
               widgets:
                 - type: honeycomb
-                  name: Interfaces
-                  width: '47'
+                  name: 'Interface Status'
+                  width: '15'
+                  height: '14'
                   fields:
-                    - type: INTEGER
-                      name: evaltype_item
-                      value: '2'
-                    - type: INTEGER
-                      name: interpolation
-                      value: '1'
                     - type: STRING
                       name: items.0
-                      value: 'Interface: * Status'
-                    - type: STRING
-                      name: items.1
-                      value: 'LAG: * Status'
+                      value: '* Status'
                     - type: INTEGER
                       name: item_tags.0.operator
                       value: '1'
@@ -2679,22 +3266,16 @@
                       value: Interface
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield): (.+?) (Bytes|Errors|Status).*$", "\2")}'
-                    - type: INTEGER
-                      name: primary_label_bold
-                      value: '1'
+                      value: '{{ITEM.NAME}.regsub("^Interface: (.+) Status$", "\1")}'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: ZEVFJ
                     - type: INTEGER
                       name: show.0
                       value: '1'
                     - type: STRING
                       name: thresholds.0.color
-                      value: '666699'
+                      value: FF465C
                     - type: STRING
                       name: thresholds.0.threshold
                       value: '0'
@@ -2704,17 +3285,11 @@
                     - type: STRING
                       name: thresholds.1.threshold
                       value: '1'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '2'
                 - type: graphprototype
                   name: 'Interface: Traffic'
-                  'y': '2'
-                  width: '47'
-                  height: '7'
+                  x: '15'
+                  width: '48'
+                  height: '14'
                   fields:
                     - type: INTEGER
                       name: columns
@@ -2726,73 +3301,14 @@
                         name: 'Interface: {#IFDESCR} Traffic'
                     - type: STRING
                       name: reference
-                      value: YMGPF
+                      value: CAPHR
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
             - name: VLANs
               widgets:
                 - type: honeycomb
-                  name: VLANs
-                  width: '58'
-                  fields:
-                    - type: INTEGER
-                      name: interpolation
-                      value: '1'
-                    - type: STRING
-                      name: items.0
-                      value: 'VLAN: * Status'
-                    - type: INTEGER
-                      name: item_tags.0.operator
-                      value: '1'
-                    - type: STRING
-                      name: item_tags.0.tag
-                      value: Interface
-                    - type: STRING
-                      name: item_tags.0.value
-                      value: VLAN
-                    - type: STRING
-                      name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^(VPN|VTI|VLAN|Interface|PortShield): (.+?) (Bytes|Errors|Status).*$", "\2")}'
-                    - type: STRING
-                      name: primary_label_color
-                      value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: FYSJN
-                    - type: INTEGER
-                      name: show.0
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: FFFF00
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '0'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: 00FF00
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: FF8000
-                    - type: STRING
-                      name: thresholds.2.threshold
-                      value: '10'
-                    - type: STRING
-                      name: thresholds.3.color
-                      value: FF465C
-                    - type: STRING
-                      name: thresholds.3.threshold
-                      value: '100'
-                    - type: STRING
-                      name: thresholds.4.color
-                      value: FF0000
-                    - type: STRING
-                      name: thresholds.4.threshold
-                      value: '1000'
-                - type: honeycomb
                   name: 'VLAN Errors'
-                  'y': '2'
                   width: '19'
                   height: '14'
                   fields:
@@ -2862,7 +3378,6 @@
                 - type: graphprototype
                   name: 'VLAN: Traffic'
                   x: '19'
-                  'y': '2'
                   width: '39'
                   height: '14'
                   fields:
@@ -2880,278 +3395,513 @@
                     - type: INTEGER
                       name: rows
                       value: '3'
-            - name: 'VPNs (VTI)'
+            - name: BGP
               widgets:
                 - type: honeycomb
-                  name: 'VPN Routes'
-                  width: '21'
-                  height: '5'
+                  name: 'BGP Neighbor States'
+                  width: '12'
+                  height: '6'
                   fields:
-                    - type: INTEGER
-                      name: interpolation
-                      value: '1'
                     - type: STRING
                       name: items.0
-                      value: '* Status'
+                      value: 'BGP Neighbor: * State'
                     - type: INTEGER
                       name: item_tags.0.operator
                       value: '1'
                     - type: STRING
                       name: item_tags.0.tag
-                      value: VPN
+                      value: Component
                     - type: STRING
                       name: item_tags.0.value
-                      value: Route
+                      value: BGP
                     - type: STRING
                       name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+)_(VTI|TUN[0-9]+) \(VPN\) Status$", "\1 (VPN)")}'
-                    - type: STRING
-                      name: primary_label_color
-                      value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: TFRQV
-                    - type: INTEGER
-                      name: secondary_label_bold
-                      value: '0'
-                    - type: STRING
-                      name: secondary_label_color
-                      value: '666699'
-                    - type: INTEGER
-                      name: secondary_label_decimal_places
-                      value: '0'
-                    - type: INTEGER
-                      name: secondary_label_units_show
-                      value: '0'
+                      value: '{{ITEM.NAME}.regsub("^BGP Neighbor: (.+) State$", "\1")}'
                     - type: STRING
                       name: thresholds.0.color
-                      value: '666699'
+                      value: FF465C
                     - type: STRING
                       name: thresholds.0.threshold
-                      value: '0'
+                      value: '1'
                     - type: STRING
                       name: thresholds.1.color
-                      value: 00FFBF
+                      value: FFE082
                     - type: STRING
                       name: thresholds.1.threshold
-                      value: '1'
+                      value: '4'
                     - type: STRING
                       name: thresholds.2.color
                       value: 80FF00
                     - type: STRING
                       name: thresholds.2.threshold
-                      value: '2'
-                - type: honeycomb
-                  name: 'VPN Interfaces (VTI)'
-                  'y': '5'
-                  width: '21'
-                  height: '5'
+                      value: '6'
+                - type: problems
+                  'y': '6'
+                  width: '48'
+                  height: '6'
                   fields:
                     - type: INTEGER
-                      name: interpolation
-                      value: '1'
-                    - type: STRING
-                      name: items.0
-                      value: '* Status'
-                    - type: INTEGER
-                      name: item_tags.0.operator
-                      value: '1'
-                    - type: STRING
-                      name: item_tags.0.tag
-                      value: Interface
-                    - type: STRING
-                      name: item_tags.0.value
-                      value: VTI
-                    - type: STRING
-                      name: primary_label
-                      value: '{{ITEM.NAME}.regsub("^VTI: (.+?)\(VPN\) Status$", "\1")}'
-                    - type: STRING
-                      name: primary_label_color
-                      value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: DDBCC
-                    - type: INTEGER
-                      name: secondary_label_bold
-                      value: '0'
-                    - type: STRING
-                      name: secondary_label_color
-                      value: '666699'
-                    - type: INTEGER
-                      name: secondary_label_decimal_places
-                      value: '0'
-                    - type: INTEGER
-                      name: secondary_label_units_pos
-                      value: '0'
-                    - type: INTEGER
-                      name: secondary_label_units_show
-                      value: '0'
-                    - type: STRING
-                      name: thresholds.0.color
-                      value: '666699'
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '0'
-                    - type: STRING
-                      name: thresholds.1.color
-                      value: 00FFBF
-                    - type: STRING
-                      name: thresholds.1.threshold
-                      value: '1'
-                    - type: STRING
-                      name: thresholds.2.color
-                      value: 80FF00
-                    - type: STRING
-                      name: thresholds.2.threshold
+                      name: show_tags
                       value: '2'
-                - type: graphprototype
-                  name: 'VPN Tunnel: Traffic'
-                  x: '21'
-                  width: '51'
-                  height: '5'
-                  fields:
                     - type: INTEGER
-                      name: columns
-                      value: '1'
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
+                      name: tags.0.operator
+                      value: '0'
+                    - type: STRING
+                      name: tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: tags.0.value
+                      value: BGP
+                - type: gauge
+                  name: 'Session Uptime %'
+                  x: '12'
+                  width: '17'
+                  height: '6'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
                       value:
                         host: 'Sonicwall Firewall'
-                        name: 'VPN Route: {#VPNNAME} Traffic'
+                        key: bgp.session.uptime
                     - type: STRING
-                      name: reference
-                      value: MVZTX
-                - type: graphprototype
-                  name: 'VTI: Traffic'
-                  x: '21'
-                  'y': '5'
-                  width: '51'
-                  height: '5'
+                      name: max
+                      value: '604800'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                - type: item
+                  name: 'BGP Neighbours'
+                  x: '29'
+                  width: '10'
                   fields:
-                    - type: INTEGER
-                      name: columns
-                      value: '1'
-                    - type: GRAPH_PROTOTYPE
-                      name: graphid.0
+                    - type: ITEM
+                      name: itemid.0
                       value:
                         host: 'Sonicwall Firewall'
-                        name: 'VTI: {#VTINAME} Traffic'
+                        key: bgp.neighbors.states
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
                     - type: STRING
-                      name: reference
-                      value: BEYEM
+                      name: units
+                      value: states
+                - type: item
+                  name: 'BGP Received Routes Count'
+                  x: '29'
+                  'y': '2'
+                  width: '10'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.routes.received
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                - type: item
+                  name: 'BGP Session Uptime'
+                  x: '29'
+                  'y': '4'
+                  width: '10'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.session.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: units
+                      value: uptime
+                - type: problems
+                  name: 'BGP Flapping Detection'
+                  x: '39'
+                  width: '9'
+                  fields:
+                    - type: STRING
+                      name: problem
+                      value: Flapping
+                    - type: INTEGER
+                      name: show_tags
+                      value: '2'
+                    - type: INTEGER
+                      name: tags.0.operator
+                      value: '0'
+                    - type: STRING
+                      name: tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: tags.0.value
+                      value: BGP
+                - type: item
+                  name: 'BGP Update Messages'
+                  x: '39'
+                  'y': '2'
+                  width: '9'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.routes.received
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                - type: item
+                  name: 'Total Messages Received'
+                  x: '39'
+                  'y': '4'
+                  width: '9'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.messages.total.received
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: units
+                      value: messages
             - name: 'VPNs (Policy)'
               widgets:
                 - type: honeycomb
-                  name: 'VPN Statuses'
+                  name: 'VPN Policy Status'
                   width: '21'
-                  height: '8'
+                  height: '14'
                   fields:
-                    - type: INTEGER
-                      name: interpolation
-                      value: '1'
                     - type: STRING
                       name: items.0
-                      value: 'VPN Policy: * Status'
+                      value: '* Status'
                     - type: INTEGER
                       name: item_tags.0.operator
                       value: '1'
                     - type: STRING
                       name: item_tags.0.tag
-                      value: VPN
+                      value: Component
                     - type: STRING
                       name: item_tags.0.value
-                      value: Policy
+                      value: VPNPolicy
+                    - type: INTEGER
+                      name: maintenance
+                      value: '1'
                     - type: STRING
                       name: primary_label
                       value: '{{ITEM.NAME}.regsub("^VPN Policy: (.+) Status$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_bold
+                      value: '1'
                     - type: STRING
                       name: primary_label_color
                       value: '666699'
-                    - type: STRING
-                      name: reference
-                      value: TCHRH
                     - type: INTEGER
-                      name: secondary_label_bold
-                      value: '0'
-                    - type: STRING
-                      name: secondary_label_color
-                      value: '666699'
+                      name: primary_label_size
+                      value: '40'
                     - type: INTEGER
-                      name: secondary_label_decimal_places
-                      value: '0'
-                    - type: STRING
-                      name: secondary_label_units
-                      value: bps
+                      name: show.0
+                      value: '1'
                     - type: STRING
                       name: thresholds.0.color
-                      value: 00FFBF
-                    - type: STRING
-                      name: thresholds.0.threshold
-                      value: '0'
-                    - type: STRING
-                      name: thresholds.1.color
                       value: 80FF00
                     - type: STRING
-                      name: thresholds.1.threshold
+                      name: thresholds.0.threshold
                       value: '1'
-                - type: svggraph
-                  name: 'VPN Policy: Bytes In/Out'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                - type: graphprototype
+                  name: 'VPN Policy: Traffic'
                   x: '21'
                   width: '51'
-                  height: '8'
+                  height: '9'
                   fields:
                     - type: INTEGER
-                      name: ds.0.aggregate_function
+                      name: columns
+                      value: '1'
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        name: 'VPN Policy: {#VPNNAME} ({#LOCALSUBNET}-{#REMOTESUBNET}) Traffic'
+                    - type: STRING
+                      name: reference
+                      value: ICZFU
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
+                - type: problems
+                  name: 'VPN Policy: Problems'
+                  x: '21'
+                  'y': '9'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: show
+                      value: '2'
+                    - type: INTEGER
+                      name: tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: tags.0.value
+                      value: VPNPolicy
+            - name: 'VPNs (VTI)'
+              widgets:
+                - type: honeycomb
+                  name: 'VPN Route Status'
+                  width: '21'
+                  height: '14'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '* Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: VPNRoute
+                    - type: INTEGER
+                      name: maintenance
+                      value: '1'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^VPN Route: (.+) Status$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_bold
+                      value: '1'
+                    - type: STRING
+                      name: primary_label_color
+                      value: '666699'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '40'
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 80FF00
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                - type: item
+                  x: '12'
+                  'y': '17'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'BGP Session Uptime'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.session.uptime
+                    - type: INTEGER
+                      name: show.0
                       value: '3'
                     - type: STRING
+                      name: units
+                      value: sessions
+                - type: item
+                  x: '20'
+                  'y': '17'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'BGP Total Messages'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.messages.total.received
+                    - type: INTEGER
+                      name: show.0
+                      value: '3'
+                    - type: STRING
+                      name: units
+                      value: messages
+                - type: svggraph
+                  name: 'VPN Route: Traffic In/Out'
+                  x: '21'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: STRING
                       name: ds.0.color
-                      value: 00FF00
+                      value: 00FF80
                     - type: INTEGER
                       name: ds.0.fill
-                      value: '0'
+                      value: '1'
                     - type: STRING
                       name: ds.0.items.0
-                      value: 'VPN Policy: * Bytes In'
+                      value: 'VPN Route: * Bytes In'
                     - type: INTEGER
                       name: ds.0.transparency
                       value: '3'
-                    - type: INTEGER
-                      name: ds.0.width
-                      value: '3'
                     - type: STRING
                       name: ds.1.color
-                      value: 00BFFF
+                      value: 8000FF
                     - type: INTEGER
                       name: ds.1.fill
-                      value: '0'
+                      value: '1'
                     - type: STRING
                       name: ds.1.items.0
-                      value: 'VPN Policy: * Bytes Out'
+                      value: 'VPN Route: * Bytes Out'
                     - type: INTEGER
                       name: ds.1.transparency
                       value: '3'
                     - type: INTEGER
-                      name: ds.1.width
-                      value: '3'
-                    - type: INTEGER
                       name: legend_lines
-                      value: '10'
-                    - type: INTEGER
-                      name: legend_statistic
-                      value: '1'
-                    - type: STRING
-                      name: reference
-                      value: TGCPP
+                      value: '8'
                     - type: INTEGER
                       name: righty
                       value: '0'
+                - type: svggraph
+                  name: 'VPN Route: Errors In/Out'
+                  x: '21'
+                  'y': '5'
+                  width: '51'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF8000
                     - type: INTEGER
-                      name: simple_triggers
+                      name: ds.0.fill
                       value: '1'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'VPN Route: * Errors In'
                     - type: INTEGER
-                      name: working_time
+                      name: ds.0.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.0.type
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FF0000
+                    - type: INTEGER
+                      name: ds.1.fill
                       value: '1'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'VPN Route: * Errors Out'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.type
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: problems
+                  name: 'VPN Route: Problems'
+                  x: '21'
+                  'y': '9'
+                  width: '51'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: tags.0.operator
+                      value: '1'
+                    - type: STRING
+                      name: tags.0.tag
+                      value: Component
+                    - type: STRING
+                      name: tags.0.value
+                      value: VPNRoute
+                - type: item
+                  x: '24'
+                  'y': '20'
+                  width: '12'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'BGP Session Activity Data'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Sonicwall Firewall'
+                        key: bgp.session.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '4'
+                    - type: STRING
+                      name: units
+                      value: sessions
       valuemaps:
+        - uuid: d78e52e493644deb9181bdcdda09faff
+          name: bgp.neighbor.state.valuemap
+          mappings:
+            - value: '1'
+              newvalue: Idle
+            - value: '2'
+              newvalue: Connect
+            - value: '3'
+              newvalue: Active
+            - value: '4'
+              newvalue: OpenSent
+            - value: '5'
+              newvalue: OpenConfirm
+            - value: '6'
+              newvalue: Established
         - uuid: ccaf690dc4e045c8946a7ef3e93e305b
           name: sonicwall.ha.status.valuemap
           mappings:
@@ -3165,15 +3915,11 @@
               newvalue: Active
             - value: '625000'
               newvalue: Active
+            - value: '875000'
+              newvalue: Idle
             - value: '1000000'
-              newvalue: Active
-            - type: LESS_OR_EQUAL
-              value: '99999'
-              newvalue: Passive
-            - type: GREATER_OR_EQUAL
-              value: '1000001'
-              newvalue: Unknown/Unexpected
-        - uuid: ffd27061e43a4463acd2abe95f3f83d4
+              newvalue: Failed
+        - uuid: fe8ad4c4a6d94b878754ccb0b6cf6985
           name: sonicwall.interface.status.valuemap
           mappings:
             - value: '1'
@@ -3190,25 +3936,20 @@
               newvalue: 'Not Present'
             - value: '7'
               newvalue: 'Lower Layer Down'
-            - value: '0'
-              newvalue: Disabled
-        - uuid: 240f720148cb48afa20f299aea2445ab
+        - uuid: 5cd6b38b9d8a4c8888a5e47f89b8f239
           name: sonicwall.vpn.policy.status.valuemap
           mappings:
-            - value: '0'
-              newvalue: Inactive
-            - type: GREATER_OR_EQUAL
-              value: '1'
+            - value: '1'
               newvalue: Active
-        - uuid: 047402633de04c5ba71b55790ecc24ab
+            - value: '2'
+              newvalue: Inactive
+        - uuid: 89f83c1dbeb34b9daec9e5ac34faf7e0
           name: sonicwall.vpn.route.status.valuemap
           mappings:
-            - value: '0'
-              newvalue: Disabled
             - value: '1'
-              newvalue: Standby
+              newvalue: Up
             - value: '2'
-              newvalue: Active
+              newvalue: Down
             - value: '3'
               newvalue: Testing
             - value: '4'
@@ -3219,38 +3960,3 @@
               newvalue: 'Not Present'
             - value: '7'
               newvalue: 'Lower Layer Down'
-  triggers:
-    - uuid: cce7dc83fa7e425ca800d918fe76563b
-      expression: |
-        avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) < {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} or
-              avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD} or
-              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) < {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD} or
-              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
-      name: 'HA Status Anomaly Detected'
-      status: DISABLED
-      priority: WARNING
-      description: |
-        HA sync status metrics are outside the expected passive/active bounds.
-         - Low threshold: {$SONICWALL_HA_ANOMOLY_LOW_THRESHOLD}
-         - High threshold: {$SONICWALL_HA_ANOMOLY_HIGH_THRESHOLD}
-      manual_close: 'YES'
-      tags:
-        - tag: Condition
-          value: Threshold
-        - tag: Symptoms
-          value: 'HA Anomoly'
-    - uuid: 9de34748c95a4e1eaf95eab935486a43
-      expression: |
-        avg(/Sonicwall Firewall/sonicwall.ha.primary.status,10m) > 1000000 or
-              avg(/Sonicwall Firewall/sonicwall.ha.secondary.status,10m) > 1000000
-      name: 'HA Status Unknown/Unexpected'
-      priority: HIGH
-      description: |
-        HA status metric exceeded expected thresholds.
-        Indicates possible data corruption, firmware anomaly, or undefined HA state.
-      manual_close: 'YES'
-      tags:
-        - tag: Condition
-          value: Threshold
-        - tag: Symptoms
-          value: 'HA Status Unknown'

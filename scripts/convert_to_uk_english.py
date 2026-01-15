@@ -141,6 +141,62 @@ class SpellingConverter:
         
         return double_quotes or single_quotes
     
+    def is_in_filename(self, text: str, position: int) -> bool:
+        """Check if position is within a filename pattern."""
+        # Look for common filename patterns around the position
+        start = max(0, position - 50)
+        end = min(len(text), position + 50)
+        context = text[start:end]
+        
+        # Find the word at position
+        word_start = position - start
+        while word_start > 0 and context[word_start - 1].isalnum():
+            word_start -= 1
+        word_end = word_start
+        while word_end < len(context) and (context[word_end].isalnum() or context[word_end] in '_.-'):
+            word_end += 1
+        
+        # Check if this looks like a filename
+        word = context[word_start:word_end]
+        
+        # Patterns that suggest this is a filename
+        filename_indicators = [
+            r'\w+\.(yaml|yml|md|py|ps1|txt|json|html|css|js)$',  # Has file extension
+            r'^[a-zA-Z0-9_.-]+\.(yaml|yml|md|py|ps1|txt|json|html|css|js)',  # Starts with filename
+            r'`[^`]*$',  # Inside backticks (code)
+            r'file.*\.yaml',  # Mentioned as a file
+            r'script.*\.py',  # Mentioned as a script
+        ]
+        
+        for pattern in filename_indicators:
+            if re.search(pattern, word, re.IGNORECASE):
+                return True
+        
+        return False
+    
+    def is_in_hyperlink(self, text: str, position: int) -> bool:
+        """Check if position is within a markdown hyperlink."""
+        # Look for markdown link patterns around the position
+        start = max(0, position - 100)
+        end = min(len(text), position + 100)
+        context = text[start:end]
+        relative_pos = position - start
+        
+        # Check for markdown link patterns: [text](url) or ![alt](url)
+        link_patterns = [
+            r'\[([^\]]*)\]\(([^)]*)\)',  # [text](url)
+            r'!\[([^\]]*)\]\(([^)]*)\)', # ![alt](url)
+            r'<([^>]+)>',               # <url>
+            r'https?://[^\s\])\}]+',    # Raw URLs
+        ]
+        
+        for pattern in link_patterns:
+            for match in re.finditer(pattern, context):
+                if match.start() <= relative_pos <= match.end():
+                    return True
+        
+        return False
+    
     def apply_stem_replacements(self, content: str) -> Tuple[str, List[str]]:
         """Apply stem-based replacements (e.g., 'utiliz*' -> 'utilis*')."""
         details = []
@@ -176,31 +232,40 @@ class SpellingConverter:
         for american, british in self.word_replacements:
             pattern = rf'\b{re.escape(american)}\b'
             
-            if american in self.quoted_exclusions:
-                # Handle quoted exclusions
-                def replace_if_not_quoted(match):
-                    if self.is_in_quotes(content, match.start()):
-                        return match.group(0)
-                    return british
+            # Enhanced replacement function that checks multiple exclusion types
+            def replace_with_exclusions(match):
+                pos = match.start()
                 
-                original_content = content
-                content = re.sub(pattern, replace_if_not_quoted, content)
+                # Check various exclusion conditions
+                if self.is_in_quotes(content, pos):
+                    return match.group(0)  # Skip quoted text
+                if self.is_in_filename(content, pos):
+                    return match.group(0)  # Skip filenames
+                if self.is_in_hyperlink(content, pos):
+                    return match.group(0)  # Skip hyperlinks
                 
-                if content != original_content:
-                    # Count non-quoted matches
-                    count = 0
-                    for match in re.finditer(pattern, original_content):
-                        if not self.is_in_quotes(original_content, match.start()):
-                            count += 1
-                    
-                    if count > 0:
-                        details.append(f"  {american} -> {british} ({count} times, excluding quoted)")
-            else:
-                # Normal replacement
-                matches = len(re.findall(pattern, content))
-                if matches > 0:
-                    content = re.sub(pattern, british, content)
-                    details.append(f"  {american} -> {british} ({matches} times)")
+                return british
+            
+            original_content = content
+            content = re.sub(pattern, replace_with_exclusions, content)
+            
+            if content != original_content:
+                # Count actual replacements (excluding skipped ones)
+                count = 0
+                for match in re.finditer(pattern, original_content):
+                    pos = match.start()
+                    if (not self.is_in_quotes(original_content, pos) and 
+                        not self.is_in_filename(original_content, pos) and
+                        not self.is_in_hyperlink(original_content, pos)):
+                        count += 1
+                
+                if count > 0:
+                    exclusion_notes = []
+                    if american in self.quoted_exclusions:
+                        exclusion_notes.append("quoted")
+                    exclusion_notes.extend(["filenames", "hyperlinks"])
+                    exclusion_text = f", excluding {', '.join(exclusion_notes)}" if exclusion_notes else ""
+                    details.append(f"  {american} -> {british} ({count} times{exclusion_text})")
         
         return content, details
     

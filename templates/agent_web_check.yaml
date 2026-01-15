@@ -1,4 +1,4 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
     - uuid: 2b5a2a0e2f2a4a0ca3a7b8b4b2f2a0e1

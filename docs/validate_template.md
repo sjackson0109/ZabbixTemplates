@@ -1202,7 +1202,7 @@ The validator performs comprehensive pre-import validation but has some limitati
 - **Value maps**: Cannot verify referenced value maps exist (in different templates)
 - **Master items**: Cannot verify master item exists (if in different template)
 
-#### 3. Runtime Behavior
+#### 3. Runtime Behaviour
 - **Item functionality**: Cannot test if items actually work
 - **SNMP connectivity**: Cannot verify SNMP OIDs return data
 - **HTTP agent URLs**: Cannot verify URLs are accessible
@@ -1242,8 +1242,8 @@ If you find a validation error that the validator misses:
 
 1. **Create an issue** on GitHub with:
    - Template file (or minimal reproducing example)
-   - Expected behavior
-   - Actual behavior
+   - Expected behaviour
+   - Actual behaviour
    - Zabbix error message (if applicable)
 
 2. **Include validator output**:

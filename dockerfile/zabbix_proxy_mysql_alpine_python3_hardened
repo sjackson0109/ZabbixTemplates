@@ -1,4 +1,4 @@
-FROM zabbix/zabbix-proxy-mysql:alpine-7.0-latest
+FROM zabbix/zabbix-server-pgsql:alpine-7.0-latest
 
 USER root
 
@@ -8,6 +8,8 @@ RUN apk add --no-cache \
     py3-pip \
     build-base \
     openssl \
+    openssl-dev \
+    libssl3 \
     libffi-dev \
     musl-dev \
     gcc \
@@ -16,7 +18,8 @@ RUN apk add --no-cache \
     bash \
     ca-certificates \
     wget \
-    git
+    git \
+    bind-tools
 
 # ---- [ 2. Python packages ] --------------------------------------------------
 # Upgrade pip tooling first
@@ -31,16 +34,35 @@ RUN pip3 install \
     pyOpenSSL \
     idna \
     certifi \
-    dnspython
+    dnspython \
+    psutil \
+    httpx[http2]
 
 # ---- [ 3. Validate installations ] -------------------------------------------
 RUN python3 --version && \
     pip3 --version && \
-    python3 -m pip show requests urllib3 py-zabbix cryptography pyOpenSSL
+    python3 -m pip show requests urllib3 py-zabbix cryptography pyOpenSSL httpx
 
-# ---- [ 4. Optional Debug Tooling ] -------------------------------------------
+# ---- [ 4. Python Accessibility Setup ] ---------------------------------------
+# Create python symlink for scripts that expect 'python' command
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Ensure proper permissions and ownership for zabbix user access
+RUN chmod 755 /usr/bin/python3.12 /usr/bin/python3 /usr/bin/python
+RUN chown root:root /usr/bin/python3.12 /usr/bin/python3 /usr/bin/python
+
+# Add python to zabbix user's PATH and create additional symlinks
+RUN mkdir -p /usr/local/zabbix/bin
+RUN ln -sf /usr/bin/python3 /usr/local/zabbix/bin/python3
+RUN ln -sf /usr/bin/python3 /usr/local/zabbix/bin/python
+RUN chown -R zabbix:zabbix /usr/local/zabbix
+
+# ---- [ 5. Optional Debug Tooling ] -------------------------------------------
 # Uncomment below if needed:
 # RUN apk add --no-cache nmap tcpdump socat bind-tools
 
-# ---- [ 5. Return to safe user ] ----------------------------------------------
+# ---- [ 6. Return to safe user ] ----------------------------------------------
 USER zabbix
+
+# Set PATH for zabbix user
+ENV PATH="/usr/local/zabbix/bin:${PATH}"

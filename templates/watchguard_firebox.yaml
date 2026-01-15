@@ -7,9 +7,6 @@
     - uuid: 70bea07f3fbf4af0bf65b40690311461
       template: 'Watchguard Firewall'
       name: 'Watchguard Firewall'
-      vendor:
-        name: 'WatchGuard'
-        version: '12.x'
       description: |
         Overview
         This template monitors WatchGuard Firebox appliances using SNMPv2.
@@ -65,6 +62,9 @@
         - VPN tunnel monitoring uses BoVPN tunnel statistics; dynamic tunnels (e.g., Mobile VPNs) are not fully covered.
         
         Author: Simon Jackson / @sjackson0109
+      vendor:
+        name: WatchGuard
+        version: 12.x
       groups:
         - name: Firewall
       items:
@@ -222,7 +222,7 @@
           key: cluster.sync.status
           value_type: FLOAT
           units: '%'
-          description: 'Reports the synchronisation percentage between FireCluster nodes (0–100%). Available only if FireCluster is enabled. A persistent value below 100% indicates configuration or state mismatch between cluster members.'
+          description: 'Reports the synchronisation percentage between FireCluster nodes (0â€“100%). Available only if FireCluster is enabled. A persistent value below 100% indicates configuration or state mismatch between cluster members.'
           valuemap:
             name: cluster.sync.valuemap
           tags:
@@ -457,6 +457,18 @@
           tags:
             - tag: Component
               value: General
+        - uuid: 923e85e3335046db9f3078f89cf5f1d2
+          name: 'VPN Policy: SA Table'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.3097.6.5.1.2.1]'
+          key: vpn.policy.sa.table.raw
+          delay: 30s
+          value_type: TEXT
+          trends: '0'
+          description: 'Raw SNMP walk of the VPN Policy Security Association table. Used as master item for dependent VPN policy monitoring.'
+          tags:
+            - tag: Component
+              value: VPN
         - uuid: 46eeebe15b3a40779bd76821e2ee5c2e
           name: 'System CPU Utilisation'
           type: SNMP_AGENT
@@ -933,201 +945,193 @@
                   item:
                     host: 'Watchguard Firewall'
                     key: 'fan.speed[{#FAN_NAME}]'
-        - uuid: 6c359cfe2bd8453bab331ef6ae877a8c
+        - uuid: 8d357e4124b942139b0bec1be7683d9e
           name: 'VPN Tunnels (Policy Based) - GwVPNs'
-          type: SNMP_AGENT
-          snmp_oid: 'discovery[{#VPNINDEX},1.3.6.1.4.1.3097.6.5.1.2.1.1,{#LOCALONE},1.3.6.1.4.1.3097.6.5.1.2.1.24,{#LOCALTWO},1.3.6.1.4.1.3097.6.5.1.2.1.25,{#REMOTEONE},1.3.6.1.4.1.3097.6.5.1.2.1.20,{#REMOTETWO},1.3.6.1.4.1.3097.6.5.1.2.1.21]'
+          type: DEPENDENT
           key: gwvpn.discovery
-          delay: 1h
-          status: DISABLED
+          delay: '0'
           filter:
             evaltype: AND
             conditions:
-              - macro: '{#LOCALONE}'
-                value: '^((?!0\.0\.0\.0).)*$'
+              - macro: '{#SUBNETPAIR}'
+                value: '{$VPN_POLICY_IGNORE_REGEX}'
+                operator: NOT_MATCHES_REGEX
                 formulaid: A
-              - macro: '{#REMOTEONE}'
-                value: '^((?!0\.0\.0\.0).)*$'
-                formulaid: B
           lifetime: 1d
           description: |
-            Currently, as of firebox v12.10 firmware, the SNMP OID published in their MIB pack, is NOT exposed over SNMPv2/v3 - suggesting this is a bug in the FW firmware.
-            These VPNs are Policy-Based VPNs, not Route-Based like BoVPNs are. I've never seen a firewall that successfully exposes metrics over SNMP related to Policy-Based VPNs. So i'm not hopeful this will ever be resolved by watchguard.
+            WatchGuard VPN Policy discovery using master SA table approach.
+            
+            Discovers stable subnet-pairs from the SA table master item, providing:
+            - Stable tunnel identification using CIDR subnet pairs
+            - Persistence across tunnel renegotiation/rekey events  
+            - Reliable tunnel name retrieval when available
+            - Efficient polling with 5m master item updates
+            
+            This follows the same proven architecture as SonicWall VPN Policy monitoring.
           item_prototypes:
-            - uuid: fa6017fe1c0a49c29f5df0e3cb12eeb9
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Bytes In'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.3097.6.5.1.2.1.28.{#VPNINDEX}'
-              key: 'vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              value_type: FLOAT
-              units: bps
-              description: 'Inbound Bytes on VPN tunnel [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+            - uuid: 80cbecccd49c492183c93cf674032333
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] Bytes In'
+              type: DEPENDENT
+              key: 'vpn.policy.bytesIn[{#SUBNETPAIR}]'
+              delay: '0'
+              history: 7d
+              trends: 90d
+              units: B
+              description: 'Inbound traffic for VPN policy {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}]'
               preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var subnetPair = "{#SUBNETPAIR}";
+                      var mapping = JSON.parse(value);
+                      
+                      if (mapping[subnetPair] && mapping[subnetPair].bytesIn) {
+                          return mapping[subnetPair].bytesIn;
+                      }
+                      
+                      return "0"; // Return 0 if not found
                 - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
+              master_item:
+                key: vpn.policy.sa.table.raw
               tags:
                 - tag: Component
                   value: GwVPN
-                - tag: Metrics
-                  value: Traffic
-            - uuid: 4df9f9b19eca4d46816a21c3df5e4b6e
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Bytes Out'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.3097.6.5.1.2.1.29.{#VPNINDEX}'
-              key: 'vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              value_type: FLOAT
-              units: bps
-              description: 'Outbound Bytes on VPN tunnel [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALCIDR}â†”{#REMOTECIDR}'
+                - tag: 'VPN Type'
+                  value: 'VPN Policy'
+            - uuid: 5b0daab671554cfe8c0a7a796ac84542
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] Bytes Out'
+              type: DEPENDENT
+              key: 'vpn.policy.bytesOut[{#SUBNETPAIR}]'
+              delay: '0'
+              history: 7d
+              trends: 90d
+              units: B
+              description: 'Outbound traffic for VPN policy {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}]'
               preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var subnetPair = "{#SUBNETPAIR}";
+                      var mapping = JSON.parse(value);
+                      
+                      if (mapping[subnetPair] && mapping[subnetPair].bytesOut) {
+                          return mapping[subnetPair].bytesOut;
+                      }
+                      
+                      return "0"; // Return 0 if not found
                 - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
                 - type: MULTIPLIER
                   parameters:
                     - '8'
+              master_item:
+                key: vpn.policy.sa.table.raw
               tags:
                 - tag: Component
                   value: GwVPN
-                - tag: Metrics
-                  value: Traffic
-            - uuid: d069897a63fb4fa58cc051ded4fddd55
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors In'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.3097.6.5.1.2.1.32.{#VPNINDEX}'
-              key: 'vpn.policy.ifInErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              description: 'Inbound errors on VPN tunnel [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              tags:
-                - tag: Component
-                  value: GwVPN
-                - tag: Metrics
-                  value: Errors
-              trigger_prototypes:
-                - uuid: ed96cd2938124583bf5e7ad54eb32e32
-                  expression: 'avg(/Watchguard Firewall/vpn.policy.ifInErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],1500s) > {$GWVPN_ERROR_THRESHOLD}'
-                  name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors In'
-                  status: DISABLED
-                  priority: HIGH
-                  description: 'Inbound errors on Gateway VPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s) within the last 5 minutes'
-                  tags:
-                    - tag: Component
-                      value: GwVPN
-                    - tag: Metrics
-                      value: Errors
-                    - tag: Symptoms
-                      value: Config/Compatibility
-                - uuid: 5196bb6e24a749018f20f64dde91b925
-                  expression: 'avg(/Watchguard Firewall/vpn.policy.ifInErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],1500s) > {$GWVPN_WARNING_THRESHOLD}'
-                  name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors In'
-                  status: DISABLED
-                  priority: WARNING
-                  description: 'Inbound errors on Gateway VPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s) within the last 5 mins'
-                  tags:
-                    - tag: Component
-                      value: GwVPN
-                    - tag: Metrics
-                      value: Errors
-                    - tag: Symptoms
-                      value: Config/Compatibility
-            - uuid: db71225b1ac5441f80a3ee5739cce566
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors Out'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.3097.6.5.1.2.1.36.{#VPNINDEX}'
-              key: 'vpn.policy.ifOutErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              description: 'Outbound errors on VPN tunnel [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              tags:
-                - tag: Component
-                  value: GwVPN
-                - tag: Metrics
-                  value: Errors
-              trigger_prototypes:
-                - uuid: 4561d362106243c0bef50d5357ae0f33
-                  expression: 'avg(/Watchguard Firewall/vpn.policy.ifOutErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],1500s) > {$GWVPN_ERROR_THRESHOLD}'
-                  name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors Out'
-                  status: DISABLED
-                  priority: HIGH
-                  description: 'Outbound errors on Gateway VPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] exceeded critical threshold ({ITEM.LASTVALUE} > {$GWVPN_ERROR_THRESHOLD}/s) within the last 5 minutes'
-                  tags:
-                    - tag: Component
-                      value: GwVPN
-                    - tag: Metrics
-                      value: Errors
-                    - tag: Symptoms
-                      value: Config/Compatibility
-                - uuid: c85d376f7b604ba08a32bb53588e4602
-                  expression: 'avg(/Watchguard Firewall/vpn.policy.ifOutErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],1500s) > {$GWVPN_WARNING_THRESHOLD}'
-                  name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Errors Out'
-                  status: DISABLED
-                  priority: WARNING
-                  description: 'Outbound errors on Gateway VPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] exceeded warning threshold ({ITEM.LASTVALUE} > {$GWVPN_WARNING_THRESHOLD}/s) within the last 5 minutes'
-                  tags:
-                    - tag: Component
-                      value: GwVPN
-                    - tag: Metrics
-                      value: Errors
-                    - tag: Symptoms
-                      value: Config/Compatibility
-            - uuid: 6e38304aac414a329194a1240788d3d8
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Status'
-              type: SNMP_AGENT
-              snmp_oid: '1.3.6.1.4.1.3097.7.1.{#VPNINDEX}'
-              key: 'vpn.policy.status[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-              value_type: FLOAT
-              description: 'Status of VPN tunnel [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] (1=up, 0=down)'
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALCIDR}â†”{#REMOTECIDR}'
+                - tag: 'VPN Type'
+                  value: 'VPN Policy'
+            
+            # Status (calculated from traffic)
+            - uuid: e6c8bb5a293c4f1ba7b0f6c52ff147c6
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] Status'
+              type: CALCULATED
+              key: 'vpn.policy.status[{#SUBNETPAIR}]'
+              delay: 1m
+              history: 7d
+              trends: 90d
+              params: 'max(/Watchguard Firewall/vpn.policy.bytesIn[{#SUBNETPAIR}],1m)>0 or max(/Watchguard Firewall/vpn.policy.bytesOut[{#SUBNETPAIR}],1m)>0'
+              description: 'Active status for VPN policy {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] (1=active, 0=inactive)'
               valuemap:
-                name: interface.status.valuemap
+                name: vpn.status
               tags:
                 - tag: Component
                   value: GwVPN
-                - tag: Interface
-                  value: Status
-              trigger_prototypes:
-                - uuid: dcfa13b84c1341c382b7138cc9981b3c
-                  expression: 'count(/Watchguard Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],300,"ne")>2 and nodata(/Watchguard Firewall/vpn.policy.status[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}],120s)=0'
-                  name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Flap Detected'
-                  status: DISABLED
-                  priority: AVERAGE
-                  description: 'Should indicate if a single tunnel is flapping, investigate it if this happens.'
-                  manual_close: 'YES'
-                  tags:
-                    - tag: Component
-                      value: GwVPN
-                    - tag: Interface
-                      value: Status
-                    - tag: Symptom
-                      value: Flap/Up/Down
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Subnets'
+                  value: '{#LOCALCIDR}â†”{#REMOTECIDR}'
+                - tag: 'VPN Type'
+                  value: 'VPN Policy'
+          
+          trigger_prototypes:
+            - uuid: ea501e1e0f9a4c62abb872512d507c19
+              expression: |
+                last(/Watchguard Firewall/vpn.policy.status[{#SUBNETPAIR}])=0
+                and
+                max(/Watchguard Firewall/vpn.policy.bytesIn[{#SUBNETPAIR}],24h)<=1
+                and
+                max(/Watchguard Firewall/vpn.policy.bytesOut[{#SUBNETPAIR}],24h)<=1
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] Idle for 24 hours'
+              priority: WARNING
+              description: 'No traffic detected for VPN policy {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] in the last 24 hours'
+              manual_close: 'YES'
+              tags:
+                - tag: Component
+                  value: GwVPN
+                - tag: Condition
+                  value: Idle
+                - tag: 'VPN Name'
+                  value: '{#VPNNAME}'
+                - tag: 'VPN Type'
+                  value: 'VPN Policy'
+          
           graph_prototypes:
-            - uuid: 91992423ce42414d82dd4aa4df2dc73c
-              name: 'GwVPN [{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}] Traffic'
+            - uuid: 94c42e99a42f4e9d9392c8aa4e517bfb
+              name: 'VPN Policy: {#VPNNAME} [{#LOCALCIDR}â†”{#REMOTECIDR}] Traffic'
+              width: '600'
+              height: '340'
+              ymin_type_1: FIXED
               graph_items:
                 - color: 00FF00
                   calc_fnc: ALL
                   item:
                     host: 'Watchguard Firewall'
-                    key: 'vpn.policy.bytesIn[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                    key: 'vpn.policy.bytesIn[{#SUBNETPAIR}]'
                 - sortorder: '1'
                   color: 0080FF
                   calc_fnc: ALL
                   item:
                     host: 'Watchguard Firewall'
-                    key: 'vpn.policy.bytesOut[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-                - sortorder: '2'
-                  drawtype: FILLED_REGION
-                  color: FF0000
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.policy.ifInErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
-                - sortorder: '3'
-                  drawtype: FILLED_REGION
-                  color: CC6600
-                  calc_fnc: ALL
-                  item:
-                    host: 'Watchguard Firewall'
-                    key: 'vpn.policy.ifOutErrors[{#LOCALONE}/{#LOCALTWO}→{#REMOTEONE}/{#REMOTETWO}]'
+                    key: 'vpn.policy.bytesOut[{#SUBNETPAIR}]'
+          master_item:
+            key: vpn.policy.sa.table.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var mapping = JSON.parse(value);
+                  var discovered = [];
+                  
+                  for (var key in mapping) {
+                      var tunnel = mapping[key];
+                      discovered.push({
+                          "{#SUBNETPAIR}": key,
+                          "{#VPNNAME}": tunnel.name || "Unnamed",
+                          "{#LOCALCIDR}": tunnel.localCIDR,
+                          "{#REMOTECIDR}": tunnel.remoteCIDR,
+                          "{#LOCALONE}": tunnel.localStart,
+                          "{#LOCALTWO}": tunnel.localEnd,
+                          "{#REMOTEONE}": tunnel.remoteStart,
+                          "{#REMOTETWO}": tunnel.remoteEnd
+                      });
+                  }
+                  
+                  return JSON.stringify(discovered);
         - uuid: 30253dfbef0b4849b4f51e0bc815934a
           name: Interfaces
           type: SNMP_AGENT
@@ -1367,7 +1371,7 @@
               key: 'temperature.sensor[{#SENSOR_NAME}]'
               delay: 5m
               value_type: FLOAT
-              units: °C
+              units: Â°C
               description: 'Temperature reading from {#SENSOR_NAME} sensor'
               preprocessing:
                 - type: MULTIPLIER
@@ -1381,7 +1385,7 @@
                   expression: 'last(/Watchguard Firewall/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_CRITICAL}'
                   name: 'Critical Temperature on {#SENSOR_NAME}'
                   priority: HIGH
-                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above critical threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_CRITICAL}Â°C)'
                   tags:
                     - tag: Component
                       value: Temperature
@@ -1389,7 +1393,7 @@
                   expression: 'last(/Watchguard Firewall/temperature.sensor[{#SENSOR_NAME}]) > {$WATCHGUARD_TEMP_WARNING}'
                   name: 'High Temperature Warning on {#SENSOR_NAME}'
                   priority: WARNING
-                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}°C)'
+                  description: 'Temperature sensor {#SENSOR_NAME} is above warning threshold ({ITEM.LASTVALUE} > {$WATCHGUARD_TEMP_WARNING}Â°C)'
                   tags:
                     - tag: Component
                       value: Temperature
@@ -1425,6 +1429,15 @@
         - macro: '{$GWVPN_WARNING_THRESHOLD}'
           value: '100000'
           description: 'Threshold in bits per second for gateway VPN traffic triggering a warning-level alert.'
+        - macro: '{$VPN_POLICY_ERROR_THRESHOLD}'
+          value: '10'
+          description: 'Threshold for VPN policy tunnel errors triggering a critical-level alert.'
+        - macro: '{$VPN_POLICY_IGNORE_REGEX}'
+          value: '^(?i:TEST|MONITORING|BACKEND).*'
+          description: 'Regex to exclude VPN policy tunnels from discovery based on tunnel name patterns.'
+        - macro: '{$VPN_POLICY_WARNING_THRESHOLD}'
+          value: '1'
+          description: 'Threshold for VPN policy tunnel errors triggering a warning-level alert.'
         - macro: '{$WATCHGUARD_CACHED_THRESHOLD}'
           value: '99'
           description: 'Threshold for memory cache utilisation percentage before alerting.'
@@ -1463,10 +1476,10 @@
           description: 'Swap usage (%) threshold before triggering a critical alert.'
         - macro: '{$WATCHGUARD_TEMP_CRITICAL}'
           value: '70'
-          description: 'Temperature (°C) threshold for critical alert.'
+          description: 'Temperature (Â°C) threshold for critical alert.'
         - macro: '{$WATCHGUARD_TEMP_WARNING}'
           value: '60'
-          description: 'Temperature (°C) threshold for warning alert.'
+          description: 'Temperature (Â°C) threshold for warning alert.'
       dashboards:
         - uuid: e056d7d058ee45309c64875fb4bfd5e1
           name: 'Watchguard Firebox'
@@ -2187,3 +2200,17 @@
               newvalue: Fault
             - value: '3'
               newvalue: 'Not Present'
+        - uuid: aea608b253de4ba3a5a1366a370d646e
+          name: vpn.status
+          mappings:
+            - value: '0'
+              newvalue: Inactive
+            - value: '1'
+              newvalue: Active
+        - uuid: 5f8e92a4d7c149b8a6e3f5c2b1d4e7a9
+          name: 'VPN Status'
+          mappings:
+            - value: '0'
+              newvalue: Inactive
+            - value: '1'
+              newvalue: Active

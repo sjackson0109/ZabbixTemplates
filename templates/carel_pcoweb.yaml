@@ -8,11 +8,9 @@
       template: 'Carel pCOWeb'
       name: 'Carel pCOWeb'
       description: |
-        Technical Details:
-        https://www.rittal.com/imf/none/3_4342/3311320_Instructions_spec__EN
-        
-        MIB:
-        https://netopslife.wordpress.com/2017/10/12/nagios-snmp-denco-pco-web-carel/
+        Technical Details and MIB information:
+        - https://www.rittal.com/imf/none/3_4342/3311320_Instructions_spec__EN
+        - https://netopslife.wordpress.com/2017/10/12/nagios-snmp-denco-pco-web-carel/
         
         Author: Simon Jackson / @sjackson0109
       vendor:
@@ -25,7 +23,7 @@
           name: 'Alarm: Airflow Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.12.0
-          key: denco.alarm.airflow
+          key: carel.alarm.airflow
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -39,7 +37,7 @@
                 - '1'
           triggers:
             - uuid: 80b7532620a849d5b3c97b1fb8ba1451
-              expression: 'last(/Carel pCOWeb/denco.alarm.airflow)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.airflow)=1'
               name: 'Airflow Fail'
               priority: WARNING
               description: 'Airflow Fail alarm is active'
@@ -48,7 +46,7 @@
           name: 'Alarm: Auxiliary Sensor'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.15.0
-          key: denco.alarm.auxilary
+          key: carel.alarm.auxilary
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -62,7 +60,7 @@
                 - '1'
           triggers:
             - uuid: 8b586819306344c3bd11101ee0f2ba6b
-              expression: 'last(/Carel pCOWeb/denco.alarm.auxilary)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.auxilary)=1'
               name: 'Auxiliary Sensor'
               priority: WARNING
               description: 'Auxiliary Sensor alarm is active'
@@ -71,7 +69,7 @@
           name: 'Alarm: Circuit 1 (VRF) High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.27.0
-          key: denco.alarm.circuit.1.pressure.high
+          key: carel.alarm.circuit.1.pressure.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -85,7 +83,7 @@
                 - '1'
           triggers:
             - uuid: 33a71d3bc8c644179302da0132cab8cd
-              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.1.pressure.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.circuit.1.pressure.high)=1'
               name: 'Circuit 1 (VRF) High Pressure Trip'
               priority: AVERAGE
               description: 'Circuit 1 (VRF) High Pressure Trip alarm is active'
@@ -94,7 +92,7 @@
           name: 'Alarm: Circuit 1 (VRF) Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.33.0
-          key: denco.alarm.circuit.1.pressure.low
+          key: carel.alarm.circuit.1.pressure.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -108,7 +106,7 @@
                 - '1'
           triggers:
             - uuid: f02f1c57d947413b8848b973088e0364
-              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.1.pressure.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.circuit.1.pressure.low)=1'
               name: 'Circuit 1 (VRF) Low Pressure Trip'
               priority: AVERAGE
               description: 'Circuit 1 (VRF) Low Pressure Trip alarm is active'
@@ -117,7 +115,7 @@
           name: 'Alarm: Circuit 2 (VRF) High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.28.0
-          key: denco.alarm.circuit.2.pressure.high
+          key: carel.alarm.circuit.2.pressure.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -131,7 +129,7 @@
                 - '1'
           triggers:
             - uuid: 2b3842d21ce34996b75bbb0ab81d61f6
-              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.2.pressure.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.circuit.2.pressure.high)=1'
               name: 'Circuit 2 (VRF) High Pressure Trip'
               priority: AVERAGE
               description: 'Circuit 2 (VRF) High Pressure Trip alarm is active'
@@ -140,7 +138,7 @@
           name: 'Alarm: Circuit 2 (VRF) Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.34.0
-          key: denco.alarm.circuit.2.pressure.low
+          key: carel.alarm.circuit.2.pressure.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -154,7 +152,7 @@
                 - '1'
           triggers:
             - uuid: a93435ac1bc34faba3f097751ac2c6b5
-              expression: 'last(/Carel pCOWeb/denco.alarm.circuit.2.pressure.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.circuit.2.pressure.low)=1'
               name: 'Circuit 2 (VRF) Low Pressure Trip'
               priority: AVERAGE
               description: 'Circuit 2 (VRF) Low Pressure Trip alarm is active'
@@ -163,7 +161,7 @@
           name: 'Alarm: Compressor 1 High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.23.0
-          key: denco.alarm.compressor.1.temperature.high
+          key: carel.alarm.compressor.1.temperature.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -177,7 +175,7 @@
                 - '1'
           triggers:
             - uuid: 9d621f03bf5d45d09a7a8a18f9a21398
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.1.temperature.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.1.temperature.high)=1'
               name: 'Compressor 1 High Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 1 High Pressure Trip alarm is active'
@@ -186,7 +184,7 @@
           name: 'Alarm: Compressor 1 Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.29.0
-          key: denco.alarm.compressor.1.temperature.low
+          key: carel.alarm.compressor.1.temperature.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -200,7 +198,7 @@
                 - '1'
           triggers:
             - uuid: 310ea08a585c47cc8930ccdf919ec6f4
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.1.temperature.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.1.temperature.low)=1'
               name: 'Compressor 1 Low Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 1 Low Pressure Trip alarm is active'
@@ -209,7 +207,7 @@
           name: 'Alarm: Compressor 2 High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.24.0
-          key: denco.alarm.compressor.2.temperature.high
+          key: carel.alarm.compressor.2.temperature.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -223,7 +221,7 @@
                 - '1'
           triggers:
             - uuid: 0c0137415018472da6c276225cb61662
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.2.temperature.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.2.temperature.high)=1'
               name: 'Compressor 2 High Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 2 High Pressure Trip alarm is active'
@@ -232,7 +230,7 @@
           name: 'Alarm: Compressor 2 Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.30.0
-          key: denco.alarm.compressor.2.temperature.low
+          key: carel.alarm.compressor.2.temperature.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -246,7 +244,7 @@
                 - '1'
           triggers:
             - uuid: e4b5373cf12440ae8494c93bb9f27f7e
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.2.temperature.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.2.temperature.low)=1'
               name: 'Compressor 2 Low Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 2 Low Pressure Trip alarm is active'
@@ -255,7 +253,7 @@
           name: 'Alarm: Compressor 3 High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.25.0
-          key: denco.alarm.compressor.3.temperature.high
+          key: carel.alarm.compressor.3.temperature.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -269,7 +267,7 @@
                 - '1'
           triggers:
             - uuid: 9c34ebd59c8a4d91846d03a3a4a1a7a5
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.3.temperature.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.3.temperature.high)=1'
               name: 'Compressor 3 High Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 3 High Pressure Trip alarm is active'
@@ -278,7 +276,7 @@
           name: 'Alarm: Compressor 3 Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.31.0
-          key: denco.alarm.compressor.3.temperature.low
+          key: carel.alarm.compressor.3.temperature.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -292,7 +290,7 @@
                 - '1'
           triggers:
             - uuid: 763c0f013dac423e8c367620067c68cd
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.3.temperature.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.3.temperature.low)=1'
               name: 'Compressor 3 Low Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 3 Low Pressure Trip alarm is active'
@@ -301,7 +299,7 @@
           name: 'Alarm: Compressor 4 High Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.26.0
-          key: denco.alarm.compressor.4.temperature.high
+          key: carel.alarm.compressor.4.temperature.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -315,7 +313,7 @@
                 - '1'
           triggers:
             - uuid: cd5b0889eae849b5a90aabb868f3faaa
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.4.temperature.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.4.temperature.high)=1'
               name: 'Compressor 4 High Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 4 High Pressure Trip alarm is active'
@@ -324,7 +322,7 @@
           name: 'Alarm: Compressor 4 Low Pressure Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.32.0
-          key: denco.alarm.compressor.4.temperature.low
+          key: carel.alarm.compressor.4.temperature.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -338,7 +336,7 @@
                 - '1'
           triggers:
             - uuid: 787598e3a0e24366b2b7e366dedf4b9a
-              expression: 'last(/Carel pCOWeb/denco.alarm.compressor.4.temperature.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.compressor.4.temperature.low)=1'
               name: 'Compressor 4 Low Pressure Trip'
               priority: AVERAGE
               description: 'Compressor 4 Low Pressure Trip alarm is active'
@@ -347,7 +345,7 @@
           name: 'Alarm: Condensing Pressure 1 Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.7.0
-          key: denco.alarm.condensing.pressure.1
+          key: carel.alarm.condensing.pressure.1
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -361,7 +359,7 @@
                 - '1'
           triggers:
             - uuid: 62b3dba2ec1b46978ab40480226d7921
-              expression: 'last(/Carel pCOWeb/denco.alarm.condensing.pressure.1)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.condensing.pressure.1)=1'
               name: 'Condensing Pressure 1 Sensor Fail'
               priority: HIGH
               description: 'Condensing Pressure 1 Sensor Fail alarm is active'
@@ -370,7 +368,7 @@
           name: 'Alarm: Condensing Pressure 2 Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.8.0
-          key: denco.alarm.condensing.pressure.2
+          key: carel.alarm.condensing.pressure.2
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -384,7 +382,7 @@
                 - '1'
           triggers:
             - uuid: 8b21d8d33269402bb781d7a81f2c9538
-              expression: 'last(/Carel pCOWeb/denco.alarm.condensing.pressure.2)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.condensing.pressure.2)=1'
               name: 'Condensing Pressure 2 Sensor Fail'
               priority: HIGH
               description: 'Condensing Pressure 2 Sensor Fail alarm is active'
@@ -393,7 +391,7 @@
           name: 'Alarm: Filter Blocked'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.13.0
-          key: denco.alarm.filter.blocked
+          key: carel.alarm.filter.blocked
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -407,7 +405,7 @@
                 - '1'
           triggers:
             - uuid: b324741a49a949a7aeb7be06cbcc9b4e
-              expression: 'last(/Carel pCOWeb/denco.alarm.filter.blocked)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.filter.blocked)=1'
               name: 'Filter Blocked'
               priority: WARNING
               description: 'Filter Blocked alarm is active'
@@ -416,7 +414,7 @@
           name: 'Alarm: Humidifier Refrigerant Leak Detection'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.85.0
-          key: denco.alarm.gas.leak
+          key: carel.alarm.gas.leak
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -430,7 +428,7 @@
                 - '1'
           triggers:
             - uuid: 3a1866a027a948a990bf8dc7464d8b71
-              expression: 'last(/Carel pCOWeb/denco.alarm.gas.leak)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.gas.leak)=1'
               name: 'Humidifier Refrigerant Leak Detection'
               priority: HIGH
               description: 'Humidifier Refrigerant Leak Detection alarm is active'
@@ -439,7 +437,7 @@
           name: 'Alarm: Humidifier High Current'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.36.0
-          key: denco.alarm.humidifier.current.high
+          key: carel.alarm.humidifier.current.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -453,7 +451,7 @@
                 - '1'
           triggers:
             - uuid: e26b8ede56f34dc2a021af2118f18d6d
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.current.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidifier.current.high)=1'
               name: 'Humidifier High Current'
               priority: WARNING
               description: 'Humidifier High Current alarm is active'
@@ -462,7 +460,7 @@
           name: 'Alarm: Humidifier Low Current'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.38.0
-          key: denco.alarm.humidifier.current.low
+          key: carel.alarm.humidifier.current.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -476,7 +474,7 @@
                 - '1'
           triggers:
             - uuid: 67acb4fe260249adb461f0bef8532caf
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.current.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidifier.current.low)=1'
               name: 'Humidifier Low Current'
               priority: WARNING
               description: 'Humidifier Low Current alarm is active'
@@ -485,7 +483,7 @@
           name: 'Alarm: Humidifier Refrigerant Exhausted'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.66.0
-          key: denco.alarm.humidifier.gas.exhausted
+          key: carel.alarm.humidifier.gas.exhausted
           delay: 15m
           description: 'Refrigerant gas is contained in a bottle/cylinder.'
           preprocessing:
@@ -502,7 +500,7 @@
           name: 'Alarm: Humidifier Lack Of Water'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.37.0
-          key: denco.alarm.humidifier.water.low
+          key: carel.alarm.humidifier.water.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -516,7 +514,7 @@
                 - '1'
           triggers:
             - uuid: f48675b3f7af4b30b155197d45dd6791
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidifier.water.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidifier.water.low)=1'
               name: 'Humidifier Lack Of Water'
               priority: WARNING
               description: 'Humidifier Lack Of Water alarm is active'
@@ -525,7 +523,7 @@
           name: 'Alarm: Supply Air Humidity Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.11.0
-          key: denco.alarm.humidity.air.supply
+          key: carel.alarm.humidity.air.supply
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -539,7 +537,7 @@
                 - '1'
           triggers:
             - uuid: 0bf9f54cfffe4fa198ed42e6e272b991
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.air.supply)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidity.air.supply)=1'
               name: 'Supply Air Humidity Sensor Fail'
               priority: HIGH
               description: 'Supply Air Humidity Sensor Fail alarm is active'
@@ -548,7 +546,7 @@
           name: 'Alarm: High Control Humidity'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.18.0
-          key: denco.alarm.humidity.control.high
+          key: carel.alarm.humidity.control.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -562,7 +560,7 @@
                 - '1'
           triggers:
             - uuid: 161836094b234aceae5b2ca7ef1ce8b3
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.control.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidity.control.high)=1'
               name: 'High Control Humidity'
               priority: WARNING
               description: 'High Control Humidity alarm is active'
@@ -571,7 +569,7 @@
           name: 'Alarm: Low Control Humidity'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.19.0
-          key: denco.alarm.humidity.control.low
+          key: carel.alarm.humidity.control.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -585,7 +583,7 @@
                 - '1'
           triggers:
             - uuid: b36a63139764485c8858f65b7b56cef8
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidity.control.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidity.control.low)=1'
               name: 'Low Control Humidity'
               priority: WARNING
               description: 'Low Control Humidity alarm is active'
@@ -594,7 +592,7 @@
           name: 'Alarm: Return Air Humidity Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.6.0
-          key: denco.alarm.humidty.air.return
+          key: carel.alarm.humidty.air.return
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -608,7 +606,7 @@
                 - '1'
           triggers:
             - uuid: e153bdfff30a4f618d93ab802b3a791c
-              expression: 'last(/Carel pCOWeb/denco.alarm.humidty.air.return)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.humidty.air.return)=1'
               name: 'Return Air Humidity Sensor Fail'
               priority: HIGH
               description: 'Return Air Humidity Sensor Fail alarm is active'
@@ -617,7 +615,7 @@
           name: 'Alarm: Kilxon Trip'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.22.0
-          key: denco.alarm.klixon
+          key: carel.alarm.klixon
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -631,7 +629,7 @@
                 - '1'
           triggers:
             - uuid: 4740481c7efa4b56bfd19c60c6cc3b28
-              expression: 'last(/Carel pCOWeb/denco.alarm.klixon)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.klixon)=1'
               name: 'Kilxon Trip'
               priority: AVERAGE
               description: 'Kilxon Trip alarm is active'
@@ -640,7 +638,7 @@
           name: 'Alarm: Return Air Temperature Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.5.0
-          key: denco.alarm.temperature.air.return
+          key: carel.alarm.temperature.air.return
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -654,7 +652,7 @@
                 - '1'
           triggers:
             - uuid: 3a74cadc83354de180aa34a6569cca6b
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.air.return)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.air.return)=1'
               name: 'Return Air Temperature Sensor Fail'
               priority: HIGH
               description: 'Return Air Temperature Sensor Fail alarm is active'
@@ -663,7 +661,7 @@
           name: 'Alarm: Supply Air Temperature Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.10.0
-          key: denco.alarm.temperature.air.supply
+          key: carel.alarm.temperature.air.supply
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -677,7 +675,7 @@
                 - '1'
           triggers:
             - uuid: 289738d64a494030b3e4a2811d9f1e13
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.air.supply)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.air.supply)=1'
               name: 'Supply Air Temperature Sensor Fail'
               priority: HIGH
               description: 'Supply Air Temperature Sensor Fail alarm is active'
@@ -686,7 +684,7 @@
           name: 'Alarm: High Control Temperature'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.16.0
-          key: denco.alarm.temperature.control.high
+          key: carel.alarm.temperature.control.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -700,7 +698,7 @@
                 - '1'
           triggers:
             - uuid: 731307dd51c547eabedc5e0881c57ebe
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.control.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.control.high)=1'
               name: 'High Control Temperature'
               priority: WARNING
               description: 'High Control Temperature alarm is active'
@@ -709,7 +707,7 @@
           name: 'Alarm: Low Control Temperature'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.17.0
-          key: denco.alarm.temperature.control.low
+          key: carel.alarm.temperature.control.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -723,7 +721,7 @@
                 - '1'
           triggers:
             - uuid: 7e7a4e3dc8dd4fdb9805691279f5e0f2
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.control.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.control.low)=1'
               name: 'Low Control Temperature'
               priority: WARNING
               description: 'Low Control Temperature alarm is active'
@@ -732,7 +730,7 @@
           name: 'Alarm: High Supply Temperature'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.21.0
-          key: denco.alarm.temperature.supply.high
+          key: carel.alarm.temperature.supply.high
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -746,7 +744,7 @@
                 - '1'
           triggers:
             - uuid: 248b9ddaf85f48a18523ae11ad9eaba8
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.supply.high)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.supply.high)=1'
               name: 'High Supply Temperature'
               priority: WARNING
               description: 'High Supply Temperature alarm is active'
@@ -755,7 +753,7 @@
           name: 'Alarm: Low Supply Temperature'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.20.0
-          key: denco.alarm.temperature.supply.low
+          key: carel.alarm.temperature.supply.low
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -769,7 +767,7 @@
                 - '1'
           triggers:
             - uuid: 0ba1fadbfe804e97a169efd93e1a3b75
-              expression: 'last(/Carel pCOWeb/denco.alarm.temperature.supply.low)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.temperature.supply.low)=1'
               name: 'Low Supply Temperature'
               priority: WARNING
               description: 'Low Supply Temperature alarm is active'
@@ -778,7 +776,7 @@
           name: 'Alarm: Water Detection'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.14.0
-          key: denco.alarm.water
+          key: carel.alarm.water
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -792,7 +790,7 @@
                 - '1'
           triggers:
             - uuid: ad45a0f0244f4e15a3aa43b5d9c32902
-              expression: 'last(/Carel pCOWeb/denco.alarm.water)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.water)=1'
               name: 'Water Detection'
               priority: HIGH
               description: 'Water Detection alarm is active'
@@ -801,7 +799,7 @@
           name: 'Alarm: Water Temperature Sensor Fail'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.9.0
-          key: denco.alarm.water.temperature
+          key: carel.alarm.water.temperature
           delay: 15m
           preprocessing:
             - type: CHECK_NOT_SUPPORTED
@@ -815,7 +813,7 @@
                 - '1'
           triggers:
             - uuid: 6e27f48c10184f92aade259244edd277
-              expression: 'last(/Carel pCOWeb/denco.alarm.water.temperature)=1'
+              expression: 'last(/Carel pCOWeb/carel.alarm.water.temperature)=1'
               name: 'Water Temperature Sensor Fail'
               priority: HIGH
               description: 'Water Temperature Sensor Fail alarm is active'
@@ -824,7 +822,7 @@
           name: 'Measured Humidity (%RH)'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.2.2.0
-          key: denco.environment.humidity
+          key: carel.environment.humidity
           delay: 2m
           value_type: FLOAT
           units: '%RH'
@@ -838,7 +836,7 @@
                 - '0.1'
           triggers:
             - uuid: 56d60ea42a93494b86bce52ad79bdeb9
-              expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)>=70'
+              expression: 'last(/Carel pCOWeb/carel.environment.humidity,#1)>=70'
               name: 'High Humidity'
               priority: WARNING
               manual_close: 'YES'
@@ -846,7 +844,7 @@
           name: 'Measured Temperature (C)'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.2.1.0
-          key: denco.environment.temperature
+          key: carel.environment.temperature
           delay: 2m
           value_type: FLOAT
           units: C
@@ -866,7 +864,7 @@
           name: 'Target Humidity (%HR)'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.9839.2.1.2.16.0
-          key: denco.system.setpoint.humidity
+          key: carel.system.setpoint.humidity
           delay: 5m
           value_type: FLOAT
           units: '%HR'
@@ -882,7 +880,7 @@
           name: 'Target Temperature (C)'
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.9839.2.1.2.15.0
-          key: denco.system.setpoint.temperature
+          key: carel.system.setpoint.temperature
           delay: 5m
           value_type: FLOAT
           units: C
@@ -898,7 +896,7 @@
           name: 'Unit Status'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.1.0
-          key: denco.system.status
+          key: carel.system.status
           description: 'Any NON-ZERO value should be investigated.'
           preprocessing:
             - type: STR_REPLACE
@@ -907,13 +905,13 @@
                 - '2'
           triggers:
             - uuid: 4f82ead6055a4cf5abf29300543ad977
-              expression: 'last(/Carel pCOWeb/denco.system.status,#1)=2'
+              expression: 'last(/Carel pCOWeb/carel.system.status,#1)=2'
               name: 'Standby Unit'
-              opdata: denco.system.status
+              opdata: carel.system.status
               priority: INFO
               manual_close: 'YES'
             - uuid: 9719407341ad414e9b1c1b2c5cc423fa
-              expression: 'last(/Carel pCOWeb/denco.system.status,#1)=1'
+              expression: 'last(/Carel pCOWeb/carel.system.status,#1)=1'
               name: 'Status Alarm'
               priority: WARNING
               description: 'Unit System Status reporting non-zero value. As a result you should login to the webpage to investigate.'
@@ -922,7 +920,7 @@
           name: 'Supervisor Mode'
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.9839.2.1.1.112.0
-          key: denco.system.supervisor.mode
+          key: carel.system.supervisor.mode
           delay: 5m
           description: |
             PCO Web Card - Set to 'Supervisor Mode' (0=OFF, 1=ON)
@@ -1434,15 +1432,27 @@
                     - type: STRING
                       name: ds.0.color
                       value: 0080FF
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '1'
                     - type: STRING
                       name: ds.0.items.0
                       value: 'Measured Temperature (C)'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
                     - type: STRING
                       name: ds.1.color
                       value: BFFF00
                     - type: STRING
                       name: ds.1.items.0
                       value: 'Target Temperature (C)'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.type
+                      value: '1'
                     - type: STRING
                       name: reference
                       value: PXFPV
@@ -1470,15 +1480,27 @@
                     - type: STRING
                       name: ds.0.color
                       value: 0080FF
+                    - type: INTEGER
+                      name: ds.0.fill
+                      value: '1'
                     - type: STRING
                       name: ds.0.items.0
                       value: 'Measured Humidity (%RH)'
+                    - type: INTEGER
+                      name: ds.0.transparency
+                      value: '3'
                     - type: STRING
                       name: ds.1.color
-                      value: FFFF00
+                      value: BFFF00
                     - type: STRING
                       name: ds.1.items.0
                       value: 'Target Humidity (%HR)'
+                    - type: INTEGER
+                      name: ds.1.transparency
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.type
+                      value: '1'
                     - type: STRING
                       name: reference
                       value: JEERS
@@ -1487,36 +1509,36 @@
                       value: '0'
   triggers:
     - uuid: 7d0cc66bb0874813bf8c2b3b63f726d2
-      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)>=25 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.temperature,#1)>=25 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'High Temperature'
       priority: HIGH
     - uuid: 1056d2441aad4bdd9f3603334aa73fbc
-      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)<=25 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.humidity,#1)<=25 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Low Humidity'
       priority: HIGH
       manual_close: 'YES'
     - uuid: 9b85a82c1fa042e08a12598e51ef23f5
-      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)<=5 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.temperature,#1)<=5 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Low Temperature'
       priority: HIGH
       manual_close: 'YES'
     - uuid: 9168337f8438449f9305f9113760c340
-      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)>=90 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.humidity,#1)>=90 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Very High Humidity'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: 97947a45fc514d959885df98ff2b7c9b
-      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)>=40 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.temperature,#1)>=40 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Very High Temperature'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: f1073853c7bc4049916b60da12a16175
-      expression: 'last(/Carel pCOWeb/denco.environment.humidity,#1)<=10 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.humidity,#1)<=10 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Very Low Humidity'
       priority: DISASTER
       manual_close: 'YES'
     - uuid: 237f03df75144db9afcf7c25af524c0d
-      expression: 'last(/Carel pCOWeb/denco.environment.temperature,#1)<=0 and not last(/Carel pCOWeb/denco.system.status,#1)=2'
+      expression: 'last(/Carel pCOWeb/carel.environment.temperature,#1)<=0 and not last(/Carel pCOWeb/carel.system.status,#1)=2'
       name: 'Very Low Temperature'
       priority: DISASTER
       manual_close: 'YES'
@@ -1530,13 +1552,13 @@
           calc_fnc: ALL
           item:
             host: 'Carel pCOWeb'
-            key: denco.environment.humidity
+            key: carel.environment.humidity
         - sortorder: '1'
           color: FF4000
           calc_fnc: ALL
           item:
             host: 'Carel pCOWeb'
-            key: denco.system.setpoint.humidity
+            key: carel.system.setpoint.humidity
     - uuid: 5a58eb1a2c074b269ac2df4a4a32a209
       name: Temperature
       ymin_type_1: FIXED
@@ -1545,9 +1567,9 @@
         - color: 0080FF
           item:
             host: 'Carel pCOWeb'
-            key: denco.environment.temperature
+            key: carel.environment.temperature
         - sortorder: '1'
           color: 00FF00
           item:
             host: 'Carel pCOWeb'
-            key: denco.system.setpoint.temperature
+            key: carel.system.setpoint.temperature

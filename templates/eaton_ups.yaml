@@ -32,7 +32,7 @@
         
         Items
         - SNMP polling of all standard XUPS-MIB metrics.
-        - Preprocessing of raw counters to normalised units (V, %, A, W, °C, seconds).
+        - Preprocessing of raw counters to normalised units (V, %, A, W, Â°C, seconds).
         - Value mapping of alarm and state integers into human-readable text.
         - Optimised polling intervals by sensor category (battery vs input vs ID).
         
@@ -299,21 +299,21 @@
           snmp_oid: 1.3.6.1.4.1.534.1.6.5.0
           key: temperature
           value_type: FLOAT
-          units: °C
+          units: Â°C
           triggers:
             - uuid: 4c763b80833b4f57af2468d1358da5ea
               expression: 'last(/Eaton UPS/temperature,#3)>30'
-              name: 'Ambient temperature > 30°C on {HOST.NAME}'
+              name: 'Ambient temperature > 30Â°C on {HOST.NAME}'
               priority: AVERAGE
               description: 'Ambient temperature greater than 30 degrees C.'
             - uuid: 121dcc15958b466e804df1e7155795ac
               expression: 'last(/Eaton UPS/temperature,#3)>50'
-              name: 'Extremely High Ambient temperature > 50°C on {HOST.NAME}'
+              name: 'Extremely High Ambient temperature > 50Â°C on {HOST.NAME}'
               priority: DISASTER
               description: 'Ambient temperature greater than 50 degrees C - this needs URGENT attention'
             - uuid: be95165651ba4e0f9afa33ae440a2ffb
               expression: 'last(/Eaton UPS/temperature,#3)>40'
-              name: 'High Ambient temperature > 40°C on {HOST.NAME}'
+              name: 'High Ambient temperature > 40Â°C on {HOST.NAME}'
               priority: HIGH
               description: 'Ambient temperature greater than 40 degrees C.'
       discovery_rules:
@@ -379,7 +379,7 @@
               snmp_oid: '.1.3.6.1.4.1.534.1.2.3.1.4.{#BATTERYINDEX}'
               key: 'battery.temperature[{#BATTERYINDEX}]'
               value_type: FLOAT
-              units: °C
+              units: Â°C
             - uuid: eb78c753c02e47d19511606ffd6da4c6
               name: 'Battery Voltage [Battery {#BATTERYINDEX}]'
               type: SNMP_AGENT
@@ -400,7 +400,7 @@
               snmp_oid: '.1.3.6.1.4.1.534.1.6.2.1.2.{#ENVINDEX}'
               key: 'env.value[{#ENVINDEX}]'
               value_type: FLOAT
-              units: °C
+              units: Â°C
         - uuid: 3e2e2b1e7e2e4e7e8e2e2b1e7e2e4e7e
           name: 'Input Line Discovery'
           type: SNMP_AGENT

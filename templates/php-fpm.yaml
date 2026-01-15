@@ -1,10 +1,13 @@
-zabbix_export:
+﻿zabbix_export:
   version: '7.0'
   template_groups:
       name: Firewall
   templates:
       template: "PHP-FastCGI Process Manager"
       name: "PHP-FastCGI Process Manager"
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
       description: >-
         PHP-FPM Zabbix Template with Auto Discovery and Multiple Pools.
         - Provides auto discovery of PHP-FPM pools (LLD)
@@ -45,7 +48,7 @@ zabbix_export:
           lifetime: "30d"
           description: ""
           item_prototypes:
-              name: "Pool {#POOLNAME}: Connections"
+            - name: "Pool {#POOLNAME}: Connections"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
               key: "php.fpm.accepted.conn[{#POOLSOCKET}]"
@@ -68,7 +71,7 @@ zabbix_export:
                     params: ""
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Active Processes"
+            - name: "Pool {#POOLNAME}: Active Processes"
               key: "php.fpm.active.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -88,7 +91,7 @@ zabbix_export:
                   params: "$['active processes']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: CPU Avg Utilisation"
+            - name: "Pool {#POOLNAME}: CPU Avg Utilisation"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
               history: "7d"
@@ -105,7 +108,7 @@ zabbix_export:
                   value: "Load"
               preprocessing: []
               master_item: {}
-              name: "Pool {#POOLNAME}: Idle Processes"
+            - name: "Pool {#POOLNAME}: Idle Processes"
               key: "php.fpm.idle.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -124,7 +127,7 @@ zabbix_export:
                   params: "$['idle processes']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Listen Queue"
+            - name: "Pool {#POOLNAME}: Listen Queue"
               key: "php.fpm.listen.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -144,7 +147,7 @@ zabbix_export:
                   params: "$['listen queue']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Listen Queue Length"
+            - name: "Pool {#POOLNAME}: Listen Queue Length"
               key: "php.fpm.listen.queue.len[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -164,7 +167,7 @@ zabbix_export:
                   params: "$['listen queue len']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Max Active Processes"
+            - name: "Pool {#POOLNAME}: Max Active Processes"
               key: "php.fpm.max.active.processes[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -184,7 +187,7 @@ zabbix_export:
                   params: "$['max active processes']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Max Children Reached"
+            - name: "Pool {#POOLNAME}: Max Children Reached"
               key: "php.fpm.max.children.reached[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -206,7 +209,7 @@ zabbix_export:
                     params: ""
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Max Listen Queue"
+            - name: "Pool {#POOLNAME}: Max Listen Queue"
               key: "php.fpm.max.listen.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -226,7 +229,7 @@ zabbix_export:
                   params: "$['max listen queue']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Process Manager"
+            - name: "Pool {#POOLNAME}: Process Manager"
               key: "php.fpm.process.manager[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -246,7 +249,7 @@ zabbix_export:
                   params: "$['process manager']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Queue Utilisation"
+            - name: "Pool {#POOLNAME}: Queue Utilisation"
               key: "php.fpm.queue[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -263,7 +266,7 @@ zabbix_export:
                   value: "Load"
               preprocessing: []
               master_item: {}
-              name: "Pool {#POOLNAME}: Slow Requests"
+            - name: "Pool {#POOLNAME}: Slow Requests"
               key: "php.fpm.slow.requests[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -285,7 +288,7 @@ zabbix_export:
                     params: ""
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Start Since"
+            - name: "Pool {#POOLNAME}: Start Since"
               key: "php.fpm.start.since[{#POOLSOCKET}]"
               value_type: FLOAT
               type: ZABBIX_PASSIVE
@@ -304,7 +307,7 @@ zabbix_export:
                   params: "$['start since']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME}: Start Time"
+            - name: "Pool {#POOLNAME}: Start Time"
               key: "php.fpm.start.time[{#POOLSOCKET}]"
               delay: "0"
               history: "1d"
@@ -322,7 +325,7 @@ zabbix_export:
                   params: "$['start time']"
               master_item:
                 key: "php-fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
-              name: "Pool {#POOLNAME} Status"
+            - name: "Pool {#POOLNAME} Status"
               key: "php.fpm.status[{#POOLSOCKET},{$PHP_FPM_STATUS_URL}]"
               delay: "0"
               history: "1d"
@@ -334,7 +337,7 @@ zabbix_export:
                   value: "PHP-FPM"
                 - tag: "Metrics"
                   value: "Service"
-              name: "Pool {#POOLNAME}: CPU Utilisation"
+            - name: "Pool {#POOLNAME}: CPU Utilisation"
               key: "proc.cpu.util[\"php-fpm: pool {#POOLNAME}\"]"
               delay: "0"
               history: "1d"
@@ -347,7 +350,7 @@ zabbix_export:
                   value: "PHP-FPM"
                 - tag: "Metrics"
                   value: "Load"
-              name: "Pool {#POOLNAME}: Memory Utilisation"
+            - name: "Pool {#POOLNAME}: Memory Utilisation"
               key: "proc.mem[\"php-fpm: pool {#POOLNAME}\",,,,pmem]"
               delay: "0"
               history: "1d"
@@ -359,7 +362,7 @@ zabbix_export:
                   value: "PHP-FPM"
                 - tag: "Metrics"
                   value: "Load"
-              name: "Pool {#POOLNAME}: memory used"
+            - name: "Pool {#POOLNAME}: memory used"
               key: "proc.mem[\"php-fpm: pool {#POOLNAME}\",,,,rss]"
               delay: "0"
               history: "1d"
@@ -372,49 +375,49 @@ zabbix_export:
                 - tag: "Metrics"
                   value: "Load"
           trigger_prototypes:
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.accepted_conn[{#POOLSOCKET}].last(0)}>=500
               name: >-
                 PHP-FPM: too many connections on {HOST.NAME} pool {#POOLNAME}
               priority: AVERAGE
               description: >-
                 Too many active connections on pool {#POOLNAME}. It means this pool is under high load. Please, make sure that your website is reachable and works as expected. For high load websites with huge amount of traffic please manually adjust this trigger to higher values. For websites with low or standard amount of visitors you may be under DDoS attack. Anyway, please, check the status of your server (CPU, memory utilisation) to make sure that your server can handle this traffic and does not have performance issues.
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.slow_requests[{#POOLSOCKET}].change()}>0
               name: >-
                 PHP-FPM detected slow request on {HOST.NAME} pool {#POOLNAME}
               priority: INFO
               description: >-
                 PHP-FPM detected slow request on pool {#POOLNAME}. A slow request means that it took more time to execute than expected (defined in the configuration of your pool). It means that your pool has performance issues: either it is under high load, your pool has non-optimal configuration, your server has insufficient resources, or your PHP scripts have slow code (have bugs or bad programming style).
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.process_manager[{#POOLSOCKET}].diff()}=1
               name: >-
                 PHP-FPM manager changed on {HOST.NAME} pool {#POOLNAME}
               priority: NOT_CLASSIFIED
               description: >-
                 PHP-FPM manager changed on pool {#POOLNAME} from {ITEM.LASTVALUE} to {ITEM.VALUE}.
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.queue[{#POOLSOCKET}].last()}>=25
               name: >-
                 PHP-FPM queue utilisation for pool {#POOLNAME} reached 25% on {HOST.NAME}
               priority: INFO
               description: >-
                 The queue for this pool reached 25% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. Low values of the listen queue generally result in performance issues of this pool. The queue length is defined by the backlog option in your pool's configuration.
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.queue[{#POOLSOCKET}].last()}>=50
               name: >-
                 PHP-FPM queue utilisation for pool {#POOLNAME} reached 50% on {HOST.NAME}
               priority: AVERAGE
               description: >-
                 The queue for this pool reached 50% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. This pool already has performance issues. Please, check that your server has enough resources and adjust the configuration of this pool to handle more concurrent requests, otherwise you can suffer serious degraded performance. The queue length is defined by the backlog option in your pool's configuration.
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':php-fpm.queue[{#POOLSOCKET}].last()}>=85
               name: >-
                 PHP-FPM queue utilisation for pool {#POOLNAME} reached 85% on {HOST.NAME}
               priority: HIGH
               description: >-
                 The queue for this pool reached 85% of its maximum capacity. Items in queue represent the current number of connections that have been initiated on this pool, but not yet accepted. It typically means that all the available server processes are currently busy, and there are no processes available to serve the next request. Raising pm.max_children (provided the server can handle it) should help keep this number low. This trigger follows from the fact that PHP-FPM listens via a socket (TCP or file based), and thus inherits some of the characteristics of sockets. This pool already has serious performance issues. Please, check that your server has enough resources and adjust the configuration of this pool to handle more concurrent requests, otherwise you can face severe errors when new requests can't be processed and will be rejected generating errors such as HTTP 500. The queue length is defined by the backlog option in your pool's configuration.
-              expression: >-
+            - expression: >-
                 {'PHP-FastCGI Process Manager':proc.mem[\"php-fpm: pool {#POOLNAME}\",,,,pmem].last()}>=50
               name: >-
                 PHP-FPM uses too much memory on {HOST.NAME} pool {#POOLNAME}
@@ -422,7 +425,7 @@ zabbix_export:
               description: >-
                 PHP-FPM uses too much memory on {HOST.NAME} pool {#POOLNAME}. Please, make sure that your server has sufficient resources to handle this pool, and check that the traffic of your website is not abnormal (check that your website is not under DDoS attack).
           graph_prototypes:
-              name: "Pool {#POOLNAME} Connections"
+            - name: "Pool {#POOLNAME} Connections"
               width: '900'
               height: '200'
               yaxismin: 0.0000
@@ -468,7 +471,7 @@ zabbix_export:
                   item:
                     host: "PHP-FastCGI Process Manager"
                     key: "php-fpm.cpu[{#POOLNAME}]"
-              name: "Pool {#POOLNAME} Max Children Reached"
+            - name: "Pool {#POOLNAME} Max Children Reached"
               width: '900'
               height: '200'
               yaxismin: 0.0000
@@ -491,7 +494,7 @@ zabbix_export:
                   item:
                     host: "PHP-FastCGI Process Manager"
                     key: "php-fpm.max_children_reached[{#POOLSOCKET}]"
-              name: "Pool {#POOLNAME} Memory"
+            - name: "Pool {#POOLNAME} Memory"
               width: '900'
               height: '200'
               yaxismin: 0.0000
@@ -523,7 +526,7 @@ zabbix_export:
                     item:
                       host: "PHP-FastCGI Process Manager"
                       key: "proc.mem[\"php-fpm: pool {#POOLNAME}\",,,,pmem]"
-              name: "Pool {#POOLNAME} Process"
+            - name: "Pool {#POOLNAME} Process"
               width: '900'
               height: '200'
               yaxismin: 0.0000
@@ -555,7 +558,7 @@ zabbix_export:
                     item:
                       host: "PHP-FastCGI Process Manager"
                       key: "php-fpm.idle_processes[{#POOLSOCKET}]"
-              name: "Pool {#POOLNAME} Queue"
+            - name: "Pool {#POOLNAME} Queue"
               width: '900'
               height: '200'
               yaxismin: 0.0000

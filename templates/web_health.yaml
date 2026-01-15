@@ -1,0 +1,585 @@
+﻿zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 39ad4b7690094192be03e6f7a58894e0
+      template: 'Web Health'
+      name: 'Web Health'
+      description: |
+        Comprehensive web server health monitoring template with RFC compliance validation.
+        
+        This template provides extensive monitoring for:
+        - HTTP/HTTPS protocol compliance (RFC 7230-7237, 9110-9114)
+        - TLS/SSL security and handshake analysis
+        - DNS record validation and performance
+        - Email authentication and deliverability
+        - Security header analysis (HSTS, CSP, etc.)
+        - Performance metrics and optimization
+        - Content validation and integrity
+        - Redirect chain analysis
+        - TCP port connectivity
+        - API endpoint health monitoring
+        
+        Requirements:
+        - Python 3.x with required libraries
+        - External scripts: get_web_health.py, get_tls_handshake.py, get_tcp_port_scan.py
+        
+        Author: Simon Jackson (sjackson0109)
+        Created: 2026/01/05
+        Version: 1.0
+      vendor:
+        name: sjackson0109
+        version: '1.0'
+      groups:
+        - name: Templates
+      items:
+        - uuid: d47d49001cba4c7495fa1687049dfff1
+          name: 'TLS Certificate Validity'
+          type: EXTERNAL
+          key: 'get_tls_handshake.py[--check,{$WEB.DOMAIN},{$WEB.PORT:443}]'
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          trends: '0'
+          description: 'TLS certificate validity and handshake status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.certificate.valid
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'false'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: tls
+          triggers:
+            - uuid: e2035bf00fc242668b1fa6a95906aea6
+              expression: 'last(/Web Health/get_tls_handshake.py[--check,{$WEB.DOMAIN},{$WEB.PORT:443}])="false"'
+              name: 'TLS Certificate Invalid'
+              priority: HIGH
+              description: 'TLS certificate is invalid or expired'
+        - uuid: e2d251a87364400a98208c8a067ed07a
+          name: 'Content Size'
+          type: EXTERNAL
+          key: 'get_web_health.py[content,{$WEB.URL}]'
+          delay: 10m
+          history: 7d
+          value_type: FLOAT
+          trends: 30d
+          units: B
+          description: 'Size of main page content'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.content_length
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: content
+        - uuid: b1732f7c52b6411ab4e195e9afbc6046
+          name: 'Compliance Frameworks Score'
+          type: EXTERNAL
+          key: 'get_web_health.py[frameworks,{$WEB.URL}]'
+          delay: 240m
+          history: 7d
+          value_type: FLOAT
+          trends: 30d
+          units: '%'
+          description: 'SOC2, HIPAA, PCI DSS, ISO 27001 compliance indicators score'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.compliance_score
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: component
+              value: compliance
+          triggers:
+            - uuid: 611abcef10234a74b44b845818d2428e
+              expression: 'last(/Web Health/get_web_health.py[frameworks,{$WEB.URL}])<60'
+              name: 'Low Compliance Framework Score (<60%)'
+              priority: WARNING
+              description: 'Compliance with major frameworks (SOC2, HIPAA, PCI DSS, ISO 27001) is below acceptable levels'
+        - uuid: 618492ca4d134ad88a2df2791da4f3aa
+          name: 'HTTP Status Code'
+          type: EXTERNAL
+          key: 'get_web_health.py[http,{$WEB.URL}]'
+          delay: 2m
+          history: 7d
+          value_type: CHAR
+          trends: '0'
+          description: 'HTTP status code from main URL'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.status_code
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: component
+              value: http
+          triggers:
+            - uuid: 2b403e3697354dfd9b79d4cf898adb84
+              expression: 'find(/Web Health/get_web_health.py[http,{$WEB.URL}],1h,"like","HTTP/1.0")=1'
+              name: 'Server Using Legacy HTTP/1.0 Protocol'
+              priority: INFO
+              description: 'Server is responding with legacy HTTP/1.0 protocol'
+              manual_close: 'YES'
+        - uuid: 77850b85ad044205bff5f14c96acc5f2
+          name: 'HTTP/3 Support Status'
+          type: EXTERNAL
+          key: 'get_web_health.py[http3,{$WEB.URL}]'
+          delay: 60m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'HTTP/3 (QUIC) protocol support detection'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.http3_supported
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'false'
+          tags:
+            - tag: component
+              value: http-protocol
+        - uuid: 4d2dea636c4f4ef6be4bd99aa57158f7
+          name: 'HTTPS Connection Status'
+          type: EXTERNAL
+          key: 'get_web_health.py[https,{$WEB.URL}]'
+          delay: 10m
+          history: 7d
+          value_type: CHAR
+          trends: '0'
+          description: 'HTTPS connection success status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.success
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'false'
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 2h
+          tags:
+            - tag: component
+              value: security
+          triggers:
+            - uuid: fcc24ffd03674d43815bdb5c813b68df
+              expression: 'last(/Web Health/get_web_health.py[https,{$WEB.URL}])="false"'
+              name: 'HTTPS Connection Failed'
+              priority: WARNING
+              description: 'HTTPS connection is failing'
+        - uuid: 5d165129fa164dd89135baad2e831d1c
+          name: 'OWASP Top 10 Security Analysis'
+          type: EXTERNAL
+          key: 'get_web_health.py[owasp,{$WEB.URL}]'
+          delay: 60m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'OWASP Top 10 security vulnerability analysis'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: security
+          triggers:
+            - uuid: f000c9bc9cad4893ab2d4efa1fe29995
+              expression: 'find(/Web Health/get_web_health.py[owasp,{$WEB.URL}],1h,"like","HIGH")=1'
+              name: 'High Risk OWASP Security Issues Detected'
+              priority: HIGH
+              description: 'High risk security vulnerabilities found in OWASP analysis'
+              manual_close: 'YES'
+            - uuid: e21a05ebf31443d7820e947c96b88d36
+              expression: 'find(/Web Health/get_web_health.py[owasp,{$WEB.URL}],1h,"like","MEDIUM")=1'
+              name: 'Medium Risk OWASP Security Issues Detected'
+              priority: WARNING
+              description: 'Medium risk security vulnerabilities found in OWASP analysis'
+              manual_close: 'YES'
+        - uuid: 0634347f86e04cac8e31fe81fb03efa2
+          name: 'HTTP Response Time'
+          type: EXTERNAL
+          key: 'get_web_health.py[performance,{$WEB.URL}]'
+          delay: 2m
+          history: 7d
+          value_type: FLOAT
+          trends: 30d
+          units: ms
+          description: 'Average HTTP response time'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.response_time
+            - type: MULTIPLIER
+              parameters:
+                - '1000'
+          tags:
+            - tag: component
+              value: performance
+          triggers:
+            - uuid: 9fa47f84b3f74d7693d48309b5d6ae9d
+              expression: 'last(/Web Health/get_web_health.py[performance,{$WEB.URL}])>2000'
+              name: 'Elevated HTTP Response Time (>2s)'
+              priority: WARNING
+              description: 'HTTP response time is elevated (>2 seconds)'
+            - uuid: 2bd4147f932f417fa17c1cdb96c38170
+              expression: 'last(/Web Health/get_web_health.py[performance,{$WEB.URL}])>5000'
+              name: 'High HTTP Response Time (>5s)'
+              priority: HIGH
+              description: 'HTTP response time is critically high (>5 seconds)'
+        - uuid: acd39ee765034b528315c152657ced9d
+          name: 'CDN and Proxy Detection'
+          type: EXTERNAL
+          key: 'get_web_health.py[proxy,{$WEB.URL}]'
+          delay: 30m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'CDN provider and proxy server detection'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 6h
+          tags:
+            - tag: component
+              value: infrastructure
+        - uuid: 830457f580684e9cb66f60a7b72e20de
+          name: 'Redirect Count'
+          type: EXTERNAL
+          key: 'get_web_health.py[redirects,{$WEB.URL}]'
+          delay: 5m
+          history: 7d
+          value_type: FLOAT
+          trends: 30d
+          description: 'Number of HTTP redirects in redirect chain'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.redirect_count
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: component
+              value: redirects
+          triggers:
+            - uuid: eb50f23a92c346ccb85ff30ad3419921
+              expression: 'last(/Web Health/get_web_health.py[redirects,{$WEB.URL}])>5'
+              name: 'Too Many HTTP Redirects (>5)'
+              priority: WARNING
+              description: 'Excessive redirect chains can impact performance'
+        - uuid: 8262528725384c97909e5eb1c51c0e27
+          name: 'Security Headers Present'
+          type: EXTERNAL
+          key: 'get_web_health.py[security,{$WEB.URL}]'
+          delay: 10m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'Security headers analysis'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 2h
+          tags:
+            - tag: component
+              value: security
+        - uuid: 717cb8562a5241018c50fa2e152af452
+          name: 'SSL/TLS Compatibility Grade'
+          type: EXTERNAL
+          key: 'get_web_health.py[ssl-compat,{$WEB.URL}]'
+          delay: 120m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'SSL/TLS compatibility and security grade assessment'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.security_grade
+              error_handler: CUSTOM_VALUE
+              error_handler_params: Unknown
+          tags:
+            - tag: component
+              value: security
+          triggers:
+            - uuid: b6c76ae3f3084eb9b1206f789f47e15d
+              expression: 'find(/Web Health/get_web_health.py[ssl-compat,{$WEB.URL}],2h,"like","F")=1'
+              name: 'SSL/TLS Security Grade F - Critical'
+              priority: HIGH
+              description: 'SSL/TLS configuration has critical security issues'
+              manual_close: 'YES'
+            - uuid: 1166ef0c2011497b8694d1d669523d1b
+              expression: 'find(/Web Health/get_web_health.py[ssl-compat,{$WEB.URL}],2h,"regexp","[CD]")=1'
+              name: 'SSL/TLS Security Grade Poor (C or D)'
+              priority: WARNING
+              description: 'SSL/TLS configuration needs improvement'
+              manual_close: 'YES'
+        - uuid: 2f2de96357fd494d8b31d52bc139c913
+          name: 'HTTP Version Support'
+          type: EXTERNAL
+          key: 'get_web_health.py[versions,{$WEB.URL}]'
+          delay: 30m
+          history: 7d
+          value_type: TEXT
+          trends: '0'
+          description: 'HTTP version support analysis and detected protocol'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 6h
+          tags:
+            - tag: component
+              value: http-protocol
+          triggers:
+            - uuid: 4a93ca89acfc42ffaed81f74ce7f78d4
+              expression: 'find(/Web Health/get_web_health.py[versions,{$WEB.URL}],1h,"like","HTTP/1.0")=1'
+              name: 'Legacy HTTP/1.0 Detected - Upgrade Recommended'
+              priority: WARNING
+              description: 'Server supports legacy HTTP/1.0 but modern protocols are available for upgrade'
+              manual_close: 'YES'
+            - uuid: f4da5e2f2ad449378c5d87fd0bdd5dbd
+              expression: 'find(/Web Health/get_web_health.py[versions,{$WEB.URL}],1h,"like","HTTP/1.0")=1'
+              name: 'Legacy HTTP/1.0 Only - Critical Upgrade Needed'
+              priority: HIGH
+              description: 'Server only supports legacy HTTP/1.0 with no fallback to modern protocols'
+              manual_close: 'YES'
+      discovery_rules:
+        - uuid: 2575a4a13d29465eb440828efe6fc06a
+          name: 'Web Service Port Discovery'
+          type: EXTERNAL
+          key: 'get_web_health.py[discover,{$WEB.DOMAIN}]'
+          delay: 1h
+          description: 'Discover available web service ports'
+          item_prototypes:
+            - uuid: 283ea4ac3bc24649af91defddbb2a378
+              name: 'Port {#PORT} Status'
+              type: EXTERNAL
+              key: 'get_tcp_port_scan.py[--check,{$WEB.DOMAIN},{#PORT}]'
+              delay: 2m
+              history: 7d
+              value_type: FLOAT
+              trends: 30d
+              description: 'Status of port {#PORT} (1=open, 0=closed)'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.status
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              tags:
+                - tag: component
+                  value: ports
+                - tag: port
+                  value: '{#PORT}'
+              trigger_prototypes:
+                - uuid: 47ad64cac0bb4bdfb43265d52069cccc
+                  expression: 'last(/Web Health/get_tcp_port_scan.py[--check,{$WEB.DOMAIN},{#PORT}])=0'
+                  name: 'Port {#PORT} is down'
+                  priority: WARNING
+                  description: 'Web service port {#PORT} is not responding'
+        - uuid: 444b8579818144168ac5336e93f213d5
+          name: 'Security Header Discovery'
+          type: EXTERNAL
+          key: 'get_web_health.py[security_discovery,{$WEB.URL}]'
+          delay: 1h
+          description: 'Discover security headers status'
+          item_prototypes:
+            - uuid: 0b23ef1a103d4155b7d185837428347f
+              name: 'Security Header: {#HEADER}'
+              type: EXTERNAL
+              key: 'get_web_health.py[security_header,{$WEB.URL},{#HEADER}]'
+              delay: 10m
+              history: 7d
+              value_type: CHAR
+              trends: '0'
+              description: 'Status of security header {#HEADER}'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.security_headers.{#HEADER}.present'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: 'false'
+              tags:
+                - tag: component
+                  value: security-headers
+                - tag: header
+                  value: '{#HEADER}'
+              trigger_prototypes:
+                - uuid: 7c0cfefe803446b98823698f317cc735
+                  expression: 'last(/Web Health/get_web_health.py[security_header,{$WEB.URL},{#HEADER}])="false"'
+                  name: 'Security Header {#HEADER} Missing'
+                  priority: INFO
+                  description: 'Security header {#HEADER} is not present'
+      tags:
+        - tag: Author
+          value: 'Simon Jackson'
+      macros:
+        - macro: '{$WEB.DOMAIN}'
+          value: example.com
+          description: 'Domain name for DNS and email monitoring'
+        - macro: '{$WEB.HEALTH_SCORE.HIGH}'
+          value: '70'
+          description: 'High alert threshold for overall health score percentage'
+        - macro: '{$WEB.HEALTH_SCORE.WARN}'
+          value: '85'
+          description: 'Warning threshold for overall health score percentage'
+        - macro: '{$WEB.PORT}'
+          value: '443'
+          description: 'Primary web server port (443 for HTTPS, 80 for HTTP)'
+        - macro: '{$WEB.RESPONSE_TIME.HIGH}'
+          value: '5000'
+          description: 'High threshold for response time in milliseconds'
+        - macro: '{$WEB.RESPONSE_TIME.WARN}'
+          value: '2000'
+          description: 'Warning threshold for response time in milliseconds'
+        - macro: '{$WEB.TIMEOUT}'
+          value: '30'
+          description: 'Timeout for web requests in seconds'
+        - macro: '{$WEB.URL}'
+          value: 'https://example.com'
+          description: 'Full URL of the web server to monitor (including protocol)'
+      dashboards:
+        - uuid: 934fb54dbdb747a8ab3570f9558c73e4
+          name: 'Web Server Health Overview'
+          display_period: '3600'
+          pages:
+            - widgets:
+                - type: ITEM
+                  name: 'HTTP Status Code'
+                  width: '3'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[http,{$WEB.URL}]'
+                - type: ITEM
+                  name: 'HTTP Protocol Version'
+                  'y': '4'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[http,{$WEB.URL}]'
+                    - type: INTEGER
+                      name: show
+                      value: '2'
+                - type: ITEM
+                  name: 'Redirect Count'
+                  'y': '7'
+                  width: '3'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[redirects,{$WEB.URL}]'
+                - type: GRAPH_CLASSIC
+                  name: 'Response Time Trend'
+                  x: '3'
+                  width: '9'
+                  height: '4'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[performance,{$WEB.URL}]'
+                - type: ITEM
+                  name: 'Content Size'
+                  x: '3'
+                  'y': '7'
+                  width: '3'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[content,{$WEB.URL}]'
+                - type: ITEM
+                  name: 'TLS Certificate Status'
+                  x: '6'
+                  'y': '4'
+                  width: '3'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_tls_handshake.py[--check,{$WEB.DOMAIN},{$WEB.PORT:443}]'
+                - type: ITEM
+                  name: 'HTTP Version Support'
+                  x: '6'
+                  'y': '7'
+                  width: '6'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[versions,{$WEB.URL}]'
+                    - type: INTEGER
+                      name: show
+                      value: '2'
+                - type: ITEM
+                  name: 'HTTPS Connection Status'
+                  x: '9'
+                  'y': '4'
+                  width: '3'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid
+                      value:
+                        host: 'Web Health'
+                        key: 'get_web_health.py[https,{$WEB.URL}]'
+      valuemaps:
+        - uuid: 1254b8f48999490db196c6bb3a2cd93e
+          name: 'Boolean Status'
+          mappings:
+            - value: 'false'
+              newvalue: 'No'
+            - value: 'true'
+              newvalue: 'Yes'
+            - value: '0'
+              newvalue: 'No'
+            - value: '1'
+              newvalue: 'Yes'
+        - uuid: ee72248ee88b4a438ee2ee50c32263d7
+          name: 'HTTP Protocol Version'
+          mappings:
+            - value: HTTP/1.0
+              newvalue: '🟨 HTTP/1.0 (Legacy)'
+            - value: HTTP/1.1
+              newvalue: '🟩 HTTP/1.1 (Standard)'
+            - value: HTTP/2.0
+              newvalue: '🚀 HTTP/2.0 (Modern)'
+            - value: HTTP/2
+              newvalue: '🚀 HTTP/2.0 (Modern)'
+        - uuid: 158f4c9a18bc4b5a8b142439a2354796
+          name: 'Port Status'
+          mappings:
+            - value: '0'
+              newvalue: Closed
+            - value: '1'
+              newvalue: Open

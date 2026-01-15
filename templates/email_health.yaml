@@ -1,0 +1,1381 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 22508c4710f045c7bb583e1d02cabeea
+      name: 'Email Infrastructure'
+  templates:
+    - uuid: e2da826265d849beb8b11cabeda8bcec
+      template: 'Email Health & Compliance Monitoring'
+      name: 'Email Health & Compliance Monitoring'
+      vendor:
+        name: 'Simon Jackson'
+        version: '1.0'
+      description: |
+        Email Infrastructure Health & RFC Compliance Monitoring Template
+        
+        PURPOSE:
+        Monitor email infrastructure health, authentication protocols, and RFC compliance
+        for comprehensive email deliverability and security assessment.
+        
+        FEATURES:
+        - SPF (RFC 7208/4408) validation and policy analysis
+        - DKIM (RFC 6376) signature discovery and validation  
+        - DMARC (RFC 7489) policy validation and alignment checks
+        - MTA-STS (RFC 8461) policy validation
+        - TLS-RPT (RFC 8460) reporting configuration
+        - BIMI brand indicators validation
+        - MX record validation and connectivity testing
+        - SMTP protocol compliance (RFC 5321/5322)
+        - Email blacklist/reputation monitoring
+        - Email deliverability scoring and recommendations
+        - STARTTLS and encryption validation
+        - Comprehensive RFC compliance assessment
+        
+        RFC COVERAGE:
+        RFC 5321 - SMTP Protocol
+        RFC 5322 - Internet Message Format  
+        RFC 3207 - SMTP STARTTLS
+        RFC 4954 - SMTP AUTH
+        RFC 6409 - Message Submission
+        RFC 7208 - SPF (Sender Policy Framework)
+        RFC 6376 - DKIM (DomainKeys Identified Mail)
+        RFC 7489 - DMARC (Domain-based Message Authentication)
+        RFC 8460 - TLS-RPT (SMTP TLS Reporting)
+        RFC 8461 - MTA-STS (Mail Transfer Agent Strict Transport Security)
+        RFC 8463 - A New Cryptographic Signature Method
+        RFC 3501 - IMAP4rev1
+        RFC 1939 - POP3
+        RFC 2595 - TLS for IMAP and POP3
+        
+        REQUIREMENTS:
+        - Python 3.6+ with standard libraries
+        - External script: externalscripts/get_email_health.py
+        - DNS resolution capability
+        - Network connectivity for SMTP testing
+        
+        USAGE:
+        Attach to host groups containing email domains (one domain per host).
+        Template performs comprehensive email infrastructure monitoring and compliance validation.
+        
+        Author: Simon Jackson (sjackson0109)
+        Created: 2026/01/02
+        Version: 1.0
+      groups:
+        - name: 'Email Infrastructure'
+      items:
+        # Email Service Discovery
+        - uuid: e0f38608ed6e41eb9fd34f810eb931c2
+          name: 'Email Services Discovery'
+          type: EXTERNAL
+          key: 'get_email_health.py[discover,{HOST.NAME}]'
+          delay: 1h
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.data
+          description: 'Discovers available email services and authentication methods for the domain'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: discovery
+
+        # MX Record Analysis
+        - uuid: e1d375101be348d8b297af69af8d4022
+          name: 'MX Records Analysis'
+          type: EXTERNAL
+          key: 'get_email_health.py[mx_analysis,{HOST.NAME}]'
+          delay: 30m
+          value_type: TEXT
+          description: 'Comprehensive MX record validation and connectivity testing'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: mx
+            - tag: rfc
+              value: 'RFC5321'
+
+        - uuid: 5ef4cbbf58cf4c7ba353b659b2306b2f
+          name: 'MX Records Count'
+          type: DEPENDENT
+          key: 'email.mx.count'
+          master_item:
+            key: 'get_email_health.py[mx_analysis,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.total_mx_count
+          description: 'Total number of MX records configured'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: count
+
+        - uuid: e9267a4ccb484bb8a0151e49c0f0b6bd
+          name: 'MX Primary Server Reachable'
+          type: DEPENDENT
+          key: 'email.mx.primary.reachable'
+          master_item:
+            key: 'get_email_health.py[mx_analysis,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.primary_mx.exchange
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'none'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var primaryExchange = data.primary_mx ? data.primary_mx.exchange : null;
+                  if (!primaryExchange) return 0;
+                  var connectivity = data.connectivity_test[primaryExchange];
+                  return connectivity && connectivity.connected ? 1 : 0;
+          description: 'Primary MX server connectivity status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: availability
+
+        - uuid: 1ec5010ec29d46f59f70d7ae2922bf69
+          name: 'MX RFC 5321 Compliance'
+          type: DEPENDENT
+          key: 'email.mx.rfc5321.compliant'
+          master_item:
+            key: 'get_email_health.py[mx_analysis,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rfc_compliance.rfc5321.compliant
+            - type: BOOL_TO_DECIMAL
+          description: 'MX configuration RFC 5321 compliance status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: compliance
+              value: rfc5321
+
+        # SPF Analysis
+        - uuid: ef2c6498a1d24739ba238dc6da7ab2c8
+          name: 'SPF Record Analysis'
+          type: EXTERNAL
+          key: 'get_email_health.py[spf,{HOST.NAME}]'
+          delay: 30m
+          value_type: TEXT
+          description: 'SPF record validation and RFC compliance analysis'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: spf
+            - tag: rfc
+              value: 'RFC7208'
+
+        - uuid: d3a50afcbd57445bab7da287c567efa5
+          name: 'SPF Record Valid'
+          type: DEPENDENT
+          key: 'email.spf.valid'
+          master_item:
+            key: 'get_email_health.py[spf,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+            - type: BOOL_TO_DECIMAL
+          description: 'SPF record validity status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: validity
+
+        - uuid: 1a495291a2b84327aa0fe7e82ac93f21
+          name: 'SPF RFC 7208 Compliance'
+          type: DEPENDENT
+          key: 'email.spf.rfc7208.compliant'
+          master_item:
+            key: 'get_email_health.py[spf,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rfc_compliance.rfc7208.compliant
+            - type: BOOL_TO_DECIMAL
+          description: 'SPF record RFC 7208 compliance status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: compliance
+              value: rfc7208
+
+        - uuid: 03d05fb15302405a83444ec600e54ec3
+          name: 'SPF Mechanisms Count'
+          type: DEPENDENT
+          key: 'email.spf.mechanisms.count'
+          master_item:
+            key: 'get_email_health.py[spf,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.mechanisms
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).length;'
+          description: 'Number of SPF mechanisms configured'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: count
+
+        # DKIM Analysis  
+        - uuid: 99168fb39cf342fc8eee1b45b884cdd8
+          name: 'DKIM Discovery'
+          type: EXTERNAL
+          key: 'get_email_health.py[dkim_discovery,{HOST.NAME}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'DKIM selector discovery and validation'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: dkim
+            - tag: rfc
+              value: 'RFC6376'
+
+        - uuid: 3c6584e0773d4d6881d7360181fb0cb0
+          name: 'DKIM Selectors Found'
+          type: DEPENDENT
+          key: 'email.dkim.selectors.count'
+          master_item:
+            key: 'get_email_health.py[dkim_discovery,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.total_found
+          description: 'Number of DKIM selectors discovered'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: count
+
+        # DMARC Analysis
+        - uuid: e05d8cafbc634fdfb8c7812292fe4573
+          name: 'DMARC Policy Analysis'
+          type: EXTERNAL
+          key: 'get_email_health.py[dmarc,{HOST.NAME}]'
+          delay: 30m
+          value_type: TEXT
+          description: 'DMARC policy validation and RFC compliance analysis'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: dmarc
+            - tag: rfc
+              value: 'RFC7489'
+
+        - uuid: 6f059f6d81514422885e21ff3f2d1365
+          name: 'DMARC Policy Valid'
+          type: DEPENDENT
+          key: 'email.dmarc.valid'
+          master_item:
+            key: 'get_email_health.py[dmarc,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+            - type: BOOL_TO_DECIMAL
+          description: 'DMARC policy validity status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: validity
+
+        - uuid: 926dea0af5fc4161a318158bc205452f
+          name: 'DMARC Policy Type'
+          type: DEPENDENT
+          key: 'email.dmarc.policy'
+          master_item:
+            key: 'get_email_health.py[dmarc,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.policy
+              error_handler: CUSTOM_VALUE
+              error_handler_params: 'none'
+          value_type: CHAR
+          description: 'DMARC policy enforcement level'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: policy
+
+        - uuid: b9ab5da57927479593ba833fce918843
+          name: 'DMARC RFC 7489 Compliance'
+          type: DEPENDENT
+          key: 'email.dmarc.rfc7489.compliant'
+          master_item:
+            key: 'get_email_health.py[dmarc,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.rfc_compliance.rfc7489.compliant
+            - type: BOOL_TO_DECIMAL
+          description: 'DMARC policy RFC 7489 compliance status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: compliance
+              value: rfc7489
+
+        # MTA-STS Analysis
+        - uuid: dd01e16c0d53470ebc22467979cd1d85
+          name: 'MTA-STS Policy Check'
+          type: EXTERNAL
+          key: 'get_email_health.py[mta_sts,{HOST.NAME}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'MTA-STS policy validation for SMTP security'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: mta-sts
+            - tag: rfc
+              value: 'RFC8461'
+
+        - uuid: e2499f0b69bf4656a5c13bd8a7f68c69
+          name: 'MTA-STS Policy Found'
+          type: DEPENDENT
+          key: 'email.mta_sts.found'
+          master_item:
+            key: 'get_email_health.py[mta_sts,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.policy_found
+            - type: BOOL_TO_DECIMAL
+          description: 'MTA-STS policy availability status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: availability
+
+        # TLS-RPT Analysis
+        - uuid: c254ff56e4ff433f86c45bdb50e0fe9c
+          name: 'TLS-RPT Configuration Check'
+          type: EXTERNAL
+          key: 'get_email_health.py[tls_rpt,{HOST.NAME}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'TLS reporting configuration validation'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: tls-rpt
+            - tag: rfc
+              value: 'RFC8460'
+
+        - uuid: a621889481424a4ca40540fd9a6b692b
+          name: 'TLS-RPT Configuration Valid'
+          type: DEPENDENT
+          key: 'email.tls_rpt.valid'
+          master_item:
+            key: 'get_email_health.py[tls_rpt,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+            - type: BOOL_TO_DECIMAL
+          description: 'TLS-RPT configuration validity status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: validity
+
+        # BIMI Analysis
+        - uuid: 5fe422c775844e9aa2b1636a1ca6d0e0
+          name: 'BIMI Brand Indicator Check'
+          type: EXTERNAL
+          key: 'get_email_health.py[bimi,{HOST.NAME}]'
+          delay: 4h
+          value_type: TEXT
+          description: 'BIMI brand indicator validation'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: bimi
+
+        - uuid: 7e80b4b3d2cb4592b4e2a17305f7235c
+          name: 'BIMI Record Valid'
+          type: DEPENDENT
+          key: 'email.bimi.valid'
+          master_item:
+            key: 'get_email_health.py[bimi,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.valid
+            - type: BOOL_TO_DECIMAL
+          description: 'BIMI record validity status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: validity
+
+        # Blacklist/Reputation Monitoring
+        - uuid: d3ca76ec41dd44e9a40072948ac2ccd8
+          name: 'Email Blacklist Check'
+          type: EXTERNAL
+          key: 'get_email_health.py[blacklist_check,{HOST.NAME}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'Email domain reputation and blacklist monitoring'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: reputation
+
+        - uuid: abff887c70c845ada2fed03c6ab4d981
+          name: 'Email Reputation Score'
+          type: DEPENDENT
+          key: 'email.reputation.score'
+          master_item:
+            key: 'get_email_health.py[blacklist_check,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.reputation_score
+          units: '%'
+          description: 'Email domain reputation score percentage'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: score
+
+        - uuid: 5d3edc8de8164f778eb4e76c24686953
+          name: 'Blacklisted Count'
+          type: DEPENDENT
+          key: 'email.blacklisted.count'
+          master_item:
+            key: 'get_email_health.py[blacklist_check,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.blacklisted_count
+          description: 'Number of blacklist entries found'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: count
+
+        # Email Deliverability Assessment
+        - uuid: 532403c7630a4b1fae182eac246ce98d
+          name: 'Email Deliverability Assessment'
+          type: EXTERNAL
+          key: 'get_email_health.py[deliverability,{HOST.NAME}]'
+          delay: 1h
+          value_type: TEXT
+          description: 'Comprehensive email deliverability assessment and scoring'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: deliverability
+
+        - uuid: 98e7dfc6f94142c5969e14379cfdbcc8
+          name: 'Overall Deliverability Score'
+          type: DEPENDENT
+          key: 'email.deliverability.score'
+          master_item:
+            key: 'get_email_health.py[deliverability,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.overall_score
+          units: '%'
+          description: 'Overall email deliverability score'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: score
+
+        # Comprehensive Health Check
+        - uuid: 74a71fdd37ad48daa925b245c71bb558
+          name: 'Comprehensive Email Health Check'
+          type: EXTERNAL
+          key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+          delay: 2h
+          value_type: TEXT
+          description: 'Complete email infrastructure health and compliance assessment'
+          tags:
+            - tag: component
+              value: email
+            - tag: service
+              value: comprehensive
+
+        - uuid: 0f61455e4bac4a5b95f04b235d1eba10
+          name: 'Overall Email Health Score'
+          type: DEPENDENT
+          key: 'email.health.overall.score'
+          master_item:
+            key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.summary.overall_health_score
+          units: '%'
+          description: 'Overall email infrastructure health score'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: score
+
+        - uuid: 2aebf7853bd44345a1a765d9438e7af4
+          name: 'Email Security Score'
+          type: DEPENDENT
+          key: 'email.security.score'
+          master_item:
+            key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.summary.security_score
+          units: '%'
+          description: 'Email authentication and security score'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: security
+
+        - uuid: 52dd7da4fa81455080c5659eed725176
+          name: 'RFC Compliance Score'
+          type: DEPENDENT
+          key: 'email.rfc.compliance.score'
+          master_item:
+            key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.summary.rfc_compliance_score
+          units: '%'
+          description: 'Overall RFC compliance score'
+          tags:
+            - tag: component
+              value: email
+            - tag: metric
+              value: compliance
+
+      discovery_rules:
+        # Email Services Discovery
+        - uuid: 3689e774a0584396bed32f6eebbc6078
+          name: 'Email Services Discovery'
+          type: EXTERNAL
+          key: 'get_email_health.py[discover,{HOST.NAME}]'
+          delay: 4h
+          description: 'Discovers email services and authentication methods'
+          item_prototypes:
+            - uuid: 344762fafbb9467984ecd1300cbe64b4
+              name: 'Email Service Status: {#EMAIL_SERVICE}'
+              type: CALCULATED
+              key: 'email.service.status[{#EMAIL_SERVICE_TYPE}]'
+              params: 'last(//get_email_health.py[{#EMAIL_SERVICE_TYPE},{HOST.NAME}])'
+              delay: 30m
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.valid
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+                - type: BOOL_TO_DECIMAL
+              description: 'Email service {#EMAIL_SERVICE} operational status'
+              valuemap:
+                name: 'Service state'
+              tags:
+                - tag: component
+                  value: email
+                - tag: service
+                  value: '{#EMAIL_SERVICE_TYPE}'
+          trigger_prototypes:
+            - uuid: bf9c60965ce040ed925ce18cf19406a2
+              expression: 'last(/Email Health & Compliance Monitoring/email.service.status[{#EMAIL_SERVICE_TYPE}])=0'
+              name: 'Email service {#EMAIL_SERVICE} is not configured properly on {HOST.NAME}'
+              priority: WARNING
+              description: 'Email service {#EMAIL_SERVICE} is not configured or not functioning properly'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: service
+                  value: '{#EMAIL_SERVICE_TYPE}'
+
+        # DKIM Selectors Discovery
+        - uuid: e439f0f53f7d47bdaece4e59e4bb54fd
+          name: 'DKIM Selectors Discovery'
+          type: EXTERNAL
+          key: 'get_email_health.py[dkim_discovery,{HOST.NAME}]'
+          delay: 6h
+          description: 'Discovers DKIM selectors for individual validation'
+          item_prototypes:
+            - uuid: de005f3912c84d2eaf431ee3ff8e3bfa
+              name: 'DKIM Selector Validation: {#DKIM_SELECTOR}'
+              type: EXTERNAL
+              key: 'get_email_health.py[dkim,{HOST.NAME},{#DKIM_SELECTOR}]'
+              delay: 2h
+              value_type: TEXT
+              description: 'Individual DKIM selector {#DKIM_SELECTOR} validation'
+              tags:
+                - tag: component
+                  value: email
+                - tag: service
+                  value: dkim
+                - tag: selector
+                  value: '{#DKIM_SELECTOR}'
+            - uuid: f3a18589f78a4a56bd7d74eaa1a7e602
+              name: 'DKIM Selector Valid: {#DKIM_SELECTOR}'
+              type: DEPENDENT
+              key: 'email.dkim.selector.valid[{#DKIM_SELECTOR}]'
+              master_item:
+                key: 'get_email_health.py[dkim,{HOST.NAME},{#DKIM_SELECTOR}]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.valid
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+                - type: BOOL_TO_DECIMAL
+              description: 'DKIM selector {#DKIM_SELECTOR} validity status'
+              valuemap:
+                name: 'Service state'
+              tags:
+                - tag: component
+                  value: email
+                - tag: metric
+                  value: validity
+                - tag: selector
+                  value: '{#DKIM_SELECTOR}'
+          trigger_prototypes:
+            - uuid: b2957862d4b14e79ba32e2e692b7fa86
+              expression: 'last(/Email Health & Compliance Monitoring/email.dkim.selector.valid[{#DKIM_SELECTOR}])=0'
+              name: 'DKIM selector {#DKIM_SELECTOR} is invalid on {HOST.NAME}'
+              priority: WARNING
+              description: 'DKIM selector {#DKIM_SELECTOR} validation failed, affecting email authentication'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: security
+                - tag: rfc
+                  value: 'RFC6376'
+                - tag: selector
+                  value: '{#DKIM_SELECTOR}'
+
+        # SMTP Connectivity Testing Items
+        - uuid: ebfeee4075684347963f46060feb3ea8
+          name: 'SMTP Port 25 Connectivity'
+          type: EXTERNAL
+          key: 'get_email_health.py[smtp_test,{HOST.NAME},25]'
+          delay: '5m'
+          value_type: TEXT
+          trends: '0'
+          description: 'Check SMTP connectivity on port 25'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '25'
+
+        - uuid: 2cb824b76f4540e09ec296a335983ed4
+          name: 'SMTP Port 465 Connectivity'
+          type: EXTERNAL
+          key: 'get_email_health.py[smtp_test,{HOST.NAME},465]'
+          delay: '5m'
+          value_type: TEXT
+          trends: '0'
+          description: 'Check SMTP connectivity on port 465 (SSL/TLS)'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '465'
+
+        - uuid: cf6e5caf460b407f8c4cf0c049d3828b
+          name: 'SMTP Port 587 Connectivity'
+          type: EXTERNAL
+          key: 'get_email_health.py[smtp_test,{HOST.NAME},587]'
+          delay: '5m'
+          value_type: TEXT
+          trends: '0'
+          description: 'Check SMTP connectivity on port 587 (STARTTLS)'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '587'
+
+        - uuid: 6ef6a97d05d04d26b5a65b49a5c6b848
+          name: 'SMTP Port 25 Connection Status'
+          type: DEPENDENT
+          key: 'email.smtp.25.connected'
+          master_item:
+            key: 'get_email_health.py[smtp_test,{HOST.NAME},25]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.connected
+            - type: BOOL_TO_DECIMAL
+          description: 'SMTP port 25 connection status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '25'
+
+        - uuid: ecd41946bae94f65bf70e1b966ad6b29
+          name: 'SMTP Port 465 Connection Status'
+          type: DEPENDENT
+          key: 'email.smtp.465.connected'
+          master_item:
+            key: 'get_email_health.py[smtp_test,{HOST.NAME},465]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.connected
+            - type: BOOL_TO_DECIMAL
+          description: 'SMTP port 465 connection status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '465'
+
+        - uuid: e04772c43a2b4c37b4a94b77a6c6cba0
+          name: 'SMTP Port 587 Connection Status'
+          type: DEPENDENT
+          key: 'email.smtp.587.connected'
+          master_item:
+            key: 'get_email_health.py[smtp_test,{HOST.NAME},587]'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.connected
+            - type: BOOL_TO_DECIMAL
+          description: 'SMTP port 587 connection status'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: email
+            - tag: connectivity
+              value: smtp
+            - tag: port
+              value: '587'
+
+      triggers:
+        # SPF Triggers
+        - uuid: 2bc8a9fa754c4b10ad63cb36dd179b39
+          expression: 'last(/Email Health & Compliance Monitoring/email.spf.valid)=0'
+          name: 'SPF record missing or invalid on {HOST.NAME}'
+          priority: HIGH
+          description: 'SPF record is missing or contains syntax errors that prevent proper email authentication'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: security
+            - tag: rfc
+              value: 'RFC7208'
+
+        - uuid: 6379712079324dc38b1ea43c3bf3c8fd
+          expression: 'last(/Email Health & Compliance Monitoring/email.spf.rfc7208.compliant)=0'
+          name: 'SPF record RFC 7208 compliance issues on {HOST.NAME}'
+          priority: WARNING
+          description: 'SPF record has RFC 7208 compliance issues that may affect email deliverability'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: compliance
+            - tag: rfc
+              value: 'RFC7208'
+
+        # DKIM Triggers
+        - uuid: 5abb4e35dcaa42ae88324371d01d931a
+          expression: 'last(/Email Health & Compliance Monitoring/email.dkim.selectors.count)=0'
+          name: 'No DKIM selectors found on {HOST.NAME}'
+          priority: WARNING
+          description: 'No DKIM selectors discovered for domain, affecting email authentication'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: security
+            - tag: rfc
+              value: 'RFC6376'
+
+        # DMARC Triggers
+        - uuid: 2f8e2bc627b1436ca9d789562860f035
+          expression: 'last(/Email Health & Compliance Monitoring/email.dmarc.valid)=0'
+          name: 'DMARC policy missing or invalid on {HOST.NAME}'
+          priority: HIGH
+          description: 'DMARC policy is missing or contains errors that affect email security and deliverability'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: security
+            - tag: rfc
+              value: 'RFC7489'
+
+        - uuid: 91ab890b4b8c4f6392077de0f9d5a7b7
+          expression: 'last(/Email Health & Compliance Monitoring/email.dmarc.policy)="none"'
+          name: 'DMARC policy set to none on {HOST.NAME}'
+          priority: WARNING
+          description: 'DMARC policy is set to "none" which provides minimal protection against email spoofing'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: security
+            - tag: policy
+              value: dmarc
+
+        # MX Record Triggers
+        - uuid: 58639d4499c2434fac29024840243d9a
+          expression: 'last(/Email Health & Compliance Monitoring/email.mx.count)=0'
+          name: 'No MX records found on {HOST.NAME}'
+          priority: DISASTER
+          description: 'No MX records configured for domain, email delivery impossible'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: availability
+            - tag: rfc
+              value: 'RFC5321'
+
+        - uuid: a1efd72423644828ba4c9ed68921fa22
+          expression: 'last(/Email Health & Compliance Monitoring/email.mx.primary.reachable)=0'
+          name: 'Primary MX server unreachable on {HOST.NAME}'
+          priority: HIGH
+          description: 'Primary MX server is not responding to SMTP connections'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: availability
+            - tag: service
+              value: smtp
+
+        - uuid: bf2983e7624240e69881749b34f4f7ab
+          expression: 'last(/Email Health & Compliance Monitoring/email.mx.rfc5321.compliant)=0'
+          name: 'MX configuration RFC 5321 compliance issues on {HOST.NAME}'
+          priority: WARNING
+          description: 'MX record configuration has RFC 5321 compliance issues'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: compliance
+            - tag: rfc
+              value: 'RFC5321'
+
+        # Reputation and Security Triggers  
+        - uuid: 99f5750b9d0641c7844922bb5ca9a491
+          expression: 'last(/Email Health & Compliance Monitoring/email.reputation.score)<70'
+          name: 'Poor email reputation score on {HOST.NAME}'
+          priority: WARNING
+          description: 'Email domain reputation score is below acceptable threshold'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: reputation
+            - tag: service
+              value: deliverability
+
+        - uuid: 66489807166e481691baf0cc7f043ec2
+          expression: 'last(/Email Health & Compliance Monitoring/email.blacklisted.count)>0'
+          name: 'Domain found on email blacklists on {HOST.NAME}'
+          priority: HIGH
+          description: 'Domain is listed on one or more email blacklists affecting deliverability'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: reputation
+            - tag: service
+              value: blacklist
+
+        # Overall Health Triggers
+        - uuid: f9aa2a983cd049b482e5c424b2bbba73
+          expression: 'last(/Email Health & Compliance Monitoring/email.deliverability.score)<50'
+          name: 'Poor email deliverability score on {HOST.NAME}'
+          priority: HIGH
+          description: 'Overall email deliverability score indicates significant issues'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: deliverability
+            - tag: service
+              value: email
+
+        - uuid: 1e08ab0d93c343b5ba1f6e9f12ae7bc4
+          expression: 'last(/Email Health & Compliance Monitoring/email.health.overall.score)<60'
+          name: 'Poor overall email health score on {HOST.NAME}'
+          priority: WARNING
+          description: 'Overall email infrastructure health score indicates issues requiring attention'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: health
+            - tag: service
+              value: email
+
+        - uuid: 046bf644bea4405196696b2debf65dbf
+          expression: 'last(/Email Health & Compliance Monitoring/email.security.score)<70'
+          name: 'Poor email security score on {HOST.NAME}'
+          priority: WARNING
+          description: 'Email security and authentication score indicates vulnerabilities'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: security
+            - tag: service
+              value: authentication
+
+        - uuid: b3f63d97e258405386c4a50b456b08e4
+          expression: 'last(/Email Health & Compliance Monitoring/email.rfc.compliance.score)<80'
+          name: 'Poor RFC compliance score on {HOST.NAME}'
+          priority: INFO
+          description: 'RFC compliance score indicates standards compliance issues'
+          manual_close: 'YES'
+          tags:
+            - tag: scope
+              value: compliance
+            - tag: service
+              value: rfc
+
+      dashboards:
+        # Email Infrastructure Overview Dashboard
+        - uuid: 864e9e12b95e42a18587c60d812f8903
+          name: 'Email Infrastructure Overview'
+          display_period: '3600'
+          auto_start: 'NO'
+          pages:
+            - name: 'Email Health Overview'
+              widgets:
+                - type: GRAPH_CLASSIC
+                  name: 'Email Health Scores'
+                  x: '0'
+                  y: '0'
+                  width: '12'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      value: '6a7b8c9d.0e1f.2a3b.4c5d.6e7f8a9b0c1d'
+                    - type: STRING
+                      name: source_type
+                      value: '1'
+                - type: PLAIN_TEXT
+                  name: 'Email Authentication Status'
+                  x: '12'
+                  y: '0'
+                  width: '12'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: style
+                      value: '1'
+                    - type: STRING
+                      name: show_lines
+                      value: '5'
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+                - type: GAUGE
+                  name: 'Overall Email Health'
+                  x: '0'
+                  y: '5'
+                  width: '6'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.health.overall.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: GAUGE
+                  name: 'Deliverability Score'
+                  x: '6'
+                  y: '5'
+                  width: '6'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.deliverability.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: GAUGE
+                  name: 'Security Score'
+                  x: '12'
+                  y: '5'
+                  width: '6'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.security.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: GAUGE
+                  name: 'RFC Compliance'
+                  x: '18'
+                  y: '5'
+                  width: '6'
+                  height: '5'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.rfc.compliance.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: ITEM_LIST
+                  name: 'Email Authentication Records'
+                  x: '0'
+                  y: '10'
+                  width: '24'
+                  height: '8'
+                  fields:
+                    - type: COLUMNS
+                      value: |
+                        [
+                          {"name": "Record Type", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.service.status[spf]"}},
+                          {"name": "SPF Valid", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.spf.valid"}},
+                          {"name": "DKIM Selectors", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dkim.selectors.count"}},
+                          {"name": "DMARC Valid", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dmarc.valid"}},
+                          {"name": "DMARC Policy", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dmarc.policy"}},
+                          {"name": "MTA-STS", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.mta_sts.found"}},
+                          {"name": "TLS-RPT", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.tls_rpt.valid"}}
+                        ]
+
+        # RFC Compliance Dashboard  
+        - uuid: 84838c86f3f44e92a8abc98d184288b1
+          name: 'Email RFC Compliance'
+          display_period: '3600'
+          auto_start: 'NO'
+          pages:
+            - name: 'RFC Compliance Analysis'
+              widgets:
+                - type: PLAIN_TEXT
+                  name: 'RFC Compliance Summary'
+                  x: '0'
+                  y: '0'
+                  width: '24'
+                  height: '8'
+                  fields:
+                    - type: STRING
+                      name: style
+                      value: '1'
+                    - type: STRING
+                      name: show_lines
+                      value: '10'
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'get_email_health.py[comprehensive,{HOST.NAME}]'
+                - type: ITEM_LIST
+                  name: 'RFC Compliance Status'
+                  x: '0'
+                  y: '8'
+                  width: '24'
+                  height: '10'
+                  fields:
+                    - type: COLUMNS
+                      value: |
+                        [
+                          {"name": "RFC Standard", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.spf.rfc7208.compliant"}},
+                          {"name": "SPF RFC 7208", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.spf.rfc7208.compliant"}},
+                          {"name": "DMARC RFC 7489", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dmarc.rfc7489.compliant"}},
+                          {"name": "MX RFC 5321", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.mx.rfc5321.compliant"}}
+                        ]
+
+        # Email Security Dashboard
+        - uuid: f75e7f4cb6a44802ae265ccb8ebfa0ef
+          name: 'Email Security Analysis'
+          display_period: '3600'
+          auto_start: 'NO'
+          pages:
+            - name: 'Security Assessment'
+              widgets:
+                - type: GRAPH_CLASSIC
+                  name: 'Security Scores Trend'
+                  x: '0'
+                  y: '0'
+                  width: '24'
+                  height: '8'
+                  fields:
+                    - type: GRAPH
+                      value: '8c9d0e1f.2a3b.4c5d.6e7f.8a9b0c1d2e3f'
+                    - type: STRING
+                      name: source_type
+                      value: '1'
+                - type: ITEM_LIST
+                  name: 'Authentication Status'
+                  x: '0'
+                  y: '8'
+                  width: '12'
+                  height: '10'
+                  fields:
+                    - type: COLUMNS
+                      value: |
+                        [
+                          {"name": "Authentication Method", "data": 1},
+                          {"name": "SPF Status", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.spf.valid"}},
+                          {"name": "DKIM Selectors", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dkim.selectors.count"}},
+                          {"name": "DMARC Status", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dmarc.valid"}},
+                          {"name": "DMARC Policy", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.dmarc.policy"}}
+                        ]
+                - type: ITEM_LIST
+                  name: 'Reputation & Blacklists'
+                  x: '12'
+                  y: '8'
+                  width: '12'
+                  height: '10'
+                  fields:
+                    - type: COLUMNS
+                      value: |
+                        [
+                          {"name": "Reputation Metric", "data": 1},
+                          {"name": "Reputation Score", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.reputation.score"}},
+                          {"name": "Blacklist Count", "data": 1, "item": {"host": "Email Health & Compliance Monitoring", "key": "email.blacklisted.count"}}
+                        ]
+
+        # Deliverability Dashboard
+        - uuid: 06988a13786c483aac62d60864329ca9
+          name: 'Email Deliverability'
+          display_period: '3600'
+          auto_start: 'NO'
+          pages:
+            - name: 'Deliverability Analysis'
+              widgets:
+                - type: GAUGE
+                  name: 'Overall Deliverability'
+                  x: '0'
+                  y: '0'
+                  width: '8'
+                  height: '8'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.deliverability.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                    - type: STRING
+                      name: description
+                      value: 'Comprehensive deliverability assessment'
+                - type: GAUGE
+                  name: 'Reputation Score'
+                  x: '8'
+                  y: '0'
+                  width: '8'
+                  height: '8'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.reputation.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: GAUGE
+                  name: 'Authentication Score'
+                  x: '16'
+                  y: '0'
+                  width: '8'
+                  height: '8'
+                  fields:
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'email.security.score'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: angle
+                      value: '270'
+                - type: PLAIN_TEXT
+                  name: 'Deliverability Assessment'
+                  x: '0'
+                  y: '8'
+                  width: '24'
+                  height: '10'
+                  fields:
+                    - type: STRING
+                      name: style
+                      value: '1'
+                    - type: STRING
+                      name: show_lines
+                      value: '15'
+                    - type: ITEM
+                      value:
+                        host: 'Email Health & Compliance Monitoring'
+                        key: 'get_email_health.py[deliverability,{HOST.NAME}]'
+
+      valuemaps:
+        - uuid: 979f50b2b5144a85b0711b5c3202793c
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: 'Down/Invalid'
+            - value: '1' 
+              newvalue: 'Up/Valid'
+
+  graphs:
+    - uuid: 1910cfbf976a418e9e68e6daf0df64fc
+      name: 'Email Health Scores'
+      graph_items:
+        - color: '00C851'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.health.overall.score'
+        - color: 'FF4444'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'  
+            key: 'email.deliverability.score'
+        - color: '33B5E5'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.security.score'
+        - color: 'FFBB33'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.rfc.compliance.score'
+
+    - uuid: 727367676b8f494bb2bc9040910abce6
+      name: 'Authentication Records Status'
+      graph_items:
+        - color: '00C851'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.spf.valid'
+        - color: '33B5E5'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.dmarc.valid'
+        - color: 'FFBB33'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.dkim.selectors.count'
+
+    - uuid: 9928046bbfaa4d7b842e290abfb6b5c6
+      name: 'Email Reputation Monitoring'
+      graph_items:
+        - color: '00C851'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.reputation.score'
+        - color: 'FF4444'
+          calc_fnc: LAST
+          item:
+            host: 'Email Health & Compliance Monitoring'
+            key: 'email.blacklisted.count'
